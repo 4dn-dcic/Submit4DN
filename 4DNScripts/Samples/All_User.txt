@@ -1,0 +1,5 @@
+@id	@type	title
+/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/	[u'User', u'Item']	Admin Admin
+/users/986b362f-4eb6-4a9c-8173-3ab267307e3b/	[u'User', u'Item']	Wrangler Wrangler
+/users/986b362f-4eb6-4a9c-8173-3ab267307e3c/	[u'User', u'Item']	Submitter Submitter
+/users/986b362f-4eb6-4a9c-8173-3ab267307e3d/	[u'User', u'Item']	Viewer Viewer

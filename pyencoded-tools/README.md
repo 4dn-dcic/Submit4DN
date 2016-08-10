@@ -1,7 +1,7 @@
 # pyencoded-tools
 
 ### ENCODE_duplicates_catch.py
-This script allows detection of non-revoked files on the portal having identical content md5sum. The script will run without any parameters, except the usual --keyfile and --key arguments. Execution of the script will result in a 'tsv' report on detected duplicates. The report includes individual sections fro each lab: 
+This script allows detection of non-revoked files on the portal having identical content md5sum. The script will run without any parameters, except the usual --keyfile and --key arguments. Execution of the script will result in a 'tsv' report on detected duplicates. The report includes individual sections fro each lab:
 
         LAB with DUPLICATES : <name of the lab>
         NUM of replicate cases : <num of duplications detected>
@@ -33,11 +33,11 @@ To get a single field use the field argument:
 where field is a string containing the field name or a comma separated list of fieldnames, this can be combined with the embedded values
 
 To get embedded field values (such as target name from an experiment):  
-**Note: ENCODE_get_fields will only expand the data untill it hits an array**
+**Note: ENCODE_get_fields will only expand the data until it hits an array**
 **currently it cannot get subarrays of arrays**
 
         ./ENCODE_get_fields.py --field target.title
-    
+
     accession       target.title
     ENCSR087PLZ     H3K9ac (Mus musculus)
 this can also get embedded values from lists
@@ -372,10 +372,10 @@ Example usage for libraries:
 
     python3 examples/3777-gravely-protocol.py --keyfile keypairs.json --key test --lib library_protocols.txt
 
-Example usage for biosamples: 
+Example usage for biosamples:
 
     python3 examples/3777-gravely-protocol.py --keyfile keypairs.json --key test --bio biosample_protocols.txt
-    
+
 
 ### ENCODE_import_data.py
 **_PLEASE NOTE:_** This script is a dryrun-default script, run it with the *--update* option to make any changes  

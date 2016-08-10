@@ -3,17 +3,40 @@ import requests
 import pickle
 import json
 import os
+import pandas
 
-OBJlist = ['Lab', 'User', 'Experiment', 'Award', 'Reference',
-           'Document', 'Replicate', 'AntibodyLot', 'Source', 'Donor',
-           'Treatment', 'Library', 'Biosample', 'Organism']
+OBJlist = [
+    'User',
+    'Award',
+    'Lab',
+    'Organism',
+    'Publication',
+    'Document',
+    'Vendor',
+    'Protocol',
+    'ProtocolsCellCulture',
+    'IndividualHuman',
+    'IndividualMouse',
+    'Biosource',
+    'Enzyme',
+    'Construct',
+    'TreatmentRnai',
+    'Modification',
+    'Biosample',
+    'File',
+    'FileSet',
+    'ExperimentHiC',
+    'ExperimentSet',
+    'Software',
+    'Page'
+    ]
 
 for OBJ in OBJlist:
     Obj = OBJ
-    Opt = "&frame=object&limit=all&format=json"
-
-    Fname = "EncodeMeta/All{}.p".format(Obj)
-    if os.path.isfile(Fname):
+    Opt = "&format=json"
+    fname = ""
+    fname = "4DNScripts/Samples/All_{}.txt".format(Obj)
+    if os.path.isfile(fname):
         print '{} \t is already stored, it is skipped'.format(Obj)
         continue
     print '{} \t is processing'.format(Obj)
@@ -22,7 +45,7 @@ for OBJ in OBJlist:
     HEADERS = {'accept': 'application/json'}
 
     # This searches the ENCODE database for the phrase "bone chip"
-    URL = "https://www.encodeproject.org/search/?type={}{}".format(Obj, Opt)
+    URL = "http://4dn-web-dev.us-east-1.elasticbeanstalk.com/search/?type={}{}".format(Obj, Opt)
     print URL
 
     # GET the search result
@@ -31,14 +54,21 @@ for OBJ in OBJlist:
     # Extract the JSON response as a python dict
     response_json_dict = response.json()
 
-    # Write dictionary to pickle
-    Fname = "All{}.p".format(Obj)
-    pickle.dump(response_json_dict, open(Fname, "wb"))
-    filesize = os.path.getsize(Fname)
-    if filesize < 1024:
-        print "\"{}\" may not be the correct object name, please check again"\
-            .format(Obj)
-        os.remove(Fname)
+    # Check if there is an @graph key
+    try:
+        allitems = response_json_dict["@graph"]
+    except:
+        print "\"{}\" may not be the correct object name, please check again".format(Obj)
+        continue
+
+    # write dictionary to tab delimeted file
+    df = pandas.DataFrame.from_records(allitems)
+    CSV = df.to_csv(fname, sep='\t', index=False)
+
+
+
+
+
 
 # Print the object
 # print json.dumps(response_json_dict, indent=4, separators=(',', ': '))

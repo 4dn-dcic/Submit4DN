@@ -1,0 +1,2 @@
+@id	@type	accession	aliases
+/individuals-human/4DNIN000AAQ1/	[u'IndividualHuman', u'Individual', u'Item']	4DNIN000AAQ1	[u'encode:donor_of_GM12878', u'encode:donor of GM12878']

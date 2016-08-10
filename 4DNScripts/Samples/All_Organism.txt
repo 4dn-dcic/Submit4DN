@@ -1,0 +1,6 @@
+@id	@type	name
+/organisms/rat/	[u'Organism', u'Item']	rat
+/organisms/mouse/	[u'Organism', u'Item']	mouse
+/organisms/human/	[u'Organism', u'Item']	human
+/organisms/dmelanogaster/	[u'Organism', u'Item']	dmelanogaster
+/organisms/celegans/	[u'Organism', u'Item']	celegans

@@ -1,0 +1,3 @@
+@id	@type	accession	aliases	description
+/experiments-hic/4DNEX067APT1/	[u'ExperimentHiC', u'Experiment', u'Item']	4DNEX067APT1	[u'labsample:alias2']	Test Drive
+/experiments-hic/4DNEX067APU1/	[u'ExperimentHiC', u'Experiment', u'Item']	4DNEX067APU1	[u'labsample:alias']	Test Drive

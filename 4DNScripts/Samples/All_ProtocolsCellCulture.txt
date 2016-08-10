@@ -1,0 +1,2 @@
+@id	@type	aliases	description
+/protocols-cell-culture/131106bc-8535-4448-903e-854af460b212/	[u'ProtocolsCellCulture', u'Protocol', u'Item']	[]	cell culture for Hi-C
