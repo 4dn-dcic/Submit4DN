@@ -1,0 +1,29 @@
+[Command: python -u /Users/koray/Desktop/Tasks/Scripts/PrintSampleFields.py]
+accession 	ENCLB152YMT
+alternate_accessions 	[]
+aliases 	[u'bradley-bernstein:DNA_Lib 2133']
+submitted_by 	/users/f1843c60-e027-4b18-8582-64d3f3eae45b/
+documents 	[u'/documents/97a73f1c-6372-4dd2-b275-0b8e855cbd5a/']
+uuid 	247e5289-50ce-4880-b119-4b120590a0af
+strand_specificity 	False
+fragmentation_method 	sonication (generic)
+schema_version 	5
+lysis_method 	see document
+biosample 	/biosamples/ENCBS504GFW/
+extraction_method 	see document
+library_size_selection_method 	see document
+status 	released
+nucleic_acid_term_name 	DNA
+treatments 	[]
+award 	/awards/U54HG006991/
+depleted_in_term_name 	[]
+nucleic_acid_term_id 	SO:0000352
+dbxrefs 	[]
+lab 	/labs/bradley-bernstein/
+@id 	/libraries/ENCLB152YMT/
+depleted_in_term_id 	[]
+size_range 	300-800
+spikeins_used 	[]
+date_created 	2014-02-25T22:05:29.652566+00:00
+@type 	[u'Library', u'Item']
+[Finished in 3.985s]
