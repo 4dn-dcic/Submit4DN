@@ -1,2 +1,0 @@
-@id	@type	accession	aliases
-/individuals-mouse/TSTIN7359335/	[u'IndividualMouse', u'Individual', u'Item']	TSTIN7359335	[u'dcic:trial']

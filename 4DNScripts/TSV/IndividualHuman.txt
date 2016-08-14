@@ -1,0 +1,2 @@
+@id	@type:array	accession	age:number	age_units	aliases:array	alternate_accessions:array	award	date_created	dbxrefs:array	documents:array	ethnicity	health_status	lab	life_stage	notes	organism	schema_version	sex	status	submitted_by	url	uuid
+	['HTTPNotFound', 'Error']	4DNIN000AAQ1																	error			

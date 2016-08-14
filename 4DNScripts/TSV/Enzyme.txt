@@ -1,0 +1,1 @@
+@id	@type:array	aliases:array	attachment:object	award	catalog_number	cut_position:integer	date_created	description	documents:array	enzyme_source	lab	name	notes	recognition_sequence	schema_version	site_length:integer	submitted_by	url	uuid	site_length:number	cut_position:number

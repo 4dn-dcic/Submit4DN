@@ -1,0 +1,1 @@
+@id	@type:array	aliases:array	award	date_created	description	documents:array	experiments_in_set:array	experimentset_type	lab	notes	schema_version	status	submitted_by	uuid

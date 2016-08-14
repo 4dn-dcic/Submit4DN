@@ -1,2 +1,0 @@
-@id	@type	name	title
-/labs/4dn-dcic-lab/	[u'Lab', u'Item']	4dn-dcic-lab	4DN DCIC Lab, HMS

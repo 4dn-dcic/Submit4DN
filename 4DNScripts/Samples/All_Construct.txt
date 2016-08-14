@@ -1,2 +1,0 @@
-@id	@type	aliases	description	name
-/constructs/131106bc-8535-4448-903e-854af460b211/	[u'Construct', u'Item']	[]	Construct to change the world!	Awesome_Construct

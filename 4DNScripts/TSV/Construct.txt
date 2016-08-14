@@ -1,0 +1,1 @@
+@id	@type:array	aliases:array	award	construct_type	construct_vendor	description	designed_to_target	documents:array	insert_sequence	lab	map	name	notes	references:array	schema_version	status	tags	url	uuid	vector_backbone

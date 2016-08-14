@@ -1,2 +1,0 @@
-@id	@type	aliases	description
-/experiment-sets/431106bc-8535-4448-903e-854af460b260/	[u'ExperimentSet', u'Item']	[]	Sample experiment set

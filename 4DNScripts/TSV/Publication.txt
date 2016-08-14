@@ -1,0 +1,1 @@
+@id	@type:array	abstract	authors	award	categories:array	data_used	date_created	date_published	date_revised	identifiers:array	issue	journal	lab	page	publication_year	published_by:array	schema_version	status	submitted_by	supplementary_data:array	title	uuid	volume

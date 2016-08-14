@@ -1,2 +1,0 @@
-@id	@type	aliases	description
-/modifications/431106bc-8535-4448-903e-854af460b254/	[u'Modification', u'Item']	[]	Gonna cut your gene!

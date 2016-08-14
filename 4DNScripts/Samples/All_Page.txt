@@ -1,5 +1,0 @@
-@id	@type	date_created	status	title
-/pages/images/	[u'Page', u'Item']	2016-08-09T16:18:19.719306+00:00	released	Images
-/test-section/subpage/	[u'Page', u'Item']	2016-08-09T16:18:19.523732+00:00	released	Subpage
-/test-section/	[u'Page', u'Item']	2016-08-09T16:18:19.464544+00:00	released	Test Section
-/pages/homepage/	[u'Page', u'Item']	2016-08-09T16:18:19.402695+00:00	released	The ENCODE Project

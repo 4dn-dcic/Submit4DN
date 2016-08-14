@@ -1,0 +1,2 @@
+@id	@type:array	accession	age:number	age_units	aliases:array	alternate_accessions:array	award	date_created	dbxrefs:array	documents:array	lab	mouse_life_stage	mouse_strain	mouse_vendor	notes	organism	schema_version	sex	status	submitted_by	url	uuid
+/individuals-mouse/TSTIN7359335/	['IndividualMouse', 'Individual', 'Item']	TSTIN7359335	2	month	['dcic:trial']		/awards/1U01CA200059-01/	2016-08-09T16:18:18.022029+00:00			/labs/4dn-dcic-lab/	pup	Full GFP Glow	/vendors/thermofisher-scientific/		/organisms/mouse/		male	released			3cfe2618-368f-45a0-9aa9-a5277f1a56a9

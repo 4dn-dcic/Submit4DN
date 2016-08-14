@@ -1,0 +1,1 @@
+@id	@type:array	aliases:array	attachment:object	award	date_created	description	document_type	lab	notes	references:array	schema_version	status	submitted_by	urls:array	uuid	attachment:dict

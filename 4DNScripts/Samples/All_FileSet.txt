@@ -1,2 +1,0 @@
-@id	@type	accession	aliases	audit	description
-/file-sets/4DNFS40D5WL1/	[u'FileSet', u'Item']	4DNFS40D5WL1	[]	{u'INTERNAL_ACTION': [{u'category': u'mismatched status', u'name': u'audit_item_status', u'level': 30, u'detail': u'current /file-sets/4DNFS40D5WL1/ has uploaded subobject /files/4DNFI067APU1/', u'path': u'/file-sets/4DNFS40D5WL1/', u'level_name': u'INTERNAL_ACTION'}]}	

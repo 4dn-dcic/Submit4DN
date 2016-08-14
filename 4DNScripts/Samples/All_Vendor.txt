@@ -1,4 +1,0 @@
-@id	@type	aliases	description	name	title
-/vendors/thermofisher-scientific/	[u'Vendor', u'Item']	[]	previously also Fermentas	thermofisher-scientific	ThermoFisher Scientific
-/vendors/new-england-biolabs/	[u'Vendor', u'Item']	[]		new-england-biolabs	New England Biolabs
-/vendors/worthington-biochemical/	[u'Vendor', u'Item']	[]		worthington-biochemical	Worthington Biochemical

@@ -1,2 +1,0 @@
-@id	@type	aliases	description
-/documents/dcf15d5e-40aa-43bc-b81c-32c70c9afb01/	[u'Document', u'Item']	[u'admin-admin:photo']	

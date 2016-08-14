@@ -1,2 +1,0 @@
-@id	@type	aliases	description
-/treatments-rnai/686b362f-4eb6-4a9c-8173-3ab267307e3b/	[u'TreatmentRnai', u'Treatment', u'Item']	[u'Awesome:Treatment']	RNAi treatment to change the world!

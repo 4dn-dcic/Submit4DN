@@ -1,0 +1,5 @@
+Namespace(allfields=True, collection='File', debug=False, es=False, field=None, key='default', keyfile='/Users/koray/keypairs.json', listfull=False, object=None, query=None)
+@id	@type:array	accession	aliases:array	alternate_accessions:array	award	content_md5sum	date_created	experiments:array	file_classification	file_format	file_format_specifications:array	file_size:integer	file_type	filename	filesets:array	href	lab	md5sum	notes	quality_metric	related_files:array	restricted:boolean	schema_version	status	submitted_by	title	upload_credentials:object	uuid	file_size:number
+	['HTTPNotFound', 'Error']	4DNFI067APU1																						error		Not Found			
+/files/TSTFI0603326/	['File', 'Item']	TSTFI0603326			/awards/1U01CA200059-01/		2016-08-10T19:08:27.867627+00:00	['/experiments-hic/4DNEX067APT1/']	raw file	fastq			fastq	example.fastq.gz		/files/TSTFI0603326/@@download/TSTFI0603326.fastq.gz	/labs/4dn-dcic-lab/	8f8cc612e5b2d25c52b1d29017e38f2b					1	uploading	/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/	TSTFI0603326		9243fcac-1f8a-4d85-a860-b73f0d72621e	82375
+	['HTTPNotFound', 'Error']	4DNFI067APU2																						error		Not Found			

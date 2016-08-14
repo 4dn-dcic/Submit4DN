@@ -1,0 +1,2 @@
+@id	@type:array	accession	aliases:array	alternate_accessions:array	award	date_created	description	documents:array	files_in_set:array	fileset_type	lab	notes	schema_version	status	submitted_by	uuid
+	['HTTPNotFound', 'Error']	4DNFS40D5WL1					The resource could not be found.							error		

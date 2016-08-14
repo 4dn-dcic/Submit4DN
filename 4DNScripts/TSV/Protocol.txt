@@ -1,0 +1,1 @@
+@id	@type:array	aliases:array	award	date_created	description	lab	notes	protocol_documents:array	schema_version	status	submitted_by	uuid

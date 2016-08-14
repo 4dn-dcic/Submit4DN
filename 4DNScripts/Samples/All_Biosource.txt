@@ -1,3 +1,0 @@
-@id	@type	accession	aliases	description
-/biosources/331111bc-8535-4448-903e-854af460b254/	[u'Biosource', u'Item']	TSTSR9295570	[]	GM06990 cells
-/biosources/111116bc-8535-4448-903e-854af460b254/	[u'Biosource', u'Item']	TSTSR6726487	[]	brain tissue
