@@ -18,12 +18,11 @@ OBJlist = [
     'File', 'FileSet',
     'ExperimentHiC', 'ExperimentSet'
     ]
+scriptpath = os.path.dirname(os.path.realpath(__file__))
+os.chdir(scriptpath)
 
-os.chdir('/Users/koray/Github/4DNWranglerTools/4DNScripts')
 for OBJ in OBJlist:
-    print(OBJ)
     command = "python3 ENCODE_get_fields.py --collection "+OBJ+" --allfields --listfull >TSV/"+OBJ+".txt"
-    print(command)
     os.system(command)
 
 wb = xlwt.Workbook()
