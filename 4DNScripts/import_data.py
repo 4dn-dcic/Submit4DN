@@ -371,13 +371,7 @@ ORDER = [
     'file',
     'file_set',
     'experiment_hic',
-    'experiment_set',
-    'software',
-    'analysis_step',
-    'task',
-    'workflow',
-    'workflow_run',
-    'page'
+    'experiment_set'
 ]
 
 def order_sorter(key):
