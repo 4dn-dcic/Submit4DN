@@ -164,7 +164,6 @@ def getArgs():
 
 def main():
     args = getArgs()
-    print(args)
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
     connection = encodedccMod.ENC_Connection(key)
     output = encodedccMod.GetFields(connection, args)

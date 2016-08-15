@@ -1,1 +1,0 @@
-@id	@type:array	aliases:array	award	binary_url	description	docker_info:object	documentation_url	lab	name	notes	purpose:array	references:array	schema_version	software_relation:array	software_type:array	source_url	title	uuid	version	docker_info:dict

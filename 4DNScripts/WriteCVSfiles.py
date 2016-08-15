@@ -22,18 +22,17 @@ OBJlist = [
 os.chdir('/Users/koray/Github/4DNWranglerTools/4DNScripts')
 for OBJ in OBJlist:
     print(OBJ)
-    command = "python3 ENCODE_get_fields.py --collection "+OBJ+" --allfields >TSV/"+OBJ+".txt"
+    command = "python3 ENCODE_get_fields.py --collection "+OBJ+" --allfields --listfull >TSV/"+OBJ+".txt"
     print(command)
-    # os.system(command)
+    os.system(command)
 
 wb = xlwt.Workbook()
 for filename in glob.glob("/Users/koray/Github/4DNWranglerTools/4DNScripts/TSV/*.txt"):
-    print(filename)
     (f_path, f_name) = os.path.split(filename)
     (f_short_name, f_extension) = os.path.splitext(f_name)
     ws = wb.add_sheet(f_short_name)
-    spamReader = csv.reader(open(filename, 'r'))
-    for rowx, row in enumerate(spamReader):
+    sheetreader = csv.reader(open(filename, 'r'), delimiter='\t')
+    for rowx, row in enumerate(sheetreader):
         for colx, value in enumerate(row):
             ws.write(rowx, colx, value)
 wb.save("/Users/koray/Github/4DNWranglerTools/4DNScripts/SubmitData.xls")

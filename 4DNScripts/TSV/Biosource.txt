@@ -1,3 +1,3 @@
 @id	@type:array	accession	aliases:array	alternate_accessions:array	award	biosource_type	biosource_vendor	cell_line	description	individual	lab	notes	references:array	schema_version	status	tissue	url	uuid
-/biosources/331111bc-8535-4448-903e-854af460b254/	['Biosource', 'Item']	TSTSR9295570				immortalized cell line	/vendors/new-england-biolabs/	GM06990	GM06990 cells	/individuals-human/4DNIN000AAQ1/				1	current			331111bc-8535-4448-903e-854af460b254
-/biosources/111116bc-8535-4448-903e-854af460b254/	['Biosource', 'Item']	TSTSR6726487				tissue			brain tissue	/individuals-human/4DNIN000AAQ1/				1	current	brain		111116bc-8535-4448-903e-854af460b254
+/biosources/TSTSR9295570/	['Biosource', 'Item']	TSTSR9295570				immortalized cell line	/vendors/new-england-biolabs/	GM06990	GM06990 cells	/individuals-human/4DNIN000AAQ1/				1	current			331111bc-8535-4448-903e-854af460b254
+/biosources/TSTSR6726487/	['Biosource', 'Item']	TSTSR6726487				tissue			brain tissue	/individuals-human/4DNIN000AAQ1/				1	current	brain		111116bc-8535-4448-903e-854af460b254
