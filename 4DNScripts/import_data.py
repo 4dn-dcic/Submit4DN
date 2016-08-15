@@ -349,7 +349,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
 
 # the order to try to upload / update the items
-
+# used to avoid dependencies... i.e. biosample needs the biosource to exist
 ORDER = [
     'user',
     'award',

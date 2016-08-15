@@ -82,6 +82,15 @@ class ENC_Connection(object):
         self.auth = (key.authid, key.authpw)
 
 
+def format_schema_name(supplied_name):
+    if supplied_name.endswith('s'):
+        schema_name = self.search_name + '.json'
+    elif supplied_name.endswith('.json'):
+        schema_name = supplied_name
+    else:
+        schema_name = supplied_name.replace('-', '_') + '.json'
+    return schema_name
+
 class ENC_Collection(object):
     def __init__(self, connection, supplied_name, frame='object'):
         if supplied_name.endswith('s'):
@@ -444,7 +453,7 @@ class GetFields():
                 if field:  # after the above loop, should have final field value
                     name = f
                     if not self.facet:
-                        name = name + self.get_type(field)
+                        name = name + get_type(field)
                     newObj[name] = field
                     #if not self.args.allfields:
                     if name not in self.header:
@@ -456,18 +465,6 @@ class GetFields():
             for d in self.data:
                 writer.writerow(d)
 
-    def get_type(self, attr):
-        ''' given an object return its type as a string to append
-        '''
-        if type(attr) == int:
-            return ":number"
-        elif type(attr) == list:
-            return ":array"
-        elif type(attr) == dict:
-            return ":dict"
-        else:
-            # this must be a string
-            return ""
 
     def get_embedded(self, path, obj):
         '''
@@ -568,6 +565,20 @@ class GetFields():
             else:
                 return ""
 
+
+
+def get_type(attr):
+    ''' given an object return its type as a string to append
+    '''
+    if type(attr) == int:
+        return ":number"
+    elif type(attr) == list:
+        return ":array"
+    elif type(attr) == dict:
+        return ":dict"
+    else:
+        # this must be a string
+        return ""
 
 def patch_set(args, connection):
     import csv

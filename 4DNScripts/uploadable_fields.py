@@ -122,31 +122,9 @@ def getArgs():
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         )
-    parser.add_argument('--object',
-                        help="Either the file containing a list of ENCs as a column\
-                        or this can be a single accession by itself")
-    parser.add_argument('--query',
-                        help="A custom query to get accessions.")
-    parser.add_argument('--field',
-                        help="Either the file containing single column of fieldnames\
-                        or the name of a single field")
-    parser.add_argument('--listfull',
-                        help="Normal list-type output shows only unique items\
-                        select this to list all values even repeats. Default is False",
-                        default=False,
-                        action='store_true')
-    parser.add_argument('--allfields',
-                        help="Overrides other field options and gets all fields\
-                        from the frame=object level. Default is False",
-                        default=False,
-                        action='store_true')
-    parser.add_argument('--collection',
-                        help="Overrides other object options and returns all\
-                        objects from the selected collection")
-    parser.add_argument('--es',
-                        help="Used for collections, uses elastic search instead of table view",
-                        default=False,
-                        action='store_true')
+    parser.add_argument('--type',
+                        help="Add a seperate --type for each type you want to get.",
+                        action="append")
     parser.add_argument('--key',
                         default='default',
                         help="The keypair identifier from the keyfile.  \
@@ -162,12 +140,30 @@ def getArgs():
     return args
 
 
+def get_field_type(field):
+    field_type = field.get('type', '')
+    if field_type == 'string':
+        return ''
+    return ":" + field_type
+
+def build_field_list(properties):
+    fields = []
+    for name, props in properties.items():
+        if not props.get('calculatedProperty', False):
+            fields.append(name + get_field_type(props))
+
+    return fields
+
 def main():
     args = getArgs()
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
     connection = encodedccMod.ENC_Connection(key)
-    output = encodedccMod.GetFields(connection, args)
-    output.get_fields()
+    for name in args.type:
+        schema_name = encodedccMod.format_schema_name(name)
+        uri = '/profiles/' + schema_name
+        schema_grabber = encodedccMod.ENC_Schema(connection, uri)
+        print(build_field_list(schema_grabber.properties))
+
 
 if __name__ == '__main__':
     main()
