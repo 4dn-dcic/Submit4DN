@@ -400,12 +400,16 @@ def main():
     else:
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
+
+    # get me a list of all the data_types in the system
     profiles = encodedcc.get_ENCODE("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
-    import pdb; pdb.set_trace()
+
     # we want to read through names in proper upload order
+    # that way we have dependencies inserted in the proper order
     sorted_names = sorted(names, key=order_sorter)
+
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall)
