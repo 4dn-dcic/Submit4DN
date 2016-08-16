@@ -1,1 +1,0 @@
-uuid	name	scientific_name	schema_version	taxon_id	status

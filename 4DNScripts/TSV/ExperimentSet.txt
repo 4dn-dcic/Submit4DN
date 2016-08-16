@@ -1,1 +1,0 @@
-submitted_by	schema_version	notes	experiments_in_set:array	award	description	documents:array	aliases:array	uuid	experimentset_type	status	date_created	lab

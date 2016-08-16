@@ -1,1 +1,0 @@
-documents:array	lab	aliases:array	fileset_type	uuid	status	files_in_set:array	date_created	alternate_accessions:array	accession	award	submitted_by	description	schema_version	notes

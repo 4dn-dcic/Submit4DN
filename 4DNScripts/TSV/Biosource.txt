@@ -1,1 +1,0 @@
-uuid	individual	biosource_type	status	description	accession	url	alternate_accessions:array	tissue	schema_version	cell_line	award	biosource_vendor	lab	references:array	aliases:array	notes

@@ -1,1 +1,0 @@
-notes	protocol_documents:array	award	schema_version	description	date_created	lab	status	uuid	aliases:array	submitted_by

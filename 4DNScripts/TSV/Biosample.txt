@@ -1,1 +1,0 @@
-alternate_accessions:array	aliases:array	status	treatments:array	biosample_protocols:array	modifications:array	description	biosource:array	lab	references:array	uuid	notes	award	schema_version	biosample_relation:array	submitted_by	date_created	accession

@@ -1,1 +1,0 @@
-age_units	organism	life_stage	submitted_by	dbxrefs:array	aliases:array	accession	alternate_accessions:array	date_created	sex	url	age:number	lab	notes	health_status	schema_version	documents:array	ethnicity	award	status	uuid

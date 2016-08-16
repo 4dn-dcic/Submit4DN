@@ -1,1 +1,0 @@
-description	aliases:array	recognition_sequence	name	site_length:integer	uuid	award	documents:array	date_created	schema_version	catalog_number	submitted_by	lab	cut_position:integer	attachment:object	notes	enzyme_source	url

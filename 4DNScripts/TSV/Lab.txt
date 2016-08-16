@@ -1,1 +1,0 @@
-title	address1	phone1	status	pi	url	phone2	country	postal_code	fax	name	institute_label	schema_version	awards:array	uuid	state	city	institute_name	address2

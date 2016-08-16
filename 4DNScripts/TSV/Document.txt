@@ -1,1 +1,0 @@
-notes	urls:array	references:array	aliases:array	lab	document_type	award	date_created	uuid	submitted_by	description	attachment:object	schema_version	status

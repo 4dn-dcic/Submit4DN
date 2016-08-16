@@ -1,1 +1,0 @@
-status	identifiers:array	schema_version	categories:array	date_created	title	date_published	page	uuid	submitted_by	issue	authors	supplementary_data:array	published_by:array	award	date_revised	volume	abstract	lab	data_used	journal

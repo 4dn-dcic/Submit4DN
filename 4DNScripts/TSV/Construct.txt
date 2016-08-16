@@ -1,1 +1,0 @@
-insert_sequence	designed_to_target	lab	construct_type	tags	uuid	vector_backbone	documents:array	map	url	notes	name	construct_vendor	status	award	schema_version	aliases:array	references:array	description
