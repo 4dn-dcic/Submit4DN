@@ -43,7 +43,7 @@ Ex: award, lab, target, etc.
     String are the default and do not require an identifier
 
 
-To upload objects with attachments, have a column titled "attachment"
+To upload objects with attachments, have a column titled "attachment:object"
 containing the name of the file you wish to attach
 
 FOR EMBEDDED SUBOBJECTS:
@@ -316,9 +316,9 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         post_json = dict(zip(keys, values))
         post_json = dict_patcher(post_json)
         # add attchments here
-        if post_json.get("attachment"):
-            attach = attachment(post_json["attachment"])
-            post_json["attachment"] = attach
+        if post_json.get("attachment:object"):
+            attach = attachment(post_json["attachment:object"])
+            post_json["attachment:object"] = attach
         print(post_json)
         temp = {}
         if post_json.get("uuid"):
