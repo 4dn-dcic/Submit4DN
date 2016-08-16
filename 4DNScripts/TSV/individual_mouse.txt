@@ -1,0 +1,1 @@
+mouse_strain	submitted_by	age:number	date_created	award	uuid	aliases:array	documents:array	organism	notes	url	lab	alternate_accessions:array	mouse_vendor	status	schema_version	accession	age_units	dbxrefs:array	sex	mouse_life_stage

@@ -1,1 +1,1 @@
-@id	@type:array	description	end_date	name	pi	schema_version	start_date	status	title	url	uuid	viewing_group
+pi	description	start_date	uuid	viewing_group	status	schema_version	name	end_date	url	title

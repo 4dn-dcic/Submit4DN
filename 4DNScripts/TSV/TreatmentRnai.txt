@@ -1,1 +1,1 @@
-@id	@type:array	aliases:array	award	description	documents:array	lab	notes	references:array	rnai_constructs:array	rnai_type	rnai_vendor	schema_version	status	target	target_sequence	url	uuid
+aliases:array	uuid	award	schema_version	status	url	target_sequence	rnai_type	notes	documents:array	rnai_vendor	description	target	rnai_constructs:array	references:array	lab

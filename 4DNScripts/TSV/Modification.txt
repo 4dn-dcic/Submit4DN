@@ -1,1 +1,1 @@
-@id	@type:array	aliases:array	award	constructs:array	description	genomic_site	lab	modification_type	notes	references:array	schema_version	status	target	url	uuid
+url	award	notes	description	status	aliases:array	genomic_site	lab	schema_version	modification_type	references:array	constructs:array	uuid	target

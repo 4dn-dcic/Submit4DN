@@ -1,1 +1,1 @@
-@id	@type:array	aliases:array	attachment:object	award	catalog_number	cut_position:integer	date_created	description	documents:array	enzyme_source	lab	name	notes	recognition_sequence	schema_version	site_length:integer	submitted_by	url	uuid	site_length:number	cut_position:number
+description	aliases:array	recognition_sequence	name	site_length:integer	uuid	award	documents:array	date_created	schema_version	catalog_number	submitted_by	lab	cut_position:integer	attachment:object	notes	enzyme_source	url

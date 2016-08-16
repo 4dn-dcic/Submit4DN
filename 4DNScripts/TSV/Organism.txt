@@ -1,1 +1,1 @@
-@id	@type:array	name	schema_version	scientific_name	status	taxon_id	uuid
+uuid	name	scientific_name	schema_version	taxon_id	status

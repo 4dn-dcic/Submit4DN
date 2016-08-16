@@ -1,1 +1,1 @@
-@id	@type:array	aliases:array	description	name	notes	schema_version	status	title	url	uuid
+title	url	schema_version	aliases:array	name	status	notes	uuid	description

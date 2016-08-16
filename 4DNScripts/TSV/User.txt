@@ -1,1 +1,1 @@
-@id	@type:array	email	fax	first_name	google	groups:array	job_title	lab	last_name	phone1	phone2	schema_version	skype	status	submits_for:array	timezone	title	uuid	viewing_groups:array
+fax	job_title	last_name	schema_version	google	timezone	submits_for:array	phone1	first_name	viewing_groups:array	status	phone2	uuid	skype	groups:array	email	lab
