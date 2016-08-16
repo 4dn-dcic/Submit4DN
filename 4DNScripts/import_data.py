@@ -229,7 +229,7 @@ def data_formatter(value, val_type):
     if val_type in ["int", "integer"]:
         return int(value)
     elif val_type in ["list", "array"]:
-        return value.strip("[]").split(",")
+        return value.strip("[\']").split(",")
         
 
 
@@ -246,6 +246,7 @@ def dict_patcher(old_dict):
             elif len(k) > 1 and len(path) == 1:
                 # non-string non-embedded object
                 # use data_formatter function
+                import pdb; pdb.set_trace()
                 new_dict[k[0]] = data_formatter(old_dict[key], k[1])
             elif len(k) == 1 and len(path) > 1:
                 # embedded string object
@@ -297,11 +298,20 @@ def dict_patcher(old_dict):
 def excel_reader(datafile, sheet, update, connection, patchall):
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
+    # remove title column
+    keys.pop(0)
+    import pdb;pdb.set_trace()
+    #skip two rows of description / enums
+    next(row)
+    next(row)
+
     total = 0
     error = 0
     success = 0
     patch = 0
     for values in row:
+        # always remove first column cause that is used for titles of rows
+        values.pop(0)
         total += 1
         post_json = dict(zip(keys, values))
         post_json = dict_patcher(post_json)
@@ -341,6 +351,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             if update:
                 print("POSTing data!")
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
+                print(e)
                 if e["status"] == "error":
                     error += 1
                 elif e["status"] == "success":
@@ -368,10 +379,10 @@ ORDER = [
     'treatment_rnai',
     'modification',
     'biosample',
-    'file',
     'file_set',
-    'experiment_hic',
+    'file',
     'experiment_set'
+    'experiment_hic',
 ]
 
 def order_sorter(key):
