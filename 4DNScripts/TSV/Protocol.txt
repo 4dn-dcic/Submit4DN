@@ -1,1 +1,1 @@
-@id	@type:array	aliases:array	award	date_created	description	lab	notes	protocol_documents:array	schema_version	status	submitted_by	uuid
+notes	protocol_documents:array	award	schema_version	description	date_created	lab	status	uuid	aliases:array	submitted_by

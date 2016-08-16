@@ -159,10 +159,12 @@ def main():
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
     connection = encodedccMod.ENC_Connection(key)
     for name in args.type:
+        fieldlist = []
         schema_name = encodedccMod.format_schema_name(name)
         uri = '/profiles/' + schema_name
         schema_grabber = encodedccMod.ENC_Schema(connection, uri)
-        print(build_field_list(schema_grabber.properties))
+        fieldlist = build_field_list(schema_grabber.properties)
+        print('\t'.join(fieldlist))
 
 
 if __name__ == '__main__':

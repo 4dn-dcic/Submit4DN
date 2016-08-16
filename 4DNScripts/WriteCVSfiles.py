@@ -13,6 +13,7 @@ OBJlist = [
     'User', 'Award', 'Lab',
     'Organism', 'Publication', 'Document',
     'Vendor', 'Protocol', 'ProtocolsCellCulture',
+    'individual_human', 'individual_mouse',
     'Biosource', 'Enzyme', 'Construct',
     'TreatmentRnai', 'Modification', 'Biosample',
     'File', 'FileSet',
@@ -22,7 +23,7 @@ scriptpath = os.path.dirname(os.path.realpath(__file__))
 os.chdir(scriptpath)
 
 for OBJ in OBJlist:
-    command = "python3 ENCODE_get_fields.py --collection "+OBJ+" --allfields --listfull >TSV/"+OBJ+".txt"
+    command = "python3 uploadable_fields.py --type "+OBJ+" >TSV/"+OBJ+".txt"
     os.system(command)
 
 wb = xlwt.Workbook()
