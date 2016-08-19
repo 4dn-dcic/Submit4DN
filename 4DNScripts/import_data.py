@@ -147,7 +147,7 @@ def attachment(path):
     filename = os.path.basename(path)
     mime_type, encoding = mimetypes.guess_type(path)
     major, minor = mime_type.split('/')
-    detected_type = magic.from_file(path, mime=True).decode('ascii')
+    detected_type = magic.from_file(path, mime=True)
 
     # XXX This validation logic should move server-side.
     if not (detected_type == mime_type or
@@ -319,9 +319,10 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         post_json = dict(zip(keys, values))
         post_json = dict_patcher(post_json)
         # add attchments here
-        if post_json.get("attachment:object"):
-            attach = attachment(post_json["attachment:object"])
-            post_json["attachment:object"] = attach
+        import pdb; pdb.set_trace()
+        if post_json.get("attachment"):
+            attach = attachment(post_json["attachment"])
+            post_json["attachment"] = attach
         print(post_json)
         temp = {}
         if post_json.get("uuid"):

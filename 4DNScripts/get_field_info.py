@@ -78,7 +78,11 @@ def build_field_list(properties, include_description=False, include_enums=False)
     fields = []
     for name, props in properties.items():
         if not props.get('calculatedProperty', False):
-            field_name = name + get_field_type(props)
+            # special case for attachemnts
+            if name == 'attachment':
+                field_name = name
+            else:
+                field_name = name + get_field_type(props)
             desc = '' if not include_description else props.get('description')
             enum = '' if not include_enums else props.get('enum')
             fields.append(FieldInfo(field_name, desc, enum))
