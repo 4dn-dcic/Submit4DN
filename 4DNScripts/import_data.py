@@ -44,7 +44,7 @@ Ex: award, lab, target, etc.
     String are the default and do not require an identifier
 
 
-To upload objects with attachments, have a column titled "attachment:object"
+To upload objects with attachments, have a column titled "attachment"
 containing the name of the file you wish to attach
 
 FOR EMBEDDED SUBOBJECTS:
