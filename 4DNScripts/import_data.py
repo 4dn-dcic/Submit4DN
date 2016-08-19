@@ -10,6 +10,7 @@ import mimetypes
 import requests
 from PIL import Image
 from base64 import b64encode
+import ast
 import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
@@ -77,7 +78,7 @@ characterization_reviews.organism    characterization_reviews.lane:int    ....  
 
 
 REMEMBER:
-to define multiple embedded items the number tag comes at the end 
+to define multiple embedded items the number tag comes at the end
 of the object but before the object type, such as object.subobject-N:type
     tags.name    tags.location    tags.name-1    tags.location-1
     FLAG         C-terminal       BOGUS          Fake-data
@@ -228,9 +229,11 @@ def data_formatter(value, val_type):
     ''' returns formatted data'''
     if val_type in ["int", "integer"]:
         return int(value)
+    if val_type in ["num", "number"]:
+        return float(value)
     elif val_type in ["list", "array"]:
         return value.strip("[\']").split(",")
-        
+
 
 
 def dict_patcher(old_dict):
@@ -246,7 +249,7 @@ def dict_patcher(old_dict):
             elif len(k) > 1 and len(path) == 1:
                 # non-string non-embedded object
                 # use data_formatter function
-                import pdb; pdb.set_trace()
+                # import pdb; pdb.set_trace()
                 new_dict[k[0]] = data_formatter(old_dict[key], k[1])
             elif len(k) == 1 and len(path) > 1:
                 # embedded string object
@@ -300,7 +303,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
     keys = next(row)  # grab the first row of headers
     # remove title column
     keys.pop(0)
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     #skip two rows of description / enums
     next(row)
     next(row)
@@ -366,23 +369,30 @@ ORDER = [
     'award',
     'lab',
     'organism',
-    'publication',
     'document',
+    'publication',
     'vendor',
     'protocol',
+    'protocolscellculture',
     'protocol_cell_culture',
+    'individualhuman',
     'individual_human',
+    'individualmouse',
     'individual_mouse',
     'biosource',
     'enzyme',
     'construct',
+    'treatmentrnai'
     'treatment_rnai',
     'modification',
     'biosample',
+    'fileset',
     'file_set',
     'file',
-    'experiment_set'
-    'experiment_hic',
+    'experimentset',
+    'experiment_set',
+    'experimenthic',
+    'experiment_hic'
 ]
 
 def order_sorter(key):
