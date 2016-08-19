@@ -229,7 +229,7 @@ def data_formatter(value, val_type):
     ''' returns formatted data'''
     if val_type in ["int", "integer"]:
         return int(value)
-    if val_type in ["num", "number"]:
+    elif val_type in ["num", "number"]:
         return float(value)
     elif val_type in ["list", "array"]:
         return value.strip("[\']").split(",")
