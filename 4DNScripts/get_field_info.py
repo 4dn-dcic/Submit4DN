@@ -9,10 +9,10 @@ import xlwt
 EPILOG = '''
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
-    
+
     To get multiple objects use the '--type' argument multiple times
 
-            %(prog)s --type Biosample --type Biosource 
+            %(prog)s --type Biosample --type Biosource
 
     to include description and enum for all types use the appropriate flags
 
@@ -59,6 +59,9 @@ def getArgs():
                         default=False,
                         action='store_true',
                         help="Print debug messages.  Default is False.")
+    parser.add_argument('--outfile',
+                        default='fields.xls',
+                        help="The name of the output file. Default is fields.xls")
     args = parser.parse_args()
     return args
 
@@ -94,7 +97,7 @@ def get_uploadable_fields(connection, types, include_description=False, include_
         schema_name = encodedccMod.format_schema_name(name)
         uri = '/profiles/' + schema_name
         schema_grabber = encodedccMod.ENC_Schema(connection, uri)
-        fields[name] = build_field_list(schema_grabber.properties, 
+        fields[name] = build_field_list(schema_grabber.properties,
                                         include_description, include_enums)
 
     return fields
@@ -123,7 +126,7 @@ def main():
     args = getArgs()
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
     connection = encodedccMod.ENC_Connection(key)
-    fields = get_uploadable_fields(connection, args.type, 
+    fields = get_uploadable_fields(connection, args.type,
                                         args.descriptions,
                                         args.enums)
 
@@ -133,7 +136,7 @@ def main():
         pprint(fields)
 
     if args.writexls:
-        file_name = 'fields.xls'
+        file_name = args.outfile
         create_xls(fields,file_name)
 
 if __name__ == '__main__':
