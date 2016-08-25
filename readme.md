@@ -7,9 +7,9 @@ is /Users/user/keypairs.json
 
     {
       "default": {
-        "key": "BBXSW2MN",
-        "secret": "2ikpug5futbov5ap",
-        "server": "http://ec2-54-210-11-70.compute-1.amazonaws.com/"
+        "key": "TheConnectionKey",
+        "secret": "very_secret_key",
+        "server":"www.The4dnWebsite.com"
       }
     }
 if file name is different and the key is not named default add it to the code:
