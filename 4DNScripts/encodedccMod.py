@@ -250,6 +250,9 @@ def get_ENCODE(obj_id, connection, frame="object"):
     logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
     logging.debug('GET RESPONSE code %s' % (response.status_code))
+    print('addedbykoray')
+    print(url)
+    print('addedbykoray')
     try:
         if response.json():
             logging.debug('GET RESPONSE JSON: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
