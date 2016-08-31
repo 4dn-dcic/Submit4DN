@@ -5,7 +5,6 @@ import requests
 import json
 import sys
 import logging
-from urllib.parse import urljoin
 from urllib.parse import quote
 import os.path
 import hashlib
@@ -250,9 +249,6 @@ def get_ENCODE(obj_id, connection, frame="object"):
     logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
     logging.debug('GET RESPONSE code %s' % (response.status_code))
-    print('addedbykoray')
-    print(url)
-    print('addedbykoray')
     try:
         if response.json():
             logging.debug('GET RESPONSE JSON: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
@@ -262,7 +258,8 @@ def get_ENCODE(obj_id, connection, frame="object"):
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
-            logging.warning('GET failure.  Response code = %s' % (response.text))
+            #logging.warning('GET failure.  Response code = %s' % (response.text))
+            pass
     return response.json()
 
 
