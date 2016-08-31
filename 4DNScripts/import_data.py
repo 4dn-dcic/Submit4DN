@@ -324,8 +324,9 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         temp = {}
         if post_json.get("uuid"):
             temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
-        elif post_json.get("alias"):
-            temp = encodedcc.get_ENCODE(post_json["alias"], connection)
+        elif post_json.get("aliases"):
+            import pdb; pdb.set_trace()
+            temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
         elif post_json.get("accession"):
             temp = encodedcc.get_ENCODE(post_json["accession"], connection)
         elif post_json.get("@id"):

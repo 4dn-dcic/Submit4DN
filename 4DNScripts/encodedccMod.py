@@ -240,13 +240,13 @@ def get_ENCODE(obj_id, connection, frame="object"):
     '''GET an ENCODE object as JSON and return as dict'''
     if frame is None:
         if '?' in obj_id:
-            url = urljoin(connection.server, obj_id+'&limit=all')
+            url = connection.server +  obj_id+'&limit=all'
         else:
-            url = urljoin(connection.server, obj_id+'?limit=all')
+            url = connection.server + obj_id+'?limit=all'
     elif '?' in obj_id:
-        url = urljoin(connection.server, obj_id+'&limit=all&frame='+frame)
+        url = connection.server + obj_id+'&limit=all&frame='+frame
     else:
-        url = urljoin(connection.server, obj_id+'?limit=all&frame='+frame)
+        url = connection.server + obj_id+'?limit=all&frame='+frame
     logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
     logging.debug('GET RESPONSE code %s' % (response.status_code))
@@ -275,7 +275,7 @@ def replace_ENCODE(obj_id, connection, put_input):
         json_payload = put_input
     else:
         logging.warning('Datatype to PUT is not string or dict.')
-    url = urljoin(connection.server, obj_id)
+    url = connection.server + obj_id
     logging.debug('PUT URL : %s' % (url))
     logging.debug('PUT data: %s' % (json_payload))
     response = requests.put(url, auth=connection.auth, data=json_payload,
@@ -296,7 +296,7 @@ def patch_ENCODE(obj_id, connection, patch_input):
         json_payload = patch_input
     else:
         print('Datatype to PATCH is not string or dict.', file=sys.stderr)
-    url = urljoin(connection.server, obj_id)
+    url = connection.server + obj_id
     logging.debug('PATCH URL : %s' % (url))
     logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload,
@@ -317,7 +317,7 @@ def new_ENCODE(connection, collection_name, post_input):
         json_payload = post_input
     else:
         print('Datatype to POST is not string or dict.', file=sys.stderr)
-    url = urljoin(connection.server, collection_name)
+    url = connection.server +  collection_name
     logging.debug("POST URL : %s" % (url))
     logging.debug("POST data: %s" % (json.dumps(post_input,
                                      sort_keys=True, indent=4,
@@ -713,7 +713,7 @@ def fastq_read(connection, uri=None, filename=None, reads=1):
     # which is roughly what a single fastq read is.
     if uri:
         BLOCK_SIZE = 512
-        url = urljoin(connection.server, quote(uri))
+        url = connection.server +  quote(uri)
         data = requests.get(url, auth=connection.auth, stream=True)
         block = BytesIO(next(data.iter_content(BLOCK_SIZE * reads)))
         compressed = gzip.GzipFile(None, 'r', fileobj=block)
@@ -747,7 +747,7 @@ def post_file(file_metadata, connection, update=False):
     except:
         pass
     if update:
-        url = urljoin(connection.server, '/files/')
+        url = connection.server + 'files/'
         r = requests.post(url, auth=connection.auth, headers=connection.headers, data=json.dumps(file_metadata))
         try:
             r.raise_for_status()
