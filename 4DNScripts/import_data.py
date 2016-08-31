@@ -249,7 +249,6 @@ def dict_patcher(old_dict):
             elif len(k) > 1 and len(path) == 1:
                 # non-string non-embedded object
                 # use data_formatter function
-                # import pdb; pdb.set_trace()
                 new_dict[k[0]] = data_formatter(old_dict[key], k[1])
             elif len(k) == 1 and len(path) > 1:
                 # embedded string object
@@ -303,7 +302,6 @@ def excel_reader(datafile, sheet, update, connection, patchall):
     keys = next(row)  # grab the first row of headers
     # remove title column
     keys.pop(0)
-    # import pdb;pdb.set_trace()
     #skip two rows of description / enums
     next(row)
     next(row)
@@ -319,7 +317,6 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         post_json = dict(zip(keys, values))
         post_json = dict_patcher(post_json)
         # add attchments here
-        import pdb; pdb.set_trace()
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
