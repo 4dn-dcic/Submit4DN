@@ -77,15 +77,35 @@ def get_field_type(field):
         return ''
     return ":" + field_type
 
-def build_field_list(properties, include_description=False, include_enums=False):
+def is_subobject(field):
+    try:
+        return field['items']['type'] == 'object'
+    except:
+        return False
+
+def dotted_field_name(field_name, parent_name=None):
+    if parent_name:
+        return "%s.%s" % (parent_name, field_name)
+    else:
+        return field_name
+
+def build_field_list(properties, include_description=False, include_enums=False,
+                    parent=''):
     fields = []
     for name, props in properties.items():
         if not props.get('calculatedProperty', False):
             # special case for attachemnts
             if name == 'attachment':
-                field_name = name
+                field_name = dotted_field_name(name, parent)
+            # handle sub-objects
+            elif is_subobject(props):
+                fields.extend(build_field_list(props['items']['properties'],
+                                               include_description,
+                                               include_enums,
+                                               parent=name)
+                             )
             else:
-                field_name = name + get_field_type(props)
+                field_name = dotted_field_name(name, parent) + get_field_type(props)
             desc = '' if not include_description else props.get('description')
             enum = '' if not include_enums else props.get('enum')
             fields.append(FieldInfo(field_name, desc, enum))
