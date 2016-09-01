@@ -35,7 +35,7 @@ def getArgs():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument('--type',
-                        help="Add a seperate --type for each type you want to get.",
+                        help="Add a separate --type for each type you want to get.",
                         action="append")
     parser.add_argument('--descriptions',
                         default=False,
@@ -100,8 +100,8 @@ def dotted_field_name(field_name, parent_name=None):
         return field_name
 
 
-def build_field_list(properties, include_description=False, include_enums=False,
-                     include_comment=False, parent=''):
+def build_field_list(properties, include_description=False, include_comment=False,
+                     include_enums=False, parent=''):
     fields = []
     for name, props in properties.items():
         if not props.get('calculatedProperty', False):
