@@ -1,0 +1,45 @@
+import pytest
+import get_field_info as gfi
+
+# test data is in conftest.py
+
+def test_get_field_type():
+    field = {'type' : 'string'}
+    assert gfi.get_field_type(field) == ''
+
+    field2 = {'type' : 'number'}
+    assert gfi.get_field_type(field2) == ':number'
+
+
+def test_is_subobject():
+    field = {'items' : {'type': 'object'}}
+    assert gfi.is_subobject(field)
+
+
+def test_is_not_subobject_wrong_type():
+    field = {'items' : {'type': 'string'}}
+    assert not gfi.is_subobject(field)
+
+
+def test_is_not_subobject_invalid_data():
+    field = {'items' : 'ugly'}
+    assert not gfi.is_subobject(field)
+
+
+def test_dotted_field_name():
+    assert "parent.child" == gfi.dotted_field_name("child", "parent")
+
+
+def test_dotted_field_name_no_parent():
+    assert "child" == gfi.dotted_field_name("child")
+
+
+def test_build_field_list(item_properties):
+    field_list = gfi.build_field_list(item_properties)
+    assert field_list
+
+
+def test_build_field_list_skips_calculated_properties(calc_properties):
+    field_list = gfi.build_field_list(calc_properties)
+    assert 1 == len(field_list)
+    assert field_list[0].name == 'description'
