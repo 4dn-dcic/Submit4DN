@@ -26,4 +26,5 @@ python3 get_field_info.py --type User --type Award --type Lab --type Organism --
 To get a single sheet use
 '''
 python3 get_field_info.py --type Lab --descriptions --enums --writexls
+python3 get_field_info.py --type ExperimentCaptureC --descriptions --enums --writexls --outfile HiC2.xls
 '''
