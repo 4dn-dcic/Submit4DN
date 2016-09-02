@@ -132,6 +132,11 @@ def getArgs():
                         action='store_true',
                         help="PATCH existing objects.  Default is False \
                         and will only PATCH with user override")
+    parser.add_argument('--skiprows',
+                        default=4,
+                        action='store_true',
+                        help="Number of rows from the beginning of sheet(s) to skip \
+                        INCLUDING Field name row - Default is 4")
     args = parser.parse_args()
     return args
 
@@ -236,7 +241,6 @@ def data_formatter(value, val_type):
         return value.strip("[\']").split(",")
 
 
-
 def dict_patcher(old_dict):
     new_dict = {}
     for key in old_dict.keys():
@@ -298,14 +302,16 @@ def dict_patcher(old_dict):
     return new_dict
 
 
-def excel_reader(datafile, sheet, update, connection, patchall):
+def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
     # remove title column
     keys.pop(0)
-    #skip two rows of description / enums
-    next(row)
-    next(row)
+    # skip the default three rows of description / comments /enums or the number
+    # specified in the skiprows argument
+    skiprows = skiprows - 1
+    for _ in range(skiprows):
+        next(row)
 
     total = 0
     error = 0
@@ -397,12 +403,14 @@ ORDER = [
     'experiment_hic'
 ]
 
+
 def order_sorter(key):
     key = key.lower()
     if key in ORDER:
         return ORDER.index(key)
     else:
         return 999
+
 
 def main():
     args = getArgs()
@@ -429,7 +437,7 @@ def main():
 
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, args.skiprows)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n), file=sys.stderr)
 
