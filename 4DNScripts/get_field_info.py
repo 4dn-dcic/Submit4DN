@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-import encodedccMod
+import fdnDCIC
 import attr
 import xlwt
 
@@ -114,9 +114,9 @@ def build_field_list(properties, include_description=False, include_enums=False,
 def get_uploadable_fields(connection, types, include_description=False, include_enums=False):
     fields = {}
     for name in types:
-        schema_name = encodedccMod.format_schema_name(name)
+        schema_name = fdnDCIC.format_schema_name(name)
         uri = '/profiles/' + schema_name
-        schema_grabber = encodedccMod.ENC_Schema(connection, uri)
+        schema_grabber = fdnDCIC.FDN_Schema(connection, uri)
         fields[name] = build_field_list(schema_grabber.properties,
                                         include_description, include_enums)
 
@@ -144,8 +144,8 @@ def create_xls(fields, filename):
 
 def main():
     args = getArgs()
-    key = encodedccMod.ENC_Key(args.keyfile, args.key)
-    connection = encodedccMod.ENC_Connection(key)
+    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    connection = fdnDCIC.FDN_Connection(key)
     fields = get_uploadable_fields(connection, args.type,
                                         args.descriptions,
                                         args.enums)

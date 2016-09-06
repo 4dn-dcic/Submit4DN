@@ -57,7 +57,7 @@ class dict_diff(object):
         return self.added() is None and self.removed() is None and self.changed() is None
 
 
-class ENC_Key:
+class FDN_Key:
     def __init__(self, keyfile, keyname):
         if os.path.isfile(str(keyfile)):
             keys_f = open(keyfile, 'r')
@@ -74,7 +74,7 @@ class ENC_Key:
             self.server += "/"
 
 
-class ENC_Connection(object):
+class FDN_Connection(object):
     def __init__(self, key):
         self.headers = {'content-type': 'application/json', 'accept': 'application/json'}
         self.server = key.server
@@ -90,7 +90,7 @@ def format_schema_name(supplied_name):
         schema_name = supplied_name.replace('-', '_') + '.json'
     return schema_name
 
-class ENC_Collection(object):
+class FDN_Collection(object):
     def __init__(self, connection, supplied_name, frame='object'):
         if supplied_name.endswith('s'):
             self.name = supplied_name.replace('_', '-')
@@ -107,11 +107,11 @@ class ENC_Collection(object):
         schema_uri = '/profiles/' + self.schema_name
         self.connection = connection
         self.server = connection.server
-        self.schema = get_ENCODE(schema_uri, connection)
+        self.schema = get_FDN(schema_uri, connection)
         self.frame = frame
         search_string = '/search/?format=json&limit=all&\
                         type=%s&frame=%s' % (self.search_name, frame)
-        collection = get_ENCODE(search_string, connection)
+        collection = get_FDN(search_string, connection)
         self.items = collection['@graph']
         self.es_connection = None
 
@@ -129,16 +129,16 @@ global schemas
 schemas = []
 
 
-class ENC_Schema(object):
+class FDN_Schema(object):
     def __init__(self, connection, uri):
         self.uri = uri
         self.connection = connection
         self.server = connection.server
-        response = get_ENCODE(uri, connection)
+        response = get_FDN(uri, connection)
         self.properties = response['properties']
 
 
-class ENC_Item(object):
+class FDN_Item(object):
     def __init__(self, connection, id, frame='object'):
         self.id = id
         self.connection = connection
@@ -154,7 +154,7 @@ class ENC_Item(object):
             else:
                 get_string = id + '&'
             get_string += 'frame=%s' % (frame)
-            item = get_ENCODE(get_string, connection)
+            item = get_FDN(get_string, connection)
             self.type = next(x for x in item['@type'] if x != 'item')
             self.properties = item
 
@@ -172,7 +172,7 @@ class ENC_Item(object):
             try:
                 schema = next(x for x in schemas if x.uri == schema_uri)
             except StopIteration:
-                schema = ENC_Schema(self.connection, schema_uri)
+                schema = FDN_Schema(self.connection, schema_uri)
                 schemas.append(schema)
 
             post_payload = {}
@@ -182,7 +182,7 @@ class ENC_Item(object):
                 else:
                     pass
             # should return the new object that comes back from the patch
-            new_object = new_ENCODE(self.connection, self.type, post_payload)
+            new_object = new_FDN(self.connection, self.type, post_payload)
 
         else:  # existing object to PATCH or PUT
             if self.id.rfind('?') == -1:
@@ -190,7 +190,7 @@ class ENC_Item(object):
             else:
                 get_string = self.id + '&'
             get_string += 'frame=%s' % (self.frame)
-            on_server = get_ENCODE(get_string, self.connection)
+            on_server = get_FDN(get_string, self.connection)
             diff = dict_diff(on_server, self.properties)
             if diff.same():
                 logging.warning("%s: No changes to sync" % (self.id))
@@ -200,7 +200,7 @@ class ENC_Item(object):
                 try:
                     schema = next(x for x in schemas if x.uri == schema_uri)
                 except StopIteration:
-                    schema = ENC_Schema(self.connection, schema_uri)
+                    schema = FDN_Schema(self.connection, schema_uri)
                     schemas.append(schema)
 
                 put_payload = {}
@@ -210,7 +210,7 @@ class ENC_Item(object):
                     else:
                         pass
                 # should return the new object that comes back from the patch
-                new_object = replace_ENCODE(self.id, self.connection, put_payload)
+                new_object = replace_FDN(self.id, self.connection, put_payload)
 
             else:  # PATCH
 
@@ -220,7 +220,7 @@ class ENC_Item(object):
                     if prop not in excluded_from_patch:
                         patch_payload.update({prop: self.properties[prop]})
                 # should probably return the new object that comes back from the patch
-                new_object = patch_ENCODE(self.id, self.connection, patch_payload)
+                new_object = patch_FDN(self.id, self.connection, patch_payload)
 
         return new_object
 
@@ -235,8 +235,8 @@ class ENC_Item(object):
             return None
 
 
-def get_ENCODE(obj_id, connection, frame="object"):
-    '''GET an ENCODE object as JSON and return as dict'''
+def get_FDN(obj_id, connection, frame="object"):
+    '''GET an FDN object as JSON and return as dict'''
     if frame is None:
         if '?' in obj_id:
             url = connection.server +  obj_id+'&limit=all'
@@ -263,8 +263,8 @@ def get_ENCODE(obj_id, connection, frame="object"):
     return response.json()
 
 
-def replace_ENCODE(obj_id, connection, put_input):
-    '''PUT an existing ENCODE object and return the response JSON
+def replace_FDN(obj_id, connection, put_input):
+    '''PUT an existing FDN object and return the response JSON
     '''
     if isinstance(put_input, dict):
         json_payload = json.dumps(put_input)
@@ -284,8 +284,8 @@ def replace_ENCODE(obj_id, connection, put_input):
     return response.json()
 
 
-def patch_ENCODE(obj_id, connection, patch_input):
-    '''PATCH an existing ENCODE object and return the response JSON
+def patch_FDN(obj_id, connection, patch_input):
+    '''PATCH an existing FDN object and return the response JSON
     '''
     if isinstance(patch_input, dict):
         json_payload = json.dumps(patch_input)
@@ -305,8 +305,8 @@ def patch_ENCODE(obj_id, connection, patch_input):
     return response.json()
 
 
-def new_ENCODE(connection, collection_name, post_input):
-    '''POST an ENCODE object as JSON and return the response JSON
+def new_FDN(connection, collection_name, post_input):
+    '''POST an FDN object as JSON and return the response JSON
     '''
     if isinstance(post_input, dict):
         json_payload = json.dumps(post_input)
@@ -340,7 +340,7 @@ def flat_one(JSON_obj):
         return JSON_obj
 
 
-def flat_ENCODE(JSON_obj):
+def flat_FDN(JSON_obj):
     flat_obj = {}
     for key in JSON_obj:
         if isinstance(JSON_obj[key], dict):
@@ -355,12 +355,12 @@ def flat_ENCODE(JSON_obj):
     return flat_obj
 
 
-def pprint_ENCODE(JSON_obj):
+def pprint_FDN(JSON_obj):
     if ('type' in JSON_obj) and (JSON_obj['type'] == "object"):
         print(json.dumps(JSON_obj['properties'],
                          sort_keys=True, indent=4, separators=(',', ': ')))
     else:
-        print(json.dumps(flat_ENCODE(JSON_obj),
+        print(json.dumps(flat_FDN(JSON_obj),
                          sort_keys=True, indent=4, separators=(',', ': ')))
 
 
@@ -386,14 +386,14 @@ class GetFields():
             temp = []
             if self.args.collection:
                 if self.args.es:
-                    temp = get_ENCODE("/search/?type=" + self.args.collection, self.connection).get("@graph", [])
+                    temp = get_FDN("/search/?type=" + self.args.collection, self.connection).get("@graph", [])
                 else:
-                    temp = get_ENCODE(self.args.collection, self.connection, frame=None).get("@graph", [])
+                    temp = get_FDN(self.args.collection, self.connection, frame=None).get("@graph", [])
             elif self.args.query:
                 if "search" in self.args.query:
-                    temp = get_ENCODE(self.args.query, self.connection).get("@graph", [])
+                    temp = get_FDN(self.args.query, self.connection).get("@graph", [])
                 else:
-                    temp = [get_ENCODE(self.args.query, self.connection)]
+                    temp = [get_FDN(self.args.query, self.connection)]
             elif self.args.object:
                 if os.path.isfile(self.args.object):
                     self.accessions = [line.strip() for line in open(self.args.object)]
@@ -413,11 +413,11 @@ class GetFields():
                         print("ERROR: object has no identifier", file=sys.stderr)
             if self.args.allfields:
                 if self.args.collection:
-                    obj = get_ENCODE("/profiles/" + self.args.collection + ".json", self.connection).get("properties")
+                    obj = get_FDN("/profiles/" + self.args.collection + ".json", self.connection).get("properties")
                 else:
-                    obj_type = get_ENCODE(self.accessions[0], self.connection).get("@type")
+                    obj_type = get_FDN(self.accessions[0], self.connection).get("@type")
                     if any(obj_type):
-                        obj = get_ENCODE("/profiles/" + obj_type[0] + ".json", self.connection).get("properties")
+                        obj = get_FDN("/profiles/" + obj_type[0] + ".json", self.connection).get("properties")
                 self.fields = list(obj.keys())
                 for key in obj.keys():
                     if obj[key]["type"] == "string":
@@ -444,7 +444,7 @@ class GetFields():
         #self.header = ["accession"]
         for acc in self.accessions:
             acc = quote(acc)
-            obj = get_ENCODE(acc, self.connection)
+            obj = get_FDN(acc, self.connection)
             newObj = {}
             newObj["accession"] = acc
             for f in self.fields:
@@ -517,7 +517,7 @@ class GetFields():
                 if field == "files":
                     files_list = []  # empty list for later
                     for f in obj[field]:
-                        temp = get_ENCODE(f, self.connection)
+                        temp = get_FDN(f, self.connection)
                         if temp.get(path[0]):
                             if len(path) == 1:  # if last element in path then get from each item in list
                                 files_list.append(temp[path[0]])  # add items to list
@@ -536,7 +536,7 @@ class GetFields():
                             for f in obj[field]:
                                 if type(f) == dict:  # if this is like a flowcell or something it should catch here
                                     return f
-                                temp = get_ENCODE(f, self.connection)
+                                temp = get_FDN(f, self.connection)
                                 if temp.get(path[0]):
                                     if type(temp[path[0]]) == list:
                                         files_list.append(temp[path[0]][0])
@@ -547,14 +547,14 @@ class GetFields():
                             else:
                                 return list(set(files_list))  # return unique list of last element items
                         elif self.facet:  # facet is a special case for the search page flattener
-                            temp = get_ENCODE(obj[field][0], self.connection)
+                            temp = get_FDN(obj[field][0], self.connection)
                             return self.get_embedded(path, temp)
                         else:  # if this is not the last item in the path, but we are in a list
                             return obj[field]  # return the item since we can't dig deeper without getting lost
                     elif type(obj[field]) == dict:
                         return obj[field]  # return dictionary objects, probably things like flowcells anyways
                     else:
-                        temp = get_ENCODE(obj[field], self.connection)  # if found get_ENCODE the embedded object
+                        temp = get_FDN(obj[field], self.connection)  # if found get_FDN the embedded object
                         return self.get_embedded(path, temp)
             else:  # if not obj.get(field) then we kick back an error
                 return ""
@@ -621,7 +621,7 @@ def patch_set(args, connection):
             print("No identifier found in headers!  Cannot PATCH data")
             sys.exit(1)
         accession = quote(accession)
-        full_data = get_ENCODE(accession, connection, frame="edit")
+        full_data = get_FDN(accession, connection, frame="edit")
         if args.remove:
             put_dict = full_data
             for key in temp_data.keys():
@@ -638,7 +638,7 @@ def patch_set(args, connection):
                         l = [x.replace("'", "") for x in l]
                         new_list = []
                         # this should remove items from the list even if they are only a partial match
-                        # such as ENCFF761JAF instead of /files/ENCFF761JAF/
+                        # such as FDNFF761JAF instead of /files/FDNFF761JAF/
                         for x in l:
                             for y in old_list:
                                 if x in y:
@@ -649,12 +649,12 @@ def patch_set(args, connection):
                         print("OLD DATA:", name, old_list)
                         print("NEW DATA:", name, patch_list)
                         if args.update:
-                            patch_ENCODE(accession, connection, put_dict)
+                            patch_FDN(accession, connection, put_dict)
                 else:
                     put_dict.pop(name, None)
                     print("Removing value:", name)
                     if args.update:
-                        replace_ENCODE(accession, connection, put_dict)
+                        replace_FDN(accession, connection, put_dict)
         else:
             patch_data = {}
             if args.flowcell:
@@ -680,7 +680,7 @@ def patch_set(args, connection):
                         if args.overwrite:
                             patch_data[k[0]] = l
                         else:
-                            append_list = get_ENCODE(accession, connection).get(k[0], [])
+                            append_list = get_FDN(accession, connection).get(k[0], [])
                             patch_data[k[0]] = l + append_list
                     elif k[1] == "dict":
                         # this is a dictionary that is being PATCHed
@@ -696,7 +696,7 @@ def patch_set(args, connection):
                     print("OLD DATA:", key, old_data[key])
                     print("NEW DATA:", key, patch_data[key])
                 if args.update:
-                    patch_ENCODE(accession, connection, patch_data)
+                    patch_FDN(accession, connection, patch_data)
 
 
 def fastq_read(connection, uri=None, filename=None, reads=1):
@@ -766,7 +766,7 @@ def post_file(file_metadata, connection, update=False):
 
 def upload_file(file_obj, update=False):
     if update:
-        if isinstance(file_obj, ENC_Item):
+        if isinstance(file_obj, FDN_Item):
             creds = file_obj.new_creds()
         else:
             creds = file_obj['upload_credentials']

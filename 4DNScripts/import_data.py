@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 import argparse
 import os.path
-import encodedccMod as encodedcc
+import fdnDCIC
 import xlrd
 import datetime
 import sys
@@ -36,7 +36,7 @@ Ex: Experiment, Biosample, Document, AntibodyCharacterization
 Ex: %(prog)s mydata.xsls --type Experiment
 
 
-The header of each sheet should be the names of the fields just as in ENCODE_patch_set.py,
+The header of each sheet should be the names of the fields just as in FDN_patch_set.py,
 Ex: award, lab, target, etc.
 
     For integers use ':int' or ':integer'
@@ -323,19 +323,19 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         print(post_json)
         temp = {}
         if post_json.get("uuid"):
-            temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
+            temp = fdnDCIC.get_FDN(post_json["uuid"], connection)
         elif post_json.get("aliases"):
-            temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
+            temp = fdnDCIC.get_FDN(post_json["aliases"][0], connection)
         elif post_json.get("alias"):
-            temp = encodedcc.get_ENCODE(post_json["alias"], connection)
+            temp = fdnDCIC.get_FDN(post_json["alias"], connection)
         elif post_json.get("accession"):
-            temp = encodedcc.get_ENCODE(post_json["accession"], connection)
+            temp = fdnDCIC.get_FDN(post_json["accession"], connection)
         elif post_json.get("@id"):
-            temp = encodedcc.get_ENCODE(post_json["@id"], connection)
+            temp = fdnDCIC.get_FDN(post_json["@id"], connection)
 
         if temp.get("uuid"):
             if patchall:
-                e = encodedcc.patch_ENCODE(temp["uuid"], connection, post_json)
+                e = fdnDCIC.patch_FDN(temp["uuid"], connection, post_json)
                 if e["status"] == "error":
                     error += 1
                 elif e["status"] == "success":
@@ -345,7 +345,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 print("Object {} already exists.  Would you like to patch it instead?".format(temp["uuid"]))
                 i = input("PATCH? y/n ")
                 if i.lower() == "y":
-                    e = encodedcc.patch_ENCODE(temp["uuid"], connection, post_json)
+                    e = fdnDCIC.patch_FDN(temp["uuid"], connection, post_json)
                     if e["status"] == "error":
                         error += 1
                     elif e["status"] == "success":
@@ -354,7 +354,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         else:
             if update:
                 print("POSTing data!")
-                e = encodedcc.new_ENCODE(connection, sheet, post_json)
+                e = fdnDCIC.new_FDN(connection, sheet, post_json)
                 print(e)
                 if e["status"] == "error":
                     error += 1
@@ -405,8 +405,8 @@ def order_sorter(key):
 
 def main():
     args = getArgs()
-    key = encodedcc.ENC_Key(args.keyfile, args.key)
-    connection = encodedcc.ENC_Connection(key)
+    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    connection = fdnDCIC.FDN_Connection(key)
     print("Running on {server}".format(server=connection.server))
     if not os.path.isfile(args.infile):
         print("File {filename} not found!".format(filename=args.infile))
@@ -418,7 +418,7 @@ def main():
         names = book.sheet_names()
 
     # get me a list of all the data_types in the system
-    profiles = encodedcc.get_ENCODE("/profiles/", connection)
+    profiles = fdnDCIC.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
 
