@@ -38,11 +38,39 @@ def test_build_field_list(item_properties):
     field_list = gfi.build_field_list(item_properties)
     assert field_list
 
+
+def test_build_field_list_gets_enum(item_properties):
+    field_list = gfi.build_field_list(item_properties, include_enums=True)
+    for field in field_list:
+        if field.name == "project":
+            assert ['4DN', 'External'] == field.enum
+
+    field_list = gfi.build_field_list(item_properties)
+    for field in field_list:
+        if field.name == "project":
+            assert not field.enum
+
+def test_build_field_list_gets_desc(item_properties):
+    field_list = gfi.build_field_list(item_properties, include_description=True)
+    for field in field_list:
+        if field.name == "name":
+            assert "official grant" in field.desc
+
+    field_list = gfi.build_field_list(item_properties)
+    for field in field_list:
+        if field.name == "name":
+            assert len(field.comm) == 0
+
 def test_build_field_list_gets_comments(item_properties):
     field_list = gfi.build_field_list(item_properties, include_comment=True)
     for field in field_list:
         if field.name == "end_date":
             assert len(field.comm) >= 1
+
+    field_list = gfi.build_field_list(item_properties)
+    for field in field_list:
+        if field.name == "end_date":
+            assert len(field.comm) == 0
 
 def test_build_field_list_skips_calculated_properties(calc_properties):
     field_list = gfi.build_field_list(calc_properties)
