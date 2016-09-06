@@ -43,3 +43,13 @@ def test_build_field_list_skips_calculated_properties(calc_properties):
     field_list = gfi.build_field_list(calc_properties)
     assert 1 == len(field_list)
     assert field_list[0].name == 'description'
+
+def test_build_field_list_embeds_with_dots(embed_properties):
+    field_list = gfi.build_field_list(embed_properties)
+    assert 2 == len(field_list)
+    assert field_list[0].name.startswith('experiment_relation')
+    assert "This field is a member of the experiment_relation array", field_list[0].desc
+    assert field_list[1].name.startswith('experiment_relation')
+
+
+

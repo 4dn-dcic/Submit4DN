@@ -99,3 +99,37 @@ def calc_properties():
                                    'type': 'string'},
                   }
 
+
+@pytest.fixture
+def embed_properties():
+    return {'experiment_relation': {'description': 'All related experiments',
+                'items': {'additionalProperties': False,
+                    'properties': {'experiment': {'description': 'The '
+                            'related '
+                            'experiment',
+                            'linkTo': 'Experiment',
+                            'type': 'string'},
+                            'relationship_type': {'description': 'A '
+                                'controlled '
+                                'term '
+                                'specifying '
+                                'the '
+                                'relationship '
+                                'between '
+                                'experiments.',
+                                'enum': ['controlled '
+                                'by',
+                                'control '
+                                'for',
+                                'derived '
+                                'from',
+                                'source '
+                                'for'],
+                                'title': 'Relationship '
+                                'Type',
+                            'type': 'string'}},
+                'title': 'Experiment relation',
+                'type': 'object'},
+                'title': 'Experiment relations',
+                'type': 'array'},
+                }

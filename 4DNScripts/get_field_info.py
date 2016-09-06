@@ -14,11 +14,10 @@ EPILOG = '''
 
             %(prog)s --type Biosample --type Biosource
 
-    to include description, enum and/or comments for all types use the appropriate flags
+    to include description and enum for all types use the appropriate flags
 
             %(prog)s --type Biosample --descriptions --enum
             %(prog)s --type Biosample --type Biosource --enum
-            %(prog)s --type Biosample --type Biosource --enum --comments
 
     To write the result to an excel file with one sheet for each type use
     the --writexls switch:
@@ -33,7 +32,7 @@ def getArgs():
     parser = argparse.ArgumentParser(
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+        )
     parser.add_argument('--type',
                         help="Add a seperate --type for each type you want to get.",
                         action="append")
@@ -45,10 +44,6 @@ def getArgs():
                         default=False,
                         action='store_true',
                         help="Include enums for fields.")
-    parser.add_argument('--comments',
-                        default=False,
-                        action='store_true',
-                        help="Include comments for fields")
     parser.add_argument('--writexls',
                         default=False,
                         action='store_true',
@@ -70,14 +65,11 @@ def getArgs():
     args = parser.parse_args()
     return args
 
-
 @attr.s
 class FieldInfo(object):
     name = attr.ib()
     desc = attr.ib(default=u'')
-    comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
-
 
 def get_field_type(field):
     field_type = field.get('type', '')
@@ -85,13 +77,11 @@ def get_field_type(field):
         return ''
     return ":" + field_type
 
-
 def is_subobject(field):
     try:
         return field['items']['type'] == 'object'
     except:
         return False
-
 
 def dotted_field_name(field_name, parent_name=None):
     if parent_name:
@@ -99,44 +89,42 @@ def dotted_field_name(field_name, parent_name=None):
     else:
         return field_name
 
-
 def build_field_list(properties, include_description=False, include_enums=False,
-                     include_comment=False, parent=''):
+                    parent='', additional_comments=''):
     fields = []
     for name, props in properties.items():
         if not props.get('calculatedProperty', False):
-            # special case for attachemnts
-            if name == 'attachment':
-                field_name = dotted_field_name(name, parent)
             # handle sub-objects
-            elif is_subobject(props):
+            if is_subobject(props):
+                if get_field_type(props) == ":array":
+                    additional_comments += " This field is a member of the %s array" % (name)
                 fields.extend(build_field_list(props['items']['properties'],
                                                include_description,
-                                               include_comment,
                                                include_enums,
-                                               parent=name)
-                              )
+                                               name,
+                                               additional_comments)
+                             )
             else:
                 field_name = dotted_field_name(name, parent) + get_field_type(props)
-            desc = '' if not include_description else props.get('description')
-            comm = '' if not include_comment else props.get('comment')
-            enum = '' if not include_enums else props.get('enum')
-            fields.append(FieldInfo(field_name, desc, comm, enum))
+                # special case for attachemnts
+                if name == 'attachment':
+                    field_name = dotted_field_name(name, parent)
+                desc = '' if not include_description else props.get('description')
+                desc += additional_comments # allow for adding stuff, like part of x array
+                enum = '' if not include_enums else props.get('enum')
+                fields.append(FieldInfo(field_name, desc, enum))
     return fields
 
-
-def get_uploadable_fields(connection, types, include_description=False,
-                          include_comment=False, include_enums=False):
+def get_uploadable_fields(connection, types, include_description=False, include_enums=False):
     fields = {}
     for name in types:
         schema_name = encodedccMod.format_schema_name(name)
         uri = '/profiles/' + schema_name
         schema_grabber = encodedccMod.ENC_Schema(connection, uri)
         fields[name] = build_field_list(schema_grabber.properties,
-                                        include_description, include_comment, include_enums)
+                                        include_description, include_enums)
 
     return fields
-
 
 def create_xls(fields, filename):
     '''
@@ -149,27 +137,22 @@ def create_xls(fields, filename):
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "Field Name:")
         ws.write(1, 0, "Description:")
-        ws.write(2, 0, "Comment:")
-        ws.write(3, 0, "Enum Values:")
+        ws.write(2, 0, "Enum Values:")
         for col, field in enumerate(fields):
-            ws.write(0, col + 1, str(field.name))
+            ws.write(0, col+1, str(field.name))
             if field.desc:
-                ws.write(1, col + 1, str(field.desc))
-            if field.comm:
-                ws.write(2, col + 1, str(field.comm))
+                ws.write(1, col+1, str(field.desc))
             if field.enum:
-                ws.write(3, col + 1, str(field.enum))
+                ws.write(2, col+1, str(field.enum))
     wb.save(filename)
-
 
 def main():
     args = getArgs()
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
     connection = encodedccMod.ENC_Connection(key)
     fields = get_uploadable_fields(connection, args.type,
-                                   args.descriptions,
-                                   args.comments,
-                                   args.enums)
+                                        args.descriptions,
+                                        args.enums)
 
     if args.debug:
         print("retrieved fields as")
@@ -178,7 +161,7 @@ def main():
 
     if args.writexls:
         file_name = args.outfile
-        create_xls(fields, file_name)
+        create_xls(fields,file_name)
 
 if __name__ == '__main__':
     main()
