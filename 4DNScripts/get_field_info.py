@@ -73,8 +73,8 @@ def getArgs():
 class FieldInfo(object):
     name = attr.ib()
     desc = attr.ib(default=u'')
-    enum = attr.ib(default=u'')
     comm = attr.ib(default=u'')
+    enum = attr.ib(default=u'')
 
 def get_field_type(field):
     field_type = field.get('type', '')
@@ -118,7 +118,8 @@ def build_field_list(properties, include_description=False, include_comment=Fals
                 desc = '' if not include_description else props.get('description')
                 comm = '' if not include_comment else props.get('comment')
                 # allow for adding stuff, like part of x array
-                comm += additional_comments 
+                if additional_comments:
+                    comm += additional_comments
                 enum = '' if not include_enums else props.get('enum')
                 fields.append(FieldInfo(field_name, desc, comm, enum))
     return fields
@@ -147,13 +148,16 @@ def create_xls(fields, filename):
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "Field Name:")
         ws.write(1, 0, "Description:")
-        ws.write(2, 0, "Enum Values:")
+        ws.write(2, 0, "Comment:")
+        ws.write(3, 0, "Enum Values:")
         for col, field in enumerate(fields):
             ws.write(0, col+1, str(field.name))
             if field.desc:
                 ws.write(1, col+1, str(field.desc))
+            if field.comm:
+                ws.write(2, col + 1, str(field.comm))
             if field.enum:
-                ws.write(2, col+1, str(field.enum))
+                ws.write(3, col+1, str(field.enum))
     wb.save(filename)
 
 def main():
