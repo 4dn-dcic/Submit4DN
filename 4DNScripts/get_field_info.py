@@ -34,12 +34,16 @@ def getArgs():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         )
     parser.add_argument('--type',
-                        help="Add a seperate --type for each type you want to get.",
+                        help="Add a separate --type for each type you want to get.",
                         action="append")
     parser.add_argument('--descriptions',
                         default=False,
                         action='store_true',
                         help="Include descriptions for fields.")
+    parser.add_argument('--comments',
+                        default=False,
+                        action='store_true',
+                        help="Include comments for fields")
     parser.add_argument('--enums',
                         default=False,
                         action='store_true',
@@ -70,6 +74,7 @@ class FieldInfo(object):
     name = attr.ib()
     desc = attr.ib(default=u'')
     enum = attr.ib(default=u'')
+    comm = attr.ib(default=u'')
 
 def get_field_type(field):
     field_type = field.get('type', '')
@@ -89,8 +94,8 @@ def dotted_field_name(field_name, parent_name=None):
     else:
         return field_name
 
-def build_field_list(properties, include_description=False, include_enums=False,
-                    parent='', additional_comments=''):
+def build_field_list(properties, include_description=False, include_comment=False,
+                     include_enums=False, parent='', additional_comments=''):
     fields = []
     for name, props in properties.items():
         if not props.get('calculatedProperty', False):
@@ -101,6 +106,7 @@ def build_field_list(properties, include_description=False, include_enums=False,
                 fields.extend(build_field_list(props['items']['properties'],
                                                include_description,
                                                include_enums,
+                                               include_comment,
                                                name,
                                                additional_comments)
                              )
@@ -110,19 +116,23 @@ def build_field_list(properties, include_description=False, include_enums=False,
                 if name == 'attachment':
                     field_name = dotted_field_name(name, parent)
                 desc = '' if not include_description else props.get('description')
-                desc += additional_comments # allow for adding stuff, like part of x array
+                comm = '' if not include_comment else props.get('comment')
+                # allow for adding stuff, like part of x array
+                comm += additional_comments 
                 enum = '' if not include_enums else props.get('enum')
-                fields.append(FieldInfo(field_name, desc, enum))
+                fields.append(FieldInfo(field_name, desc, comm, enum))
     return fields
 
-def get_uploadable_fields(connection, types, include_description=False, include_enums=False):
+def get_uploadable_fields(connection, types, include_description=False, include_comments=False, include_enums=False):
     fields = {}
     for name in types:
         schema_name = encodedccMod.format_schema_name(name)
         uri = '/profiles/' + schema_name
         schema_grabber = encodedccMod.ENC_Schema(connection, uri)
         fields[name] = build_field_list(schema_grabber.properties,
-                                        include_description, include_enums)
+                                        include_description,
+                                        include_comments,
+                                        include_enums)
 
     return fields
 
@@ -152,6 +162,7 @@ def main():
     connection = encodedccMod.ENC_Connection(key)
     fields = get_uploadable_fields(connection, args.type,
                                         args.descriptions,
+                                        args.comments,
                                         args.enums)
 
     if args.debug:

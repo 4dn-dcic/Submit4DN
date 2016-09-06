@@ -133,8 +133,8 @@ def getArgs():
                         help="PATCH existing objects.  Default is False \
                         and will only PATCH with user override")
     parser.add_argument('--skiprows',
+                        type=int,
                         default=4,
-                        action='store_true',
                         help="Number of rows from the beginning of sheet(s) to skip \
                         INCLUDING Field name row - Default is 4")
     args = parser.parse_args()
