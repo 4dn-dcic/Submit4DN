@@ -238,7 +238,8 @@ def data_formatter(value, val_type):
     elif val_type in ["num", "number"]:
         return float(value)
     elif val_type in ["list", "array"]:
-        return value.strip("[\']").split(",")
+        data_list = value.strip("[\']").split(",")
+        return  [data.strip() for data in data_list]
 
 
 def dict_patcher(old_dict):
