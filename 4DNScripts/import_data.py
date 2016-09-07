@@ -249,10 +249,12 @@ def dict_patcher(old_dict):
             k = key.split(":")
             path = k[0].split(".")
             if len(k) == 1 and len(path) == 1:
+                # FieldInfo object reduce to data
                 # this object is a string and not embedded
                 # return plain value
                 new_dict[k[0]] = old_dict[key]
             elif len(k) > 1 and len(path) == 1:
+                # this should be called field_formater in FieldInfo class
                 # non-string non-embedded object
                 # use data_formatter function
                 new_dict[k[0]] = data_formatter(old_dict[key], k[1])
@@ -323,7 +325,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
         values.pop(0)
         total += 1
         post_json = dict(zip(keys, values))
+        import pdb; pdb.set_trace()
         post_json = dict_patcher(post_json)
+
+        import pdb; pdb.set_trace()
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
@@ -440,7 +445,7 @@ def main():
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, args.skiprows)
         else:
-            print("Sheet name '{name}' not part of supported object types!".format(name=n), file=sys.stderr)
+            print("Sheet name '{name}' not part of supported object types!".format(name=n))
 
 if __name__ == '__main__':
         main()

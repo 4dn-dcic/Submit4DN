@@ -133,3 +133,18 @@ def embed_properties():
                 'title': 'Experiment relations',
                 'type': 'array'},
                 }
+
+@pytest.fixture
+def file_metadata():
+    return {'aliases:array': 'dcic:HIC00test2',
+  'award': '/awards/OD008540-01/',
+  'file_classification': 'raw file',
+  'file_format': 'fastq',
+  'filesets:array': '',
+  'instrument': 'Illumina HiSeq 2000',
+  'lab': '/labs/erez-liebermanaiden-lab/',
+  'paired_end': '',
+  'related_files.file': 'testfile.fastq',
+  'related_files.relationship_type': 'related_to',
+  'status': 'uploaded'}
+
