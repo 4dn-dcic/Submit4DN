@@ -314,7 +314,6 @@ def new_ENCODE(connection, collection_name, post_input):
         json_payload = post_input
     else:
         print('Datatype to POST is not string or dict.')
-    import pdb; pdb.set_trace()
     url = connection.server +  collection_name
     logging.debug("POST URL : %s" % (url))
     logging.debug("POST data: %s" % (json.dumps(post_input,
