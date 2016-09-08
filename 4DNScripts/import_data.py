@@ -15,6 +15,10 @@ import ast
 import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
+import attr
+import os
+import time
+import subprocess
 
 EPILOG = '''
 This script takes in an Excel file with the data
@@ -240,70 +244,106 @@ def data_formatter(value, val_type):
     elif val_type in ["list", "array"]:
         data_list = value.strip("[\']").split(",")
         return  [data.strip() for data in data_list]
+    else:
+        # default assumed to be string
+        return str(value)
+
+def clear_out_empty_field(field_name, fields):
+    if fields[field_name] == '':
+        fields.pop(field_name)
+
+def get_field_name(field_name):
+    '''handle type at end, plus embedded objets'''
+    field = field_name.split(":")[0]
+    return field.split(".")[0]
+
+def get_sub_field(field_name):
+    try:
+        return field_name.split(".")[1]
+    except:
+        return ''
+
+def get_field_type(field_name):
+    try:
+        return field_name.split(":")[1]
+    except:
+        return "string"
 
 
-def dict_patcher(old_dict):
-    new_dict = {}
-    for key in old_dict.keys():
-        if old_dict[key] != "":  # this removes empty cells
-            k = key.split(":")
-            path = k[0].split(".")
-            if len(k) == 1 and len(path) == 1:
-                # FieldInfo object reduce to data
-                # this object is a string and not embedded
-                # return plain value
-                new_dict[k[0]] = old_dict[key]
-            elif len(k) > 1 and len(path) == 1:
-                # this should be called field_formater in FieldInfo class
-                # non-string non-embedded object
-                # use data_formatter function
-                new_dict[k[0]] = data_formatter(old_dict[key], k[1])
-            elif len(k) == 1 and len(path) > 1:
-                # embedded string object
-                # need to build the mini dictionary to put this in
-                value = path[1].split("-")
-                if new_dict.get(path[0]):
-                    # I have already added the embedded object to the new dictionary
-                    # add to it
-                    if len(value) > 1:
-                        # this has a number next to it
-                        if len(new_dict[path[0]]) == int(value[1]):
-                            # this means we have not added any part of new item to the list
-                            new_dict[path[0]].insert(int(value[1]), {value[0]: old_dict[key]})
-                        else:
-                            # this should be that we have started putting in the new object
-                            new_dict[path[0]][int(value[1])].update({value[0]: old_dict[key]})
-                    else:
-                        # the object does not exist in the embedded part, add it
-                        new_dict[path[0]][0].update({path[1]: old_dict[key]})
+def is_embedded_field(field_name):
+    return '.' in field_name
+
+
+def get_sub_field_number(field_name):
+    field = field_name.split(":")[0]
+    try:
+        return int(field.split("-")[1])
+    except:
+        return 0
+
+@attr.s
+class FieldInfo(object):
+    name = attr.ib()
+    field_type = attr.ib(default=u'')
+    value = attr.ib(default=u'')
+
+def build_field(field, field_data):
+    if field_data == '' or field == '':
+        return '' 
+
+    patch_field_name = get_field_name(field)
+    patch_field_type = get_field_type(field)
+
+    if is_embedded_field(field):
+        sub_field = get_sub_field(field)
+        return  build_field(sub_field,field_data)
+    else:
+        patch_field_data = data_formatter(field_data, patch_field_type)
+
+
+    return {patch_field_name : patch_field_data}
+
+
+def build_patch_json(fields):
+    '''
+    fields is a dictonary from json object
+    '''
+    patch_data = {}
+    for field, field_data in fields.items():
+        patch_field = build_field(field, field_data)
+        if patch_field != None:
+            if is_embedded_field(field):
+                top_field = get_field_name(field)
+                if patch_data.get(top_field, None) is None:
+                    # initially create a list of object for the embedded field
+                    patch_data[top_field] = [{}]
+                # we can have multiple embedded objects (they are numbered in excel)
+                subobject_num = get_sub_field_number(field)
+
+                if subobject_num >= len(patch_data[top_field]):
+                    # add a new row to the list
+                    patch_data[top_field].extend(patch_field)
                 else:
-                    # make new item in dictionary
-                    temp_dict = {path[1]: old_dict[key]}
-                    new_dict[path[0]] = [temp_dict]
-            elif len(k) > 1 and len(path) > 1:
-                # embedded non-string object
-                # need mini dictionary to build
-                value = path[1].split("-")
-                if new_dict.get(path[0]):
-                    # I have already added the embedded object to the new dictionary
-                    # add to it
-                    if len(value) > 1:
-                        # this has a number next to it
-                        if len(new_dict[path[0]]) == int(value[1]):
-                            # this means we have not added any part of new item to the list
-                            new_dict[path[0]].insert(int(value[1]), {value[0]: old_dict[key]})
-                        else:
-                            # this should be that we have started putting in the new object
-                            new_dict[path[0]][int(value[1])].update({value[0]: old_dict[key]})
-                    else:
-                        # the object does not exist in the embedded part, add it
-                        new_dict[path[0]][0].update({path[1]: data_formatter(old_dict[key], k[1])})
-                else:
-                    # make new item in dictionary
-                    temp_dict = {path[1]: data_formatter(old_dict[key], k[1])}
-                    new_dict[path[0]] = [temp_dict]
-    return new_dict
+                    # update existing object in the list
+                    patch_data[top_field][subobject_num].update(patch_field)
+            else:
+                # normal case, just update the dictionary
+                patch_data.update(patch_field)
+    return patch_data
 
+def get_existing(post_json, connection):
+    temp = {}
+    if post_json.get("uuid"):
+        temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
+    #elif post_json.get("aliases"):
+        temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
+    elif post_json.get("alias"):
+        temp = encodedcc.get_ENCODE(post_json["alias"], connection)
+    elif post_json.get("accession"):
+        temp = encodedcc.get_ENCODE(post_json["accession"], connection)
+    elif post_json.get("@id"):
+        temp = encodedcc.get_ENCODE(post_json["@id"], connection)
+    return temp
 
 def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
     row = reader(datafile, sheetname=sheet)
@@ -325,56 +365,80 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
         values.pop(0)
         total += 1
         post_json = dict(zip(keys, values))
-        import pdb; pdb.set_trace()
-        post_json = dict_patcher(post_json)
+        post_json = build_patch_json(post_json)
 
-        import pdb; pdb.set_trace()
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
         print(post_json)
-        temp = {}
-        if post_json.get("uuid"):
-            temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
-        elif post_json.get("aliases"):
-            temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
-        elif post_json.get("alias"):
-            temp = encodedcc.get_ENCODE(post_json["alias"], connection)
-        elif post_json.get("accession"):
-            temp = encodedcc.get_ENCODE(post_json["accession"], connection)
-        elif post_json.get("@id"):
-            temp = encodedcc.get_ENCODE(post_json["@id"], connection)
 
-        if temp.get("uuid"):
-            if patchall:
-                e = encodedcc.patch_ENCODE(temp["uuid"], connection, post_json)
+        # should I upload files as well?
+        file_to_upload = False
+        if post_json.get('filename'):
+            file_to_upload = True
+
+        existing_data = get_existing(post_json, connection)
+
+        if existing_data.get("uuid"):
+            to_patch = 'n'
+            if not patchall:
+                print("Object {} already exists.  Would you like to patch it "
+                      "instead?".format(existing_data["uuid"]))
+                to_patch = input("PATCH? y/n ")
+
+            if patchall or to_patch.lower() == 'y':
+                e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
                 if e["status"] == "error":
                     error += 1
                 elif e["status"] == "success":
                     success += 1
                     patch += 1
-            else:
-                print("Object {} already exists.  Would you like to patch it instead?".format(temp["uuid"]))
-                i = input("PATCH? y/n ")
-                if i.lower() == "y":
-                    e = encodedcc.patch_ENCODE(temp["uuid"], connection, post_json)
-                    if e["status"] == "error":
-                        error += 1
-                    elif e["status"] == "success":
-                        success += 1
-                        patch += 1
         else:
             if update:
                 print("POSTing data!")
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
-                print(e)
+                if file_to_upload:
+                    upload_file(e, post_json.get('filename'))
                 if e["status"] == "error":
                     error += 1
                 elif e["status"] == "success":
                     success += 1
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+
+def upload_file(metadata_post_response, path):
+    try:
+        item = metadata_post_response['@graph'][0]
+        creds = item['upload_credentials']
+    except:
+        return
+
+    ####################
+    # POST file to S3
+
+    env = os.environ.copy()
+    env.update({
+        'AWS_ACCESS_KEY_ID': creds['access_key'],
+        'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
+        'AWS_SECURITY_TOKEN': creds['session_token'],
+    })
+
+    # ~10s/GB from Stanford - AWS Oregon
+    # ~12-15s/GB from AWS Ireland - AWS Oregon
+    print("Uploading file.")
+    start = time.time()
+    try:
+        subprocess.check_call(['aws', 's3', 'cp', path, creds['upload_url']], env=env)
+    except subprocess.CalledProcessError as e:
+        # The aws command returns a non-zero exit code on error.
+        print("Upload failed with exit code %d" % e.returncode)
+        sys.exit(e.returncode)
+    else:
+        end = time.time()
+        duration = end - start
+        print("Uploaded in %.2f seconds" % duration)
+
 
 # the order to try to upload / update the items
 # used to avoid dependencies... i.e. biosample needs the biosource to exist

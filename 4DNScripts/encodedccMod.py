@@ -5,7 +5,7 @@ import requests
 import json
 import sys
 import logging
-from urllib.parse import quote
+#from urllib.parse import quote
 import os.path
 import hashlib
 import copy
@@ -314,6 +314,7 @@ def new_ENCODE(connection, collection_name, post_input):
         json_payload = post_input
     else:
         print('Datatype to POST is not string or dict.')
+    import pdb; pdb.set_trace()
     url = connection.server +  collection_name
     logging.debug("POST URL : %s" % (url))
     logging.debug("POST data: %s" % (json.dumps(post_input,
@@ -443,7 +444,7 @@ class GetFields():
         self.setup()
         #self.header = ["accession"]
         for acc in self.accessions:
-            acc = quote(acc)
+            #acc = quote(acc)
             obj = get_ENCODE(acc, self.connection)
             newObj = {}
             newObj["accession"] = acc
@@ -620,7 +621,7 @@ def patch_set(args, connection):
         if not accession:
             print("No identifier found in headers!  Cannot PATCH data")
             sys.exit(1)
-        accession = quote(accession)
+        #accession = quote(accession)
         full_data = get_ENCODE(accession, connection, frame="edit")
         if args.remove:
             put_dict = full_data
@@ -710,7 +711,7 @@ def fastq_read(connection, uri=None, filename=None, reads=1):
     # which is roughly what a single fastq read is.
     if uri:
         BLOCK_SIZE = 512
-        url = connection.server +  quote(uri)
+        url = connection.server +  uri
         data = requests.get(url, auth=connection.auth, stream=True)
         block = BytesIO(next(data.iter_content(BLOCK_SIZE * reads)))
         compressed = gzip.GzipFile(None, 'r', fileobj=block)
