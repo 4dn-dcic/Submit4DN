@@ -315,7 +315,7 @@ def build_patch_json(fields):
             if is_embedded_field(field):
                 top_field = get_field_name(field)
                 if patch_data.get(top_field, None) is None:
-                    # initially create a list for embedded field 
+                    # initially create an empty list for embedded field 
                     patch_data[top_field] = []
                 # we can have multiple embedded objects (they are numbered in excel)
                 subobject_num = get_sub_field_number(field)
