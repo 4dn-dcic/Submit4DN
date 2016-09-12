@@ -289,7 +289,7 @@ class FieldInfo(object):
 
 def build_field(field, field_data):
     if field_data == '' or field == '':
-        return '' 
+        return None
 
     patch_field_name = get_field_name(field)
     patch_field_type = get_field_type(field)
@@ -315,27 +315,28 @@ def build_patch_json(fields):
             if is_embedded_field(field):
                 top_field = get_field_name(field)
                 if patch_data.get(top_field, None) is None:
-                    # initially create a list of object for the embedded field
-                    patch_data[top_field] = [{}]
+                    # initially create a list for embedded field 
+                    patch_data[top_field] = []
                 # we can have multiple embedded objects (they are numbered in excel)
                 subobject_num = get_sub_field_number(field)
 
                 if subobject_num >= len(patch_data[top_field]):
                     # add a new row to the list
-                    patch_data[top_field].extend(patch_field)
+                    patch_data[top_field].append(patch_field)
                 else:
                     # update existing object in the list
                     patch_data[top_field][subobject_num].update(patch_field)
             else:
                 # normal case, just update the dictionary
                 patch_data.update(patch_field)
+    
     return patch_data
 
 def get_existing(post_json, connection):
     temp = {}
     if post_json.get("uuid"):
         temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
-    #elif post_json.get("aliases"):
+    elif post_json.get("aliases"):
         temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
     elif post_json.get("alias"):
         temp = encodedcc.get_ENCODE(post_json["alias"], connection)
@@ -371,7 +372,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
-        print(post_json)
 
         # should I upload files as well?
         file_to_upload = False
@@ -396,7 +396,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
                     patch += 1
         else:
             if update:
-                print("POSTing data!")
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
                 if file_to_upload:
                     upload_file(e, post_json.get('filename'))
@@ -404,6 +403,11 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
                     error += 1
                 elif e["status"] == "success":
                     success += 1
+            else:
+                print("This looks like a new row but the update flag wasn't passed, use --update to"
+                " post new data")
+                return
+
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
 
