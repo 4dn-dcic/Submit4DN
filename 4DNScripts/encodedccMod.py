@@ -5,7 +5,7 @@ import requests
 import json
 import sys
 import logging
-from urllib.parse import quote
+#from urllib.parse import quote
 import os.path
 import hashlib
 import copy
@@ -292,7 +292,7 @@ def patch_ENCODE(obj_id, connection, patch_input):
     elif isinstance(patch_input, str):
         json_payload = patch_input
     else:
-        print('Datatype to PATCH is not string or dict.', file=sys.stderr)
+        print('Datatype to PATCH is not string or dict.')
     url = connection.server + obj_id
     logging.debug('PATCH URL : %s' % (url))
     logging.debug('PATCH data: %s' % (json_payload))
@@ -313,7 +313,7 @@ def new_ENCODE(connection, collection_name, post_input):
     elif isinstance(post_input, str):
         json_payload = post_input
     else:
-        print('Datatype to POST is not string or dict.', file=sys.stderr)
+        print('Datatype to POST is not string or dict.')
     url = connection.server +  collection_name
     logging.debug("POST URL : %s" % (url))
     logging.debug("POST data: %s" % (json.dumps(post_input,
@@ -410,7 +410,7 @@ class GetFields():
                     elif obj.get("aliases"):
                         self.accessions.append(obj["aliases"][0])
                     else:
-                        print("ERROR: object has no identifier", file=sys.stderr)
+                        print("ERROR: object has no identifier")
             if self.args.allfields:
                 if self.args.collection:
                     obj = get_ENCODE("/profiles/" + self.args.collection + ".json", self.connection).get("properties")
@@ -431,10 +431,10 @@ class GetFields():
                 else:
                     self.fields = self.args.field.split(",")
         if len(self.accessions) == 0:
-            print("ERROR: Need to provide accessions", file=sys.stderr)
+            print("ERROR: Need to provide accessions")
             sys.exit(1)
         if len(self.fields) == 0:
-            print("ERROR: Need to provide fields!", file=sys.stderr)
+            print("ERROR: Need to provide fields!")
             sys.exit(1)
 
     def get_fields(self):
@@ -443,7 +443,7 @@ class GetFields():
         self.setup()
         #self.header = ["accession"]
         for acc in self.accessions:
-            acc = quote(acc)
+            #acc = quote(acc)
             obj = get_ENCODE(acc, self.connection)
             newObj = {}
             newObj["accession"] = acc
@@ -620,7 +620,7 @@ def patch_set(args, connection):
         if not accession:
             print("No identifier found in headers!  Cannot PATCH data")
             sys.exit(1)
-        accession = quote(accession)
+        #accession = quote(accession)
         full_data = get_ENCODE(accession, connection, frame="edit")
         if args.remove:
             put_dict = full_data
@@ -710,7 +710,7 @@ def fastq_read(connection, uri=None, filename=None, reads=1):
     # which is roughly what a single fastq read is.
     if uri:
         BLOCK_SIZE = 512
-        url = connection.server +  quote(uri)
+        url = connection.server +  uri
         data = requests.get(url, auth=connection.auth, stream=True)
         block = BytesIO(next(data.iter_content(BLOCK_SIZE * reads)))
         compressed = gzip.GzipFile(None, 'r', fileobj=block)
