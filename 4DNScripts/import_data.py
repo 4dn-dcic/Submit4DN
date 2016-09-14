@@ -344,6 +344,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
 
             if patchall or to_patch.lower() == 'y':
                 e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
+                if file_to_upload:
+                    if not existing_data.get('filename'):
+                        upload_file(e, post_json.get('filename'))
+                    else:
+                        print("There is an existing filename, ")
+
                 if e["status"] == "error":
                     error += 1
                 elif e["status"] == "success":
