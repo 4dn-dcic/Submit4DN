@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
+"""See the epilog for detailed information."""
 
 import argparse
 import os.path
@@ -25,7 +26,7 @@ This script takes in an Excel file with the data
 This is a dryrun-default script, run with --update or --patchall to work
 
 By DEFAULT:
-If there is a uuid, alias, @id, or accession in the document
+If there is a uuid, @id, or accession in the document
 it will ask if you want to PATCH that object
 Use '--patchall' if you want to patch ALL objects in your document and ignore that message
 
@@ -35,24 +36,25 @@ for POSTing to occur
 Defining Object type:
     Name each "sheet" of the excel file the name of the object type you are using
     with the format used on https://www.encodeproject.org/profiles/
-Ex: Experiment, Biosample, Document, AntibodyCharacterization
+Ex: ExperimentHiC, Biosample, Document, Target
 
-    Or use the '--type' argument, but this will only work for single sheet documents
-Ex: %(prog)s mydata.xsls --type Experiment
+If there is a single sheet that needs to be posted or patched, you can name the single sheet
+with the object name or use the '--type' argument
+Ex: %(prog)s mydata.xsls --type ExperimentHiC
 
-
-The header of each sheet should be the names of the fields just as in ENCODE_patch_set.py,
+The header of each sheet should be the names of the fields.
 Ex: award, lab, target, etc.
 
     For integers use ':int' or ':integer'
     For lists use ':list' or ':array'
     String are the default and do not require an identifier
 
-
 To upload objects with attachments, have a column titled "attachment"
 containing the name of the file you wish to attach
 
 FOR EMBEDDED SUBOBJECTS:
+
+
 Embedded objects are considered to be things like:
  - characterization_reviews in AntibodyCharacterizations
  - tags in Constructs
@@ -146,9 +148,7 @@ def getArgs():
 
 
 def attachment(path):
-    """ Create an attachment upload object from a filename
-    Embeds the attachment as a data url.
-    """
+    """Create an attachment upload object from a filename and embed the attachment as a data url."""
     if not os.path.isfile(path):
         r = requests.get(path)
         path = path.split("/")[-1]
@@ -191,8 +191,7 @@ def attachment(path):
 
 
 def reader(filename, sheetname=None):
-    """ Read named sheet or first and only sheet from xlsx file
-    """
+    """Read named sheet or first and only sheet from xlsx file."""
     book = xlrd.open_workbook(filename)
     if sheetname is None:
         sheet, = book.sheets()
@@ -243,25 +242,29 @@ def data_formatter(value, val_type):
         return float(value)
     elif val_type in ["list", "array"]:
         data_list = value.strip("[\']").split(",")
-        return  [data.strip() for data in data_list]
+        return [data.strip() for data in data_list]
     else:
         # default assumed to be string
         return str(value)
 
+
 def clear_out_empty_field(field_name, fields):
     if fields[field_name] == '':
         fields.pop(field_name)
+
 
 def get_field_name(field_name):
     '''handle type at end, plus embedded objets'''
     field = field_name.split(":")[0]
     return field.split(".")[0]
 
+
 def get_sub_field(field_name):
     try:
         return field_name.split(".")[1]
     except:
         return ''
+
 
 def get_field_type(field_name):
     try:
@@ -281,11 +284,13 @@ def get_sub_field_number(field_name):
     except:
         return 0
 
+
 @attr.s
 class FieldInfo(object):
     name = attr.ib()
     field_type = attr.ib(default=u'')
     value = attr.ib(default=u'')
+
 
 def build_field(field, field_data):
     if field_data == '' or field == '':
@@ -296,26 +301,22 @@ def build_field(field, field_data):
 
     if is_embedded_field(field):
         sub_field = get_sub_field(field)
-        return  build_field(sub_field,field_data)
+        return build_field(sub_field, field_data)
     else:
         patch_field_data = data_formatter(field_data, patch_field_type)
-
-
-    return {patch_field_name : patch_field_data}
+    return {patch_field_name: patch_field_data}
 
 
 def build_patch_json(fields):
-    '''
-    fields is a dictonary from json object
-    '''
+    """Create the data entry dictionary from the fields."""
     patch_data = {}
     for field, field_data in fields.items():
         patch_field = build_field(field, field_data)
-        if patch_field != None:
+        if patch_field is not None:
             if is_embedded_field(field):
                 top_field = get_field_name(field)
                 if patch_data.get(top_field, None) is None:
-                    # initially create an empty list for embedded field 
+                    # initially create an empty list for embedded field
                     patch_data[top_field] = []
                 # we can have multiple embedded objects (they are numbered in excel)
                 subobject_num = get_sub_field_number(field)
@@ -329,22 +330,23 @@ def build_patch_json(fields):
             else:
                 # normal case, just update the dictionary
                 patch_data.update(patch_field)
-    
+
     return patch_data
 
+
 def get_existing(post_json, connection):
+    """Get the entry that will be patched from the server."""
     temp = {}
     if post_json.get("uuid"):
         temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
     elif post_json.get("aliases"):
         temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
-    elif post_json.get("alias"):
-        temp = encodedcc.get_ENCODE(post_json["alias"], connection)
     elif post_json.get("accession"):
         temp = encodedcc.get_ENCODE(post_json["accession"], connection)
     elif post_json.get("@id"):
         temp = encodedcc.get_ENCODE(post_json["@id"], connection)
     return temp
+
 
 def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
     row = reader(datafile, sheetname=sheet)
@@ -405,11 +407,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
                     success += 1
             else:
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
-                " post new data")
+                      " post new data")
                 return
 
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+
 
 def upload_file(metadata_post_response, path):
     try:
