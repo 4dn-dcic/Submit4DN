@@ -5,6 +5,7 @@
 import argparse
 import os.path
 import encodedccMod as encodedcc
+from encodedccMod import md5
 import xlrd
 import datetime
 import sys
@@ -330,8 +331,13 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
 
         # should I upload files as well?
         file_to_upload = False
-        if post_json.get('filename'):
+        filename_to_post = post_json.get('filename')
+        if filename_to_post:
             file_to_upload = True
+            # add the md5
+            if not post_json.get('md5sum'):
+                print("calculating md5 sum for file %s " % (filename_to_post)
+                post_json['md5sum'] = md5(post_json.get(filename_to_post))
 
         existing_data = get_existing(post_json, connection)
 
