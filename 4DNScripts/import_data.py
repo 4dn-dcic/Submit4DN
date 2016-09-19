@@ -333,10 +333,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
         file_to_upload = False
         filename_to_post = post_json.get('filename')
         if filename_to_post:
+            # remove full path from filename
+            post_json['filename'] = filename_to_post.split('/')[-1]
             file_to_upload = True
             # add the md5
             if not post_json.get('md5sum'):
-                print("calculating md5 sum for file %s " % (filename_to_post)
+                print("calculating md5 sum for file %s " % (filename_to_post))
                 post_json['md5sum'] = md5(post_json.get(filename_to_post))
 
         existing_data = get_existing(post_json, connection)
@@ -359,7 +361,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
             if update:
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
                 if file_to_upload:
-                    upload_file(e, post_json.get('filename'))
+                    upload_file(e, filename_to_post)
                 if e["status"] == "error":
                     error += 1
                 elif e["status"] == "success":
