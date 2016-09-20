@@ -24,7 +24,7 @@ To create an xls file with sheets to be filled use the example and modify to you
 
 *Full list*
 ~~~~
-python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentCaptureC --type ExperimentHiC --type ExperimentSet --descriptions --enums --writexls
+python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSet --type Image --descriptions --enums --comments --writexls --outfile AllItems.xls
 
 ~~~~
 *To get a single sheet use*
