@@ -51,7 +51,7 @@ def getArgs():
     parser.add_argument('--writexls',
                         default=False,
                         action='store_true',
-                        help="Create an xls with the appropriate columns and sheets, based on the data returned from this command.")
+                        help="Create an xls with the columns and sheets, based on the data returned from this command.")
     parser.add_argument('--key',
                         default='default',
                         help="The keypair identifier from the keyfile.  \
@@ -69,6 +69,7 @@ def getArgs():
     args = parser.parse_args()
     return args
 
+
 @attr.s
 class FieldInfo(object):
     name = attr.ib()
@@ -76,11 +77,13 @@ class FieldInfo(object):
     comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
 
+
 def get_field_type(field):
     field_type = field.get('type', '')
     if field_type == 'string':
         return ''
     return ":" + field_type
+
 
 def is_subobject(field):
     try:
@@ -88,11 +91,13 @@ def is_subobject(field):
     except:
         return False
 
+
 def dotted_field_name(field_name, parent_name=None):
     if parent_name:
         return "%s.%s" % (parent_name, field_name)
     else:
         return field_name
+
 
 def build_field_list(properties, include_description=False, include_comment=False,
                      include_enums=False, parent='', additional_comments=''):
@@ -109,20 +114,21 @@ def build_field_list(properties, include_description=False, include_comment=Fals
                                                include_comment,
                                                name,
                                                additional_comments)
-                             )
+                              )
             else:
                 field_name = dotted_field_name(name, parent) + get_field_type(props)
                 # special case for attachemnts
                 if name == 'attachment':
                     field_name = dotted_field_name(name, parent)
                 desc = '' if not include_description else props.get('description')
-                comm = '' if not include_comment else props.get('comment')
+                comm = '' if not include_comment else props.get('comment', '')
                 # allow for adding stuff, like part of x array
                 if additional_comments:
                     comm += additional_comments
                 enum = '' if not include_enums else props.get('enum')
                 fields.append(FieldInfo(field_name, desc, comm, enum))
     return fields
+
 
 def get_uploadable_fields(connection, types, include_description=False, include_comments=False, include_enums=False):
     fields = {}
@@ -134,8 +140,8 @@ def get_uploadable_fields(connection, types, include_description=False, include_
                                         include_description,
                                         include_comments,
                                         include_enums)
-
     return fields
+
 
 def create_xls(fields, filename):
     '''
@@ -160,14 +166,15 @@ def create_xls(fields, filename):
                 ws.write(3, col+1, str(field.enum))
     wb.save(filename)
 
+
 def main():
     args = getArgs()
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
     connection = encodedccMod.ENC_Connection(key)
     fields = get_uploadable_fields(connection, args.type,
-                                        args.descriptions,
-                                        args.comments,
-                                        args.enums)
+                                   args.descriptions,
+                                   args.comments,
+                                   args.enums)
 
     if args.debug:
         print("retrieved fields as")
@@ -176,7 +183,7 @@ def main():
 
     if args.writexls:
         file_name = args.outfile
-        create_xls(fields,file_name)
+        create_xls(fields, file_name)
 
 if __name__ == '__main__':
     main()
