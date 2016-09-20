@@ -63,12 +63,12 @@ If the embedded sub-object is a list, you can increase the number of items by cr
 
 **Aliases**
 
-When you create new object types at the same time, it is not possible to reference one item in another with an accession or uuid since it is not assigned yet. For example, if you have a new experiment with a new biosample in the same excel sheet, what are you going to put in biosample field in experiments sheet? To overcome this problem, a lab specific identifier called alias is used. aliases field accepts multiple entries in the form of "labname:refname" (testlab:expHic001). If you add lab:bisample1 to alliases field in biosample, you can then use this value in biosample field in experiment.
+When you create new object types at the same time, it is not possible to reference one item in another with an accession or uuid since it is not assigned yet. For example, if you have a new experiment with a new biosample in the same excel workbook (different sheets), what are you going to put in biosample field in experiments sheet? To overcome this problem, a lab specific identifier called alias is used. "aliases" field accepts multiple entries in the form of "labname:refname,labname:refname2" (testlab:expHic001). If you add lab:bisample1 to aliases field in biosample, you can then use this value in biosample field in experiment.
 
-At the moment it is a must to use an alias  for each new item.
 
 #Specifications for import_data.py
 You can use import_data.py either to upload new metadata or patch fields of an existing metadata.
+When you import file data, the status has to be "uploading". if you have some other status, like "uploaded" and then patch the status to "uploading", you will not be able to upload file, because the dedicated url for aws upload is creating during post if the status is uploading.
 
 **Uploading vs Patching**
 
