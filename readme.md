@@ -44,10 +44,10 @@ In fields.xls, each excel sheet is named after an object type, like ExperimentHi
 
 The first entry will start from row 4, and column 2.
 
-Each field can be a certain type; string, number/integer, list. If the type is integer, number or array, it will be indicated with the fields name; field:num, fields:int, field:list. If the field is a string, you will only see the field name.
+Each field can be a certain type; string, number/integer, list. If the type is integer, number or array, it will be indicated with the fields name; field:number, fields:int, field:array. If the field is a string, you will only see the field name.
 If the field is an array (field:list), you may enter a single item, or multiple items separated by comma.
 
-    field:list
+    field:array
     item1,item2,item2,item4
 
 Some objects containing fields that are grouped together, called embedded sub-objects. For example the "experiment_relations" has 2 fields called "relationship_type", and "experiment". In the field names you will see
