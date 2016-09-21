@@ -2,13 +2,15 @@
 # -*- coding: latin-1 -*-
 import xlrd
 import xlwt
+import os
 
-ReadFile = "/Users/koray/Github/4DNWranglerTools/Orderedlist/fieldsRao.xls"
-RefFile = "/Users/koray/Github/4DNWranglerTools/Orderedlist/Submission_first_round.xls"
-OutputFile = "/Users/koray/Github/4DNWranglerTools/Orderedlist/Rao_ordered.xls"
+folder = os.path.dirname(os.path.abspath(__file__))
+ReadFile = "fieldsRao.xls"
+RefFile = "Submission_first_round.xls"
+OutputFile = "Rao_ordered_test.xls"
 
-bookref = xlrd.open_workbook(RefFile)
-bookread = xlrd.open_workbook(ReadFile)
+bookref = xlrd.open_workbook(folder+'/'+RefFile)
+bookread = xlrd.open_workbook(folder+'/'+ReadFile)
 book_w = xlwt.Workbook()
 Sheets = bookread.sheet_names()
 
@@ -27,11 +29,5 @@ for sheet in Sheets:
             continue
         column_val = active_sheet_read.col_values(read_col_ind)
         for write_column_index, cell_value in enumerate(column_val):
-            if write_item in ['aliases:array', 'biosource:array', 'protocol_documents:array']:
-                cell_value = cell_value.strip("[")
-                cell_value = cell_value.strip("]")
-                cell_value = cell_value.strip("'")
-                cell_value = cell_value.strip('"')
-
             new_sheet.write(write_column_index, write_row_index, cell_value)
-book_w.save(OutputFile)
+book_w.save(folder+'/'+OutputFile)
