@@ -92,11 +92,6 @@ def getArgs():
                         action='store_true',
                         help="PATCH existing objects.  Default is False \
                         and will only PATCH with user override")
-    parser.add_argument('--skiprows',
-                        type=int,
-                        default=4,
-                        help="Number of rows from the beginning of sheet(s) to skip \
-                        INCLUDING Field name row - Default is 4")
     args = parser.parse_args()
     return args
 
@@ -302,23 +297,21 @@ def get_existing(post_json, connection):
     return temp
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
+def excel_reader(datafile, sheet, update, connection, patchall):
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
     # remove title column
     keys.pop(0)
-    # skip the default three rows of description / comments /enums or the number
-    # specified in the skiprows argument
-    skiprows = skiprows - 1
-    for _ in range(skiprows):
-        next(row)
 
     total = 0
     error = 0
     success = 0
     patch = 0
     for values in row:
-        # always remove first column cause that is used for titles of rows
+        # Rows that start with # are skipped
+        if values[0].startswith("#"):
+            continue
+        # Get rid of the first empty cell
         values.pop(0)
         total += 1
         post_json = dict(zip(keys, values))
@@ -328,6 +321,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, skiprows):
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
+        #print(post_json)
 
         # should I upload files as well?
         file_to_upload = False
@@ -481,7 +475,7 @@ def main():
 
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, args.skiprows)
+            excel_reader(args.infile, n, args.update, connection, args.patchall)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
 
