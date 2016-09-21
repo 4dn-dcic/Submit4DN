@@ -5,6 +5,7 @@ import argparse
 import encodedccMod
 import attr
 import xlwt
+import xlrd
 
 EPILOG = '''
     This program graphs uploadable fields (i.e. not calculated properties)
@@ -66,6 +67,10 @@ def getArgs():
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
+    parser.add_argument('--order',
+                        default=True,
+                        action='store_true',
+                        help="A reference file is used for ordering and filtering fields")
     args = parser.parse_args()
     return args
 
@@ -167,6 +172,43 @@ def create_xls(fields, filename):
     wb.save(filename)
 
 
+def ordered(input_file, reference_file="System_Files/reference_fields.xls"):
+    folder = os.path.dirname(os.path.abspath(__file__))
+    ReadFile = folder+'/'+input_file
+    RefFile = folder+'/'+reference_file
+    OutputFile = folder+'/'+input_file[:-4]+'_ordered.xls'
+
+    bookref = xlrd.open_workbook(RefFile)
+    bookread = xlrd.open_workbook(ReadFile)
+    book_w = xlwt.Workbook()
+    Sheets = bookread.sheet_names()
+
+    for sheet in Sheets:
+        try:
+            active_sheet_ref = bookref.sheet_by_name(sheet)
+        except:
+            print('The object {} does not exist in referece file, please update'.format(sheet))
+            continue
+        active_sheet_read = bookread.sheet_by_name(sheet)
+        first_row_values_read = active_sheet_read.row_values(rowx=0)
+        first_row_values_ref = active_sheet_ref.row_values(rowx=0)
+
+        new_sheet = book_w.add_sheet(sheet)
+        for write_row_index, write_item in enumerate(first_row_values_ref):
+            try:
+                read_col_ind = first_row_values_read.index(write_item)
+            except:
+                new_sheet.write(0, write_row_index, write_item)
+                continue
+            column_val = active_sheet_read.col_values(read_col_ind)
+            for write_column_index, cell_value in enumerate(column_val):
+                new_sheet.write(write_column_index, write_row_index, cell_value)
+    try:
+        book_w.save(OutputFile)
+    except:
+        print('Ordered xls is not created, reference might be missing ordered object sheets')
+
+
 def main():
     args = getArgs()
     key = encodedccMod.ENC_Key(args.keyfile, args.key)
@@ -184,6 +226,8 @@ def main():
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
+        if args.order:
+            ordered(file_name)
 
 if __name__ == '__main__':
     main()
