@@ -18,20 +18,22 @@ python3 code.py --keyfile nameoffile.json --key NotDefault
 ##Generate fields.xls
 To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
 --type           use for each sheet that you want to add to the excel workbook
---descriptions   adds the descriptions in the second line
---enums          adds the enum options in the third line
+--descriptions   adds the descriptions in the second line (by default True)
+--enums          adds the enum options in the third line (by default True)
+--comments       adds the comments together with enums (by default False)
+--writexls       creates the xls file (by default True)
 --outfile        change the default file name "fields.xls" to a specified one
 
 *Full list*
 ~~~~
-python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSet --type Image --descriptions --enums --comments --writexls --outfile AllItems.xls
+python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSet --type Image --comments --outfile AllItems.xls
 
 ~~~~
 *To get a single sheet use*
 ```
-python3 get_field_info.py --type IndividualHuman --descriptions --enums --writexls
-python3 get_field_info.py --type ExperimentCaptureC --descriptions --enums --writexls --outfile HiC2.xls
-
+python3 get_field_info.py --type Biosample
+python3 get_field_info.py --type Biosample --comments
+python3 get_field_info.py --type Biosample --comments --outfile biosample.xls
 ```
 
 #Specifications for fields.xls
