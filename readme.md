@@ -18,20 +18,22 @@ python3 code.py --keyfile nameoffile.json --key NotDefault
 ##Generate fields.xls
 To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
 --type           use for each sheet that you want to add to the excel workbook
---descriptions   adds the descriptions in the second line
---enums          adds the enum options in the third line
+--descriptions   adds the descriptions in the second line (by default True)
+--enums          adds the enum options in the third line (by default True)
+--comments       adds the comments together with enums (by default False)
+--writexls       creates the xls file (by default True)
 --outfile        change the default file name "fields.xls" to a specified one
 
 *Full list*
 ~~~~
-python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentCaptureC --type ExperimentHiC --type ExperimentSet --descriptions --enums --writexls
+python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSet --type Image --comments --outfile AllItems.xls
 
 ~~~~
 *To get a single sheet use*
 ```
-python3 get_field_info.py --type IndividualHuman --descriptions --enums --writexls
-python3 get_field_info.py --type ExperimentCaptureC --descriptions --enums --writexls --outfile HiC2.xls
-
+python3 get_field_info.py --type Biosample
+python3 get_field_info.py --type Biosample --comments
+python3 get_field_info.py --type Biosample --comments --outfile biosample.xls
 ```
 
 #Specifications for fields.xls
@@ -44,10 +46,10 @@ In fields.xls, each excel sheet is named after an object type, like ExperimentHi
 
 The first entry will start from row 4, and column 2.
 
-Each field can be a certain type; string, number/integer, list. If the type is integer, number or array, it will be indicated with the fields name; field:num, fields:int, field:list. If the field is a string, you will only see the field name.
+Each field can be a certain type; string, number/integer, list. If the type is integer, number or array, it will be indicated with the fields name; field:number, fields:int, field:array. If the field is a string, you will only see the field name.
 If the field is an array (field:list), you may enter a single item, or multiple items separated by comma.
 
-    field:list
+    field:array
     item1,item2,item2,item4
 
 Some objects containing fields that are grouped together, called embedded sub-objects. For example the "experiment_relations" has 2 fields called "relationship_type", and "experiment". In the field names you will see

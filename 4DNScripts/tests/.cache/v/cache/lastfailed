@@ -1,4 +1,0 @@
-{
-  "test_get_field_info.py::test_build_field_list": true,
-  "test_get_field_info.py::test_build_field_list_skips_calculated_properties": true
-}
