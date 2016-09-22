@@ -3,8 +3,8 @@
 import xlrd
 import xlwt
 
-InputFile = "/Users/koray/Github/4DNWranglerTools/Orderedlist/AllItems.xls"
-OutputFile = "/Users/koray/Github/4DNWranglerTools/Orderedlist/OrderedItems.xls"
+InputFile = "/Users/koray/Github/4DNWranglerTools/Data_Files/Orderedlist/AllItems.xls"
+OutputFile = "/Users/koray/Github/4DNWranglerTools/Data_Files/Orderedlist/reference_fields.xls"
 book = xlrd.open_workbook(InputFile)
 book_w = xlwt.Workbook()
 Sheets = book.sheet_names()
@@ -18,6 +18,8 @@ sheet_order = [
     "Construct",
     "TreatmentRnai",
     "TreatmentChemical",
+    "Target",
+    "GenomicRegion",
     "Modification",
     "Enzyme",
     "Biosample",
@@ -29,6 +31,7 @@ sheet_order = [
     "File",
     "ExperimentSet",
     "ExperimentHiC",
+    "ExperimentCaptureC",
     "Publication"
 ]
 
@@ -55,7 +58,7 @@ move_frond = [
     'title',
     'name',
     'aliases:array',
-    'Field Name:'
+    '#Field Name:'
 ]
 
 move_end = [

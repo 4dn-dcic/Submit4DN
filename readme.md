@@ -26,7 +26,7 @@ To create an xls file with sheets to be filled use the example and modify to you
 
 *Full list*
 ~~~~
-python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSet --type Image --comments --outfile AllItems.xls
+python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --outfile AllItems.xls --order
 
 ~~~~
 *To get a single sheet use*
@@ -34,6 +34,7 @@ python3 get_field_info.py --type Publication --type Document --type Vendor --typ
 python3 get_field_info.py --type Biosample
 python3 get_field_info.py --type Biosample --comments
 python3 get_field_info.py --type Biosample --comments --outfile biosample.xls
+python3 get_field_info.py --type Biosample --comments --outfile biosample.xls --order
 ```
 
 #Specifications for fields.xls
