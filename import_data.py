@@ -348,6 +348,10 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
                     if not existing_data.get('filename'):
+                        creds = get_upload_creds(
+                            e.get('uuid'),
+                            connection)
+                        e['upload_credentials'] = creds
                         upload_file(e, post_json.get('filename'))
                     else:
                         print("There is an existing filename, ")
@@ -373,6 +377,14 @@ def excel_reader(datafile, sheet, update, connection, patchall):
 
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+
+def get_upload_creds(file_id, connection):
+    import pdb; pdb.set_trace()
+    r = requests.post("%s/%s/upload/" % (connection.server, file_id),
+                      auth=connection.auth,
+                      headers=connection.headers,
+                      data=json.dumps({}))
+    return r.json()['@graph'][0]['upload_credentials']
 
 
 def upload_file(metadata_post_response, path):
