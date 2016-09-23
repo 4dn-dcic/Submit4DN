@@ -181,7 +181,15 @@ def ordered(input_file, reference_file="System_Files/reference_fields.xls"):
     bookref = xlrd.open_workbook(RefFile)
     bookread = xlrd.open_workbook(ReadFile)
     book_w = xlwt.Workbook()
-    Sheets = bookread.sheet_names()
+    Sheets_read = bookread.sheet_names()
+    Sheets_ref = bookref.sheet_names()
+    Sheets = []
+    for sh in Sheets_ref:
+        if sh in Sheets_read:
+            Sheets.append(sh)
+            Sheets_read.remove(sh)
+    Sheets.extend(Sheets_read)
+
 
     for sheet in Sheets:
         try:
