@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
-
+import json
 import argparse
 import os.path
 import encodedccMod as encodedcc
@@ -333,7 +333,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             # add the md5
             if not post_json.get('md5sum'):
                 print("calculating md5 sum for file %s " % (filename_to_post))
-                post_json['md5sum'] = md5(post_json.get(filename_to_post))
+                post_json['md5sum'] = md5(filename_to_post)
 
         existing_data = get_existing(post_json, connection)
 
@@ -347,14 +347,12 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             if patchall or to_patch.lower() == 'y':
                 e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
-                    if not existing_data.get('filename'):
-                        creds = get_upload_creds(
-                            e.get('uuid'),
-                            connection)
-                        e['upload_credentials'] = creds
-                        upload_file(e, post_json.get('filename'))
-                    else:
-                        print("There is an existing filename, ")
+                    creds = get_upload_creds(
+                        e['@graph'][0]['accession'],
+                        connection,
+                        e['@graph'][0])
+                    e['upload_credentials'] = creds
+                    upload_file(e, post_json.get('filename'))
 
                 if e["status"] == "error":
                     error += 1
@@ -378,13 +376,13 @@ def excel_reader(datafile, sheet, update, connection, patchall):
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
 
-def get_upload_creds(file_id, connection):
-    import pdb; pdb.set_trace()
-    r = requests.post("%s/%s/upload/" % (connection.server, file_id),
+def get_upload_creds(file_id, connection,file_info):
+    url = "%s%s/upload/" % (connection.server, file_id)
+    req = requests.post(url,
                       auth=connection.auth,
                       headers=connection.headers,
                       data=json.dumps({}))
-    return r.json()['@graph'][0]['upload_credentials']
+    return req.json()['@graph'][0]['upload_credentials']
 
 
 def upload_file(metadata_post_response, path):
