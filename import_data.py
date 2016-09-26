@@ -341,13 +341,13 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 to_patch = input("PATCH? y/n ")
 
             if patchall or to_patch.lower() == 'y':
+                # add the md5
+                if file_to_upload and not post_json.get('md5sum'):
+                    print("calculating md5 sum for file %s " % (filename_to_post))
+                    post_json['md5sum'] = md5(filename_to_post)
+
                 e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
-                    # add the md5
-                    if not post_json.get('md5sum'):
-                        print("calculating md5 sum for file %s " % (filename_to_post))
-                        post_json['md5sum'] = md5(filename_to_post)
-
                     # get s3 credentials
                     creds = get_upload_creds(
                         e['@graph'][0]['accession'],
@@ -366,12 +366,12 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                     patch += 1
         else:
             if update:
+                # add the md5
+                if file_to_uplad and not post_json.get('md5sum'):
+                    print("calculating md5 sum for file %s " % (filename_to_post))
+                    post_json['md5sum'] = md5(filename_to_post)
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
                 if file_to_upload:
-                    # add the md5
-                    if not post_json.get('md5sum'):
-                        print("calculating md5 sum for file %s " % (filename_to_post))
-                        post_json['md5sum'] = md5(filename_to_post)
                     # upload the file
                     upload_file(e, filename_to_post)
                 if e["status"] == "error":
