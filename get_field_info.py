@@ -128,6 +128,8 @@ def build_field_list(properties, include_description=False, include_comment=Fals
             else:
                 field_name = dotted_field_name(name, parent)
                 field_type = get_field_type(props)
+                if is_member_of_array_of_objects:
+                    field_type = field_type + " member of list of Object fields"
                 # special case for attachemnts
                 #if name == 'attachment':
                 #    field_name = dotted_field_name(name, parent)
