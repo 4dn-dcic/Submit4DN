@@ -113,10 +113,10 @@ def build_field_list(properties, include_description=False, include_comment=Fals
                      include_enums=False, parent='', is_submember=False):
     fields = []
     for name, props in properties.items():
+        is_member_of_array_of_objects = False
         if not props.get('calculatedProperty', False):
             if is_subobject(props):
-                is_member_of_array_of_objects = False
-                if get_field_type(props) == 'array':
+                if get_field_type(props).startswith('array'):
                     is_member_of_array_of_objects = True
                 fields.extend(build_field_list(props['items']['properties'],
                                                include_description,
@@ -128,8 +128,8 @@ def build_field_list(properties, include_description=False, include_comment=Fals
             else:
                 field_name = dotted_field_name(name, parent)
                 field_type = get_field_type(props)
-                if is_member_of_array_of_objects:
-                    field_type = field_type + " member of list of Object fields"
+                if is_submember:
+                    field_type = field_type + " (array - multiple allowed paired with other " + parent + " fields)"
                 # special case for attachemnts
                 #if name == 'attachment':
                 #    field_name = dotted_field_name(name, parent)
