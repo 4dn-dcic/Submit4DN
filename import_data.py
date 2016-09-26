@@ -353,7 +353,8 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                         e['@graph'][0]['accession'],
                         connection,
                         e['@graph'][0])
-                    e['upload_credentials'] = creds
+                    e['@graph'][0]['upload_credentials'] = creds
+
 
                     # upload
                     upload_file(e, filename_to_post)
@@ -398,7 +399,8 @@ def upload_file(metadata_post_response, path):
     try:
         item = metadata_post_response['@graph'][0]
         creds = item['upload_credentials']
-    except:
+    except Exception as e:
+        print(e)
         return
 
     ####################
