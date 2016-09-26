@@ -330,10 +330,6 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             # remove full path from filename
             post_json['filename'] = filename_to_post.split('/')[-1]
             file_to_upload = True
-            # add the md5
-            if not post_json.get('md5sum'):
-                print("calculating md5 sum for file %s " % (filename_to_post))
-                post_json['md5sum'] = md5(filename_to_post)
 
         existing_data = get_existing(post_json, connection)
 
@@ -347,12 +343,22 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             if patchall or to_patch.lower() == 'y':
                 e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
+                    import pdb; pdb.set_trace()
+
+                    # add the md5
+                    if not post_json.get('md5sum'):
+                        print("calculating md5 sum for file %s " % (filename_to_post))
+                        post_json['md5sum'] = md5(filename_to_post)
+
+                    # get s3 credentials    
                     creds = get_upload_creds(
                         e['@graph'][0]['accession'],
                         connection,
                         e['@graph'][0])
                     e['upload_credentials'] = creds
-                    upload_file(e, post_json.get('filename'))
+
+                    # upload
+                    upload_file(e, filename_to_post)
 
                 if e["status"] == "error":
                     error += 1
@@ -363,6 +369,11 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             if update:
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
                 if file_to_upload:
+                    # add the md5
+                    if not post_json.get('md5sum'):
+                        print("calculating md5 sum for file %s " % (filename_to_post))
+                        post_json['md5sum'] = md5(filename_to_post)
+                    # upload the file
                     upload_file(e, filename_to_post)
                 if e["status"] == "error":
                     error += 1
