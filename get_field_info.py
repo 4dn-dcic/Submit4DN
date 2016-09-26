@@ -199,7 +199,6 @@ def ordered(input_file, reference_file="System_Files/reference_fields.xls"):
             Sheets_read.remove(sh)
     Sheets.extend(Sheets_read)
 
-
     for sheet in Sheets:
         try:
             active_sheet_ref = bookref.sheet_by_name(sheet)
