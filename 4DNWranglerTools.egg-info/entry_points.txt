@@ -1,5 +1,0 @@
-
-        [console_scripts]
-        import_data  = src.import_data:main
-        get_field_info = src.get_field_info:main
-        

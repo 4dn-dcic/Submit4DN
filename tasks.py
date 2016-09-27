@@ -29,14 +29,15 @@ def test(ctx, watch=False, last_failing=False):
 def flake(ctx):
     """Run flake8 on codebase."""
     run('flake8 .', echo=True)
+    print("flake8 passed!!!")
 
 
 @task
 def clean(ctx):
     run("rm -rf build")
     run("rm -rf dist")
-    run("rm -rf {{cookiecutter.repo_name}}.egg-info")
-    clean_docs()
+    run("rm -rf 4DNWranglerTools.egg-info")
+    clean_docs(ctx)
     print("Cleaned up.")
 
 
@@ -74,7 +75,7 @@ def watch_docs(ctx):
         print('    pip install sphinx-autobuild')
         sys.exit(1)
     run('sphinx-autobuild {0} {1} --watch {2}'.format(
-        docs_dir, build_dir, '{{cookiecutter.repo_name}}'), echo=True, pty=True)
+        docs_dir, build_dir, '4DNWranglerTools'), echo=True, pty=True)
 
 
 @task
@@ -87,7 +88,7 @@ def readme(ctx, browse=False):
 @task
 def publish(ctx, test=False):
     """Publish to the cheeseshop."""
-    clean()
+    clean(ctx)
     if test:
         run('python setup.py register -r test sdist bdist_wheel', echo=True)
         run('twine upload dist/* -r test', echo=True)
