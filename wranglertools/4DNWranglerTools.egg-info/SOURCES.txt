@@ -1,0 +1,9 @@
+setup.cfg
+setup.py
+src/4DNWranglerTools.egg-info/PKG-INFO
+src/4DNWranglerTools.egg-info/SOURCES.txt
+src/4DNWranglerTools.egg-info/dependency_links.txt
+src/4DNWranglerTools.egg-info/entry_points.txt
+src/4DNWranglerTools.egg-info/not-zip-safe
+src/4DNWranglerTools.egg-info/requires.txt
+src/4DNWranglerTools.egg-info/top_level.txt
