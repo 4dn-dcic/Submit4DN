@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-import encodedccMod
+from wranglertools import encodedccMod
 import attr
 import xlwt
 import xlrd
@@ -52,14 +52,16 @@ def getArgs():
     parser.add_argument('--writexls',
                         default=True,
                         action='store_true',
-                        help="Create an xls with the columns and sheets, based on the data returned from this command.")
+                        help="Create an xls with the columns and sheets"
+                             "based on the data returned from this command.")
     parser.add_argument('--key',
                         default='default',
                         help="The keypair identifier from the keyfile.  \
                         Default is --key=default")
     parser.add_argument('--keyfile',
                         default=os.path.expanduser("~/keypairs.json"),
-                        help="The keypair file.  Default is --keyfile=%s" % (os.path.expanduser("~/keypairs.json")))
+                        help="The keypair file.  Default is --keyfile=%s" %
+                             (os.path.expanduser("~/keypairs.json")))
     parser.add_argument('--debug',
                         default=False,
                         action='store_true',
@@ -140,7 +142,8 @@ def build_field_list(properties, include_description=False, include_comment=Fals
     return fields
 
 
-def get_uploadable_fields(connection, types, include_description=False, include_comments=False, include_enums=False):
+def get_uploadable_fields(connection, types, include_description=False,
+                          include_comments=False, include_enums=False):
     fields = {}
     for name in types:
         schema_name = encodedccMod.format_schema_name(name)

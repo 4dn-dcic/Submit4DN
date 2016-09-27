@@ -4,8 +4,8 @@
 import json
 import argparse
 import os.path
-import encodedccMod as encodedcc
-from encodedccMod import md5
+from wranglertools import encodedccMod as encodedcc
+from wranglertools.encodedccMod import md5
 import xlrd
 import datetime
 import sys
@@ -13,7 +13,6 @@ import mimetypes
 import requests
 from PIL import Image
 from base64 import b64encode
-import ast
 import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
@@ -78,7 +77,8 @@ def getArgs():
                         Default is --key=default")
     parser.add_argument('--keyfile',
                         default=os.path.expanduser("~/keypairs.json"),
-                        help="The keypair file.  Default is --keyfile=%s" % (os.path.expanduser("~/keypairs.json")))
+                        help="The keypair file.  Default is --keyfile=%s" %
+                             (os.path.expanduser("~/keypairs.json")))
     parser.add_argument('--debug',
                         default=False,
                         action='store_true',
@@ -336,7 +336,6 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
-        #print(post_json)
 
         # should I upload files as well?
         file_to_upload = False
@@ -345,10 +344,6 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             # remove full path from filename
             post_json['filename'] = filename_to_post.split('/')[-1]
             file_to_upload = True
-            # add the md5
-            if not post_json.get('md5sum'):
-                print("calculating md5 sum for file %s " % (filename_to_post))
-                post_json['md5sum'] = md5(filename_to_post)
 
         existing_data = get_existing(post_json, connection)
 
@@ -360,14 +355,22 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 to_patch = input("PATCH? y/n ")
 
             if patchall or to_patch.lower() == 'y':
+                # add the md5
+                if file_to_upload and not post_json.get('md5sum'):
+                    print("calculating md5 sum for file %s " % (filename_to_post))
+                    post_json['md5sum'] = md5(filename_to_post)
+
                 e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
+                    # get s3 credentials
                     creds = get_upload_creds(
                         e['@graph'][0]['accession'],
                         connection,
                         e['@graph'][0])
-                    e['upload_credentials'] = creds
-                    upload_file(e, post_json.get('filename'))
+                    e['@graph'][0]['upload_credentials'] = creds
+
+                    # upload
+                    upload_file(e, filename_to_post)
 
                 if e["status"] == "error":
                     error += 1
@@ -376,8 +379,13 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                     patch += 1
         else:
             if update:
+                # add the md5
+                if file_to_upload and not post_json.get('md5sum'):
+                    print("calculating md5 sum for file %s " % (filename_to_post))
+                    post_json['md5sum'] = md5(filename_to_post)
                 e = encodedcc.new_ENCODE(connection, sheet, post_json)
                 if file_to_upload:
+                    # upload the file
                     upload_file(e, filename_to_post)
                 if e["status"] == "error":
                     error += 1
@@ -405,7 +413,8 @@ def upload_file(metadata_post_response, path):
     try:
         item = metadata_post_response['@graph'][0]
         creds = item['upload_credentials']
-    except:
+    except Exception as e:
+        print(e)
         return
 
     ####################
