@@ -1,7 +1,7 @@
-import pytest
-import import_data as imp
+import wranglertools.import_data as imp
 
 # test data is in conftest.py
+
 
 def test_formatter_gets_ints_correctly():
     assert 6 == imp.data_formatter('6', 'int')
@@ -12,16 +12,19 @@ def test_formatter_gets_floats_correctly():
     assert 6.0 == imp.data_formatter('6', 'num')
     assert 7.2456 == imp.data_formatter(7.2456, 'number')
 
+
 def test_formatter_gets_lists_correctly():
-    assert ['1','2','3'] == imp.data_formatter('[1,  2 ,3]', 'list')
-    assert ['1','2','3'] == imp.data_formatter("'[1,2,3]'", 'array')
+    assert ['1', '2', '3'] == imp.data_formatter('[1,  2 ,3]', 'list')
+    assert ['1', '2', '3'] == imp.data_formatter("'[1,2,3]'", 'array')
+
 
 def test_build_patch_json_removes_empty_fields(file_metadata):
     post_json = imp.build_patch_json(file_metadata)
 
     # All the below values exist in file_metadatadd
-    assert None == post_json.get('filesets:array', None)
-    assert None == post_json.get('paired_end', None)
+    assert post_json.get('filesets:array', None) is None
+    assert post_json.get('paired_end', None) is None
+
 
 def test_build_patch_json_keeps_valid_fields(file_metadata):
     post_json = imp.build_patch_json(file_metadata)
@@ -41,4 +44,4 @@ def test_build_patch_json_embeds_fields(file_metadata):
     post_json = imp.build_patch_json(file_metadata)
 
     expected = [{'file': 'testfile.fastq', 'relationship_type': 'related_to'}]
-    assert expected == post_json.get('related_files', None )
+    assert expected == post_json.get('related_files', None)

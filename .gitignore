@@ -2,5 +2,10 @@ __pycache__/
 *.pyc
 .cache/
 *.DS_Store
-
+.coverage
 Data_Files/LabAwardUserPwd/*
+.eggs/
+README.html
+build/
+dist/
+4DNWranglerTools.egg-info/*
