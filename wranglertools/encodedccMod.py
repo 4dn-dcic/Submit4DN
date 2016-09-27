@@ -5,11 +5,11 @@ import requests
 import json
 import sys
 import logging
-#from urllib.parse import quote
 import os.path
 import hashlib
 import copy
 import subprocess
+
 
 class dict_diff(object):
     """
@@ -81,14 +81,15 @@ class ENC_Connection(object):
         self.auth = (key.authid, key.authpw)
 
 
-def format_schema_name(supplied_name):
+def format_schema_name(supplied_name, search_name):
     if supplied_name.endswith('s'):
-        schema_name = self.search_name + '.json'
+        schema_name = search_name + '.json'
     elif supplied_name.endswith('.json'):
         schema_name = supplied_name
     else:
         schema_name = supplied_name.replace('-', '_') + '.json'
     return schema_name
+
 
 class ENC_Collection(object):
     def __init__(self, connection, supplied_name, frame='object'):
@@ -239,7 +240,7 @@ def get_ENCODE(obj_id, connection, frame="object"):
     '''GET an ENCODE object as JSON and return as dict'''
     if frame is None:
         if '?' in obj_id:
-            url = connection.server +  obj_id+'&limit=all'
+            url = connection.server + obj_id+'&limit=all'
         else:
             url = connection.server + obj_id+'?limit=all'
     elif '?' in obj_id:
@@ -251,14 +252,15 @@ def get_ENCODE(obj_id, connection, frame="object"):
     logging.debug('GET RESPONSE code %s' % (response.status_code))
     try:
         if response.json():
-            logging.debug('GET RESPONSE JSON: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+            logging.debug('GET RESPONSE JSON: %s' %
+                          (json.dumps(response.json(), indent=4, separators=(',', ': '))))
     except:
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
-            #logging.warning('GET failure.  Response code = %s' % (response.text))
+            # logging.warning('GET failure.  Response code = %s' % (response.text))
             pass
     return response.json()
 
@@ -314,7 +316,7 @@ def new_ENCODE(connection, collection_name, post_input):
         json_payload = post_input
     else:
         print('Datatype to POST is not string or dict.')
-    url = connection.server +  collection_name
+    url = connection.server + collection_name
     logging.debug("POST URL : %s" % (url))
     logging.debug("POST data: %s" % (json.dumps(post_input,
                                      sort_keys=True, indent=4,
@@ -345,7 +347,8 @@ def flat_ENCODE(JSON_obj):
     for key in JSON_obj:
         if isinstance(JSON_obj[key], dict):
             flat_obj.update({key: flat_one(JSON_obj[key])})
-        elif isinstance(JSON_obj[key], list) and JSON_obj[key] != [] and isinstance(JSON_obj[key][0], dict):
+        elif (isinstance(JSON_obj[key], list) and JSON_obj[key] != [] and
+              isinstance(JSON_obj[key][0], dict)):
             newlist = []
             for obj in JSON_obj[key]:
                 newlist.append(flat_one(obj))
@@ -386,9 +389,11 @@ class GetFields():
             temp = []
             if self.args.collection:
                 if self.args.es:
-                    temp = get_ENCODE("/search/?type=" + self.args.collection, self.connection).get("@graph", [])
+                    temp = get_ENCODE("/search/?type=" + self.args.collection,
+                                      self.connection).get("@graph", [])
                 else:
-                    temp = get_ENCODE(self.args.collection, self.connection, frame=None).get("@graph", [])
+                    temp = get_ENCODE(self.args.collection, self.connection,
+                                      frame=None).get("@graph", [])
             elif self.args.query:
                 if "search" in self.args.query:
                     temp = get_ENCODE(self.args.query, self.connection).get("@graph", [])
@@ -413,11 +418,13 @@ class GetFields():
                         print("ERROR: object has no identifier")
             if self.args.allfields:
                 if self.args.collection:
-                    obj = get_ENCODE("/profiles/" + self.args.collection + ".json", self.connection).get("properties")
+                    obj = get_ENCODE("/profiles/" + self.args.collection + ".json",
+                                     self.connection).get("properties")
                 else:
                     obj_type = get_ENCODE(self.accessions[0], self.connection).get("@type")
                     if any(obj_type):
-                        obj = get_ENCODE("/profiles/" + obj_type[0] + ".json", self.connection).get("properties")
+                        obj = get_ENCODE("/profiles/" + obj_type[0] + ".json",
+                                         self.connection).get("properties")
                 self.fields = list(obj.keys())
                 for key in obj.keys():
                     if obj[key]["type"] == "string":
@@ -441,9 +448,7 @@ class GetFields():
         import csv
         from collections import deque
         self.setup()
-        #self.header = ["accession"]
         for acc in self.accessions:
-            #acc = quote(acc)
             obj = get_ENCODE(acc, self.connection)
             newObj = {}
             newObj["accession"] = acc
@@ -455,7 +460,6 @@ class GetFields():
                     if not self.facet:
                         name = name + get_type(field)
                     newObj[name] = field
-                    #if not self.args.allfields:
                     if name not in self.header:
                         self.header.append(name)
             self.data.append(newObj)
@@ -464,7 +468,6 @@ class GetFields():
             writer.writeheader()
             for d in self.data:
                 writer.writerow(d)
-
 
     def get_embedded(self, path, obj):
         '''
@@ -519,7 +522,8 @@ class GetFields():
                     for f in obj[field]:
                         temp = get_ENCODE(f, self.connection)
                         if temp.get(path[0]):
-                            if len(path) == 1:  # if last element in path then get from each item in list
+                            if len(path) == 1:
+                                # if last element in path then get from each item in list
                                 files_list.append(temp[path[0]])  # add items to list
                             else:
                                 return self.get_embedded(path, temp)
@@ -531,10 +535,12 @@ class GetFields():
                     if type(obj[field]) == int:
                         return obj[field]  # just return integers as is, we can't expand them
                     elif type(obj[field]) == list:
-                        if len(path) == 1:  # if last element in path then get from each item in list
+                        if len(path) == 1:
+                            # if last element in path then get from each item in list
                             files_list = []
                             for f in obj[field]:
-                                if type(f) == dict:  # if this is like a flowcell or something it should catch here
+                                if type(f) == dict:
+                                    # if this is like a flowcell or something it should catch here
                                     return f
                                 temp = get_ENCODE(f, self.connection)
                                 if temp.get(path[0]):
@@ -545,16 +551,21 @@ class GetFields():
                             if self.args.listfull:
                                 return files_list
                             else:
-                                return list(set(files_list))  # return unique list of last element items
+                                # return unique list of last element items
+                                return list(set(files_list))
                         elif self.facet:  # facet is a special case for the search page flattener
                             temp = get_ENCODE(obj[field][0], self.connection)
                             return self.get_embedded(path, temp)
-                        else:  # if this is not the last item in the path, but we are in a list
-                            return obj[field]  # return the item since we can't dig deeper without getting lost
+                        else:
+                            # if this is not the last item in the path, but we are in a list
+                            # return the item since we can't dig deeper without getting lost
+                            return obj[field]
                     elif type(obj[field]) == dict:
-                        return obj[field]  # return dictionary objects, probably things like flowcells anyways
+                        # return dictionary objects, probably things like flowcells anyways
+                        return obj[field]
                     else:
-                        temp = get_ENCODE(obj[field], self.connection)  # if found get_ENCODE the embedded object
+                        # if found get_ENCODE the embedded object
+                        temp = get_ENCODE(obj[field], self.connection)
                         return self.get_embedded(path, temp)
             else:  # if not obj.get(field) then we kick back an error
                 return ""
@@ -564,7 +575,6 @@ class GetFields():
                 return obj[field]
             else:
                 return ""
-
 
 
 def get_type(attr):
@@ -579,6 +589,7 @@ def get_type(attr):
     else:
         # this must be a string
         return ""
+
 
 def patch_set(args, connection):
     import csv
@@ -620,7 +631,6 @@ def patch_set(args, connection):
         if not accession:
             print("No identifier found in headers!  Cannot PATCH data")
             sys.exit(1)
-        #accession = quote(accession)
         full_data = get_ENCODE(accession, connection, frame="edit")
         if args.remove:
             put_dict = full_data
@@ -637,7 +647,8 @@ def patch_set(args, connection):
                         l = temp_data[key].strip("[]").split(",")
                         l = [x.replace("'", "") for x in l]
                         new_list = []
-                        # this should remove items from the list even if they are only a partial match
+                        # this should remove items from the list
+                        # even if they are only a partial match
                         # such as ENCFF761JAF instead of /files/ENCFF761JAF/
                         for x in l:
                             for y in old_list:
@@ -710,7 +721,7 @@ def fastq_read(connection, uri=None, filename=None, reads=1):
     # which is roughly what a single fastq read is.
     if uri:
         BLOCK_SIZE = 512
-        url = connection.server +  uri
+        url = connection.server + uri
         data = requests.get(url, auth=connection.auth, stream=True)
         block = BytesIO(next(data.iter_content(BLOCK_SIZE * reads)))
         compressed = gzip.GzipFile(None, 'r', fileobj=block)
@@ -745,7 +756,8 @@ def post_file(file_metadata, connection, update=False):
         pass
     if update:
         url = connection.server + 'files/'
-        r = requests.post(url, auth=connection.auth, headers=connection.headers, data=json.dumps(file_metadata))
+        r = requests.post(url, auth=connection.auth, headers=connection.headers,
+                          data=json.dumps(file_metadata))
         try:
             r.raise_for_status()
         except:
