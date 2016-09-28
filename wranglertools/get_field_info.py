@@ -132,10 +132,10 @@ def build_field_list(properties, required_fields=None, include_description=False
                 field_name = dotted_field_name(name, parent)
                 if required_fields is not None:
                     if field_name in required_fields:
-                        field_name = field_name + '*'
+                        field_name = '*' + field_name
                 field_type = get_field_type(props)
                 if is_submember:
-                    field_type = field_type + " (array - multiple allowed paired with other " + parent + " fields)"
+                    field_type = "array of embedded objects, " + field_type
                 # special case for attachemnts
                 #if name == 'attachment':
                 #    field_name = dotted_field_name(name, parent)
