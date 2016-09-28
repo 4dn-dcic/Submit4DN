@@ -1,13 +1,11 @@
 language: python
 sudo: false
-cache:
-  pip: true
 python:
     - "3.5"
     - "3.4"
     - "3.3"
 install:
-    - pip install -r requirements.txt
+    - pip install -U -r requirements.txt
     - pip install coveralls
     - pip install codacy-coverage
 script:
