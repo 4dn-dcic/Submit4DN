@@ -111,7 +111,7 @@ def dotted_field_name(field_name, parent_name=None):
         return field_name
 
 
-def build_field_list(properties, include_description=False, include_comment=False,
+def build_field_list(properties, required_fields=None, include_description=False, include_comment=False,
                      include_enums=False, parent='', is_submember=False):
     fields = []
     for name, props in properties.items():
@@ -121,6 +121,7 @@ def build_field_list(properties, include_description=False, include_comment=Fals
                 if get_field_type(props).startswith('array'):
                     is_member_of_array_of_objects = True
                 fields.extend(build_field_list(props['items']['properties'],
+                                               required_fields,
                                                include_description,
                                                include_comment,
                                                include_enums,
@@ -129,6 +130,9 @@ def build_field_list(properties, include_description=False, include_comment=Fals
                               )
             else:
                 field_name = dotted_field_name(name, parent)
+                if required_fields is not None:
+                    if field_name in required_fields:
+                        field_name = field_name + '*'
                 field_type = get_field_type(props)
                 if is_submember:
                     field_type = field_type + " (array - multiple allowed paired with other " + parent + " fields)"
@@ -149,7 +153,9 @@ def get_uploadable_fields(connection, types, include_description=False,
         schema_name = encodedccMod.format_schema_name(name)
         uri = '/profiles/' + schema_name
         schema_grabber = encodedccMod.ENC_Schema(connection, uri)
+        required_fields = schema_grabber.required
         fields[name] = build_field_list(schema_grabber.properties,
+                                        required_fields,
                                         include_description,
                                         include_comments,
                                         include_enums)
