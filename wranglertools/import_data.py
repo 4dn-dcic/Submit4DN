@@ -241,26 +241,31 @@ class FieldInfo(object):
     value = attr.ib(default=u'')
 
 
-def build_field(field, field_data):
+def build_field(field, field_data, field_type):
     if field_data == '' or field == '':
         return None
 
     patch_field_name = get_field_name(field)
-    patch_field_type = get_field_type(field)
+    if field_type is None:
+        field_type = get_field_type(field)
 
     if is_embedded_field(field):
         sub_field = get_sub_field(field)
-        return build_field(sub_field, field_data)
+        return build_field(sub_field, field_data, 'string')
     else:
-        patch_field_data = data_formatter(field_data, patch_field_type)
+        patch_field_data = data_formatter(field_data, field_type)
     return {patch_field_name: patch_field_data}
 
 
-def build_patch_json(fields):
+def build_patch_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
     patch_data = {}
     for field, field_data in fields.items():
-        patch_field = build_field(field, field_data)
+        field_type = None
+        if fields2types is not None:
+            field_type = fields2types[field]
+
+        patch_field = build_field(field, field_data, field_type)
         if patch_field is not None:
             if is_embedded_field(field):
                 top_field = get_field_name(field)
@@ -300,8 +305,18 @@ def get_existing(post_json, connection):
 def excel_reader(datafile, sheet, update, connection, patchall):
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
+    types = next(row)  # grab second row with type info
     # remove title column
+    fields2types = None
     keys.pop(0)
+    row2name = types.pop(0)
+    if 'Type' in row2name:
+        fields2types = dict(zip(keys, types))
+        for field, ftype in fields2types.items():
+            if 'array' in ftype:
+                fields2types[field] = 'array'
+    #print(fields2types)
+    #sys.exit()
 
     total = 0
     error = 0
@@ -315,7 +330,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         values.pop(0)
         total += 1
         post_json = dict(zip(keys, values))
-        post_json = build_patch_json(post_json)
+        post_json = build_patch_json(post_json, fields2types)
 
         # add attchments here
         if post_json.get("attachment"):

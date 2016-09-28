@@ -33,7 +33,7 @@ def getArgs():
     parser = argparse.ArgumentParser(
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        )
+    )
     parser.add_argument('--type',
                         help="Add a separate --type for each type you want to get.",
                         action="append")
@@ -80,6 +80,7 @@ def getArgs():
 @attr.s
 class FieldInfo(object):
     name = attr.ib()
+    ftype = attr.ib()
     desc = attr.ib(default=u'')
     comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
@@ -88,8 +89,12 @@ class FieldInfo(object):
 def get_field_type(field):
     field_type = field.get('type', '')
     if field_type == 'string':
-        return ''
-    return ":" + field_type
+        if field.get('linkTo', ''):
+            return "Item:" + field.get('linkTo')
+        return 'string'
+    elif field_type == 'array':
+        return 'array of ' + get_field_type(field.get('items')) + 's'
+    return field_type
 
 
 def is_subobject(field):
@@ -107,31 +112,33 @@ def dotted_field_name(field_name, parent_name=None):
 
 
 def build_field_list(properties, include_description=False, include_comment=False,
-                     include_enums=False, parent='', additional_comments=''):
+                     include_enums=False, parent='', is_submember=False):
     fields = []
     for name, props in properties.items():
+        is_member_of_array_of_objects = False
         if not props.get('calculatedProperty', False):
-            # handle sub-objects
-            # additional_comments = ''
             if is_subobject(props):
-                if get_field_type(props) == ":array":
-                    embedded_array_info = " This field is a member of the %s array" % (name)
+                if get_field_type(props).startswith('array'):
+                    is_member_of_array_of_objects = True
                 fields.extend(build_field_list(props['items']['properties'],
                                                include_description,
                                                include_comment,
                                                include_enums,
                                                name,
-                                               embedded_array_info)
+                                               is_member_of_array_of_objects)
                               )
             else:
-                field_name = dotted_field_name(name, parent) + get_field_type(props)
+                field_name = dotted_field_name(name, parent)
+                field_type = get_field_type(props)
+                if is_submember:
+                    field_type = field_type + " (array - multiple allowed paired with other " + parent + " fields)"
                 # special case for attachemnts
-                if name == 'attachment':
-                    field_name = dotted_field_name(name, parent)
+                #if name == 'attachment':
+                #    field_name = dotted_field_name(name, parent)
                 desc = '' if not include_description else props.get('description', '')
-                comm = '' if not include_comment else props.get('comment', '') + additional_comments
+                comm = '' if not include_comment else props.get('comment', '')
                 enum = '' if not include_enums else props.get('enum', '')
-                fields.append(FieldInfo(field_name, desc, comm, enum))
+                fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
     return fields
 
 
@@ -159,19 +166,21 @@ def create_xls(fields, filename):
     for obj_name, fields in fields.items():
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
-        ws.write(1, 0, "#Description:")
-        ws.write(2, 0, "#Additional Info:")
+        ws.write(1, 0, "#Field Type:")
+        ws.write(2, 0, "#Description:")
+        ws.write(3, 0, "#Additional Info:")
         for col, field in enumerate(fields):
             ws.write(0, col+1, str(field.name))
+            ws.write(1, col+1, str(field.ftype))
             if field.desc:
-                ws.write(1, col+1, str(field.desc))
+                ws.write(2, col+1, str(field.desc))
             # combine comments and Enum
             add_info = ''
             if field.comm:
                 add_info += str(field.comm)
             if field.enum:
                 add_info += "Choices:" + str(field.enum)
-            ws.write(2, col+1, add_info)
+            ws.write(3, col+1, add_info)
     wb.save(filename)
 
 
