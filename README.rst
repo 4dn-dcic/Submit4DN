@@ -1,4 +1,11 @@
 
+##Installing the package
+
+Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format::
+
+    python -m wranglertools.get_field_info —type Biosource
+    python -m wranglertools.import_data filename.xls
+
 ##Connection
 first thing you need is the keyfile to access the REST application
 it is a json formatted file that contains key,secret and server
@@ -40,10 +47,11 @@ python3 get_field_info.py --type Biosample --comments --outfile biosample.xls --
 #Specifications for fields.xls
 In fields.xls, each excel sheet is named after an object type, like ExperimentHiC, Biosample, Construct, Protocol...
 
-*Each sheet has 3 rows*
+*Each sheet has at least 4 rows that begin with a #*
 1) Field name
-2) Field description
-3) Choices for controlled vocabulary (some fields only accept a value from a list of selection, like experiment type)
+2) Field type
+3) Field description
+4) Choices for controlled vocabulary (some fields only accept a value from a list of selection, like experiment type). NOTE if you add the optional --comments argument the comments will also be included in this row.
 
 The first entry will start from row 4, and column 2.
 
