@@ -49,7 +49,9 @@ class FDN_Schema(object):
         self.server = connection.server
         response = get_FDN(uri, connection)
         self.properties = response['properties']
-        self.required = response['required']
+        self.required = None
+        if 'required' in response:
+            self.required = response['required']
 
 
 def get_FDN(obj_id, connection, frame="object"):
