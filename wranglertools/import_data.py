@@ -6,6 +6,7 @@ import argparse
 import os.path
 from wranglertools import fdnDCIC
 from wranglertools.fdnDCIC import md5
+from wranglertools.fdnDCIC.order_FDN import sheet_order
 import xlrd
 import datetime
 import sys
@@ -447,36 +448,10 @@ def upload_file(metadata_post_response, path):
 
 # the order to try to upload / update the items
 # used to avoid dependencies... i.e. biosample needs the biosource to exist
-ORDER = [
-    'user',
-    'award',
-    'lab',
-    'organism',
-    'genomicregion',
-    'target',
-    'document',
-    'publication',
-    'vendor',
-    'protocol',
-    'biosamplecellculture',
-    'individualhuman',
-    'individualmouse',
-    'biosource',
-    'enzyme',
-    'construct',
-    'treatmentrnai',
-    'treatmentchemical',
-    'modification',
-    'biosample',
-    'fileset',
-    'filefastq',
-    'experimentset',
-    'experimenthic',
-    'experimentcapturec'
-]
 
 
 def order_sorter(key):
+    ORDER = [i.lower for i in sheet_order]
     key = key.lower()
     if key in ORDER:
         return ORDER.index(key)
