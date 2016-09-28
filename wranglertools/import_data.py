@@ -204,6 +204,7 @@ def clear_out_empty_field(field_name, fields):
 
 def get_field_name(field_name):
     '''handle type at end, plus embedded objets'''
+    field_name = field_name.replace('*', '')
     field = field_name.split(":")[0]
     return field.split(".")[0]
 
@@ -331,6 +332,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
+        print(post_json)
 
         # add attchments here
         if post_json.get("attachment"):
