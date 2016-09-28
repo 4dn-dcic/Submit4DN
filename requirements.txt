@@ -2,6 +2,7 @@ attrs==16.0.0
 Pillow==3.3.0
 py==1.4.31
 pytest==3.0.1
+pytest.cov
 python-magic==0.4.12
 requests==2.11.0
 xlrd==1.0.0
