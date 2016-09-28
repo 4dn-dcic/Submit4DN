@@ -81,7 +81,7 @@ class ENC_Connection(object):
         self.auth = (key.authid, key.authpw)
 
 
-def format_schema_name(supplied_name, search_name):
+def format_schema_name(supplied_name, search_name=None):
     if supplied_name.endswith('s'):
         schema_name = search_name + '.json'
     elif supplied_name.endswith('.json'):
@@ -137,6 +137,7 @@ class ENC_Schema(object):
         self.server = connection.server
         response = get_ENCODE(uri, connection)
         self.properties = response['properties']
+        self.required = response['required']
 
 
 class ENC_Item(object):
