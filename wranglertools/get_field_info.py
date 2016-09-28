@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-from wranglertools import encodedccMod
+from wranglertools import fdnDCIC
 import attr
 import xlwt
 import xlrd
@@ -136,9 +136,6 @@ def build_field_list(properties, required_fields=None, include_description=False
                 field_type = get_field_type(props)
                 if is_submember:
                     field_type = "array of embedded objects, " + field_type
-                # special case for attachemnts
-                #if name == 'attachment':
-                #    field_name = dotted_field_name(name, parent)
                 desc = '' if not include_description else props.get('description', '')
                 comm = '' if not include_comment else props.get('comment', '')
                 enum = '' if not include_enums else props.get('enum', '')
@@ -150,9 +147,9 @@ def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
     for name in types:
-        schema_name = encodedccMod.format_schema_name(name)
+        schema_name = fdnDCIC.format_schema_name(name)
         uri = '/profiles/' + schema_name
-        schema_grabber = encodedccMod.ENC_Schema(connection, uri)
+        schema_grabber = fdnDCIC.FDN_Schema(connection, uri)
         required_fields = schema_grabber.required
         fields[name] = build_field_list(schema_grabber.properties,
                                         required_fields,
@@ -236,8 +233,8 @@ def ordered(input_file, reference_file="System_Files/reference_fields.xls"):
 
 def main():
     args = getArgs()
-    key = encodedccMod.ENC_Key(args.keyfile, args.key)
-    connection = encodedccMod.ENC_Connection(key)
+    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    connection = fdnDCIC.FDN_Connection(key)
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
@@ -251,8 +248,8 @@ def main():
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-        if args.order:
-            ordered(file_name)
+        # if args.order:
+        #    ordered(file_name)
 
 if __name__ == '__main__':
     main()

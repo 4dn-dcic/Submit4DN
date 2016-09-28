@@ -4,8 +4,8 @@
 import json
 import argparse
 import os.path
-from wranglertools import encodedccMod as encodedcc
-from wranglertools.encodedccMod import md5
+from wranglertools import fdnDCIC
+from wranglertools.fdnDCIC import md5
 import xlrd
 import datetime
 import sys
@@ -293,13 +293,13 @@ def get_existing(post_json, connection):
     """Get the entry that will be patched from the server."""
     temp = {}
     if post_json.get("uuid"):
-        temp = encodedcc.get_ENCODE(post_json["uuid"], connection)
+        temp = fdnDCIC.get_FDN(post_json["uuid"], connection)
     elif post_json.get("aliases"):
-        temp = encodedcc.get_ENCODE(post_json["aliases"][0], connection)
+        temp = fdnDCIC.get_FDN(post_json["aliases"][0], connection)
     elif post_json.get("accession"):
-        temp = encodedcc.get_ENCODE(post_json["accession"], connection)
+        temp = fdnDCIC.get_FDN(post_json["accession"], connection)
     elif post_json.get("@id"):
-        temp = encodedcc.get_ENCODE(post_json["@id"], connection)
+        temp = fdnDCIC.get_FDN(post_json["@id"], connection)
     return temp
 
 
@@ -332,7 +332,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        print(post_json)
+        # print(post_json)
 
         # add attchments here
         if post_json.get("attachment"):
@@ -362,7 +362,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                     print("calculating md5 sum for file %s " % (filename_to_post))
                     post_json['md5sum'] = md5(filename_to_post)
 
-                e = encodedcc.patch_ENCODE(existing_data["uuid"], connection, post_json)
+                e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
                     # get s3 credentials
                     creds = get_upload_creds(
@@ -385,7 +385,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 if file_to_upload and not post_json.get('md5sum'):
                     print("calculating md5 sum for file %s " % (filename_to_post))
                     post_json['md5sum'] = md5(filename_to_post)
-                e = encodedcc.new_ENCODE(connection, sheet, post_json)
+                e = fdnDCIC.new_FDN(connection, sheet, post_json)
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
@@ -452,30 +452,27 @@ ORDER = [
     'award',
     'lab',
     'organism',
+    'genomicregion',
+    'target',
     'document',
     'publication',
     'vendor',
     'protocol',
-    'protocolscellculture',
-    'protocol_cell_culture',
+    'biosamplecellculture',
     'individualhuman',
-    'individual_human',
     'individualmouse',
-    'individual_mouse',
     'biosource',
     'enzyme',
     'construct',
-    'treatmentrnai'
-    'treatment_rnai',
+    'treatmentrnai',
+    'treatmentchemical',
     'modification',
     'biosample',
     'fileset',
-    'file_set',
-    'file',
+    'filefastq',
     'experimentset',
-    'experiment_set',
     'experimenthic',
-    'experiment_hic'
+    'experimentcapturec'
 ]
 
 
@@ -489,8 +486,8 @@ def order_sorter(key):
 
 def main():
     args = getArgs()
-    key = encodedcc.ENC_Key(args.keyfile, args.key)
-    connection = encodedcc.ENC_Connection(key)
+    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    connection = fdnDCIC.FDN_Connection(key)
     print("Running on {server}".format(server=connection.server))
     if not os.path.isfile(args.infile):
         print("File {filename} not found!".format(filename=args.infile))
@@ -502,7 +499,7 @@ def main():
         names = book.sheet_names()
 
     # get me a list of all the data_types in the system
-    profiles = encodedcc.get_ENCODE("/profiles/", connection)
+    profiles = fdnDCIC.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
 
