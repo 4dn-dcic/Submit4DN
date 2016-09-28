@@ -2,10 +2,10 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-from wranglertools import fdnDCIC
+import fdnDCIC
 import attr
 import xlwt
-import xlrd
+
 
 EPILOG = '''
     This program graphs uploadable fields (i.e. not calculated properties)

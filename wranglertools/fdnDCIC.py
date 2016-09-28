@@ -188,10 +188,14 @@ def order_FDN(input_xls):
 
     move_frond = [
         'award',
+        '*award',
         'lab',
+        '*lab',
         'description',
         'title',
+        '*title',
         'name',
+        '*name',
         'aliases',
         '#Field Name:'
         ]
