@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-import fdnDCIC
+from wranglertools import fdnDCIC
 import attr
 import xlwt
 
