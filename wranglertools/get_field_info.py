@@ -248,8 +248,8 @@ def main():
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-        if args.order:
-            ordered(file_name)
+        # if args.order:
+        #    ordered(file_name)
 
 if __name__ == '__main__':
     main()
