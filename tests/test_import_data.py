@@ -18,30 +18,23 @@ def test_formatter_gets_lists_correctly():
     assert ['1', '2', '3'] == imp.data_formatter("'[1,2,3]'", 'array')
 
 
-def test_build_patch_json_removes_empty_fields(file_metadata):
-    post_json = imp.build_patch_json(file_metadata)
+def test_build_patch_json_removes_empty_fields(file_metadata, file_metadata_type):
+    post_json = imp.build_patch_json(file_metadata, file_metadata_type)
 
     # All the below values exist in file_metadatadd
-    assert post_json.get('filesets:array', None) is None
+    assert post_json.get('filesets', None) is None
     assert post_json.get('paired_end', None) is None
 
 
-def test_build_patch_json_keeps_valid_fields(file_metadata):
-    post_json = imp.build_patch_json(file_metadata)
+def test_build_patch_json_keeps_valid_fields(file_metadata, file_metadata_type):
+    post_json = imp.build_patch_json(file_metadata, file_metadata_type)
 
     assert '/awards/OD008540-01/' == post_json.get('award', None)
     assert 'fastq' == post_json.get('file_format', None)
 
 
-def test_build_patch_json_coverts_arrays(file_metadata):
-    post_json = imp.build_patch_json(file_metadata)
-
-    assert "dcic:HIC00test2" == file_metadata.get('aliases:array')
-    assert ['dcic:HIC00test2'] == post_json.get('aliases', None)
-
-
-def test_build_patch_json_embeds_fields(file_metadata):
-    post_json = imp.build_patch_json(file_metadata)
+def test_build_patch_json_embeds_fields(file_metadata, file_metadata_type):
+    post_json = imp.build_patch_json(file_metadata, file_metadata_type)
 
     expected = [{'file': 'testfile.fastq', 'relationship_type': 'related_to'}]
     assert expected == post_json.get('related_files', None)

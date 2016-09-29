@@ -4,8 +4,8 @@ import wranglertools.get_field_info as gfi
 
 
 def test_get_field_type():
-    field = {'type': 'string'}
-    assert gfi.get_field_type(field) == 'string'
+    field1 = {'type': 'string'}
+    assert gfi.get_field_type(field1) == 'string'
 
     field2 = {'type': 'number'}
     assert gfi.get_field_type(field2) == 'number'
