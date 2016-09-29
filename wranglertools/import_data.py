@@ -221,6 +221,7 @@ def is_embedded_field(field_name):
 
 
 def get_sub_field_number(field_name):
+    field_name = field_name.replace('*', '')
     field = field_name.split(":")[0]
     try:
         return int(field.split("-")[1])
@@ -329,7 +330,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         # combine exp sets
         if "Experiment" in sheet:
             comb_sets = []
-            for set_key in ["experiment_sets:0", "experiment_sets:1", "experiment_sets:2", "experiment_sets:3"]:
+            for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
                 try:
                     comb_sets.extend(post_json.get(set_key))
                 except:
