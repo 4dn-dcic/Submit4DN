@@ -210,9 +210,8 @@ def order_FDN(input_xls):
         'alternate_accessions'
         ]
 
-    folder = os.path.dirname(os.path.abspath(__file__))
-    ReadFile = folder+'/'+input_xls
-    OutputFile = folder+'/'+input_xls[:-4]+'_ordered.xls'
+    ReadFile = input_xls
+    OutputFile = input_xls[:-4]+'_ordered.xls'
     bookread = xlrd.open_workbook(ReadFile)
     book_w = xlwt.Workbook()
     Sheets_read = bookread.sheet_names()
