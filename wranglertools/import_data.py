@@ -329,14 +329,15 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         # print(post_json)
         # combine exp sets
         if "Experiment" in sheet:
-            comb_sets = []
-            for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
-                try:
-                    comb_sets.extend(post_json.get(set_key))
-                except:
-                    continue
-                post_json.pop(set_key, None)
-            post_json['experiment_sets'] = comb_sets
+            if sheet != "ExperimentSet":
+                comb_sets = []
+                for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
+                    try:
+                        comb_sets.extend(post_json.get(set_key))
+                    except:
+                        continue
+                    post_json.pop(set_key, None)
+                post_json['experiment_sets'] = comb_sets
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
