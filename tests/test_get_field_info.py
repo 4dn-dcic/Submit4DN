@@ -5,10 +5,10 @@ import wranglertools.get_field_info as gfi
 
 def test_get_field_type():
     field = {'type': 'string'}
-    assert gfi.get_field_type(field) == ''
+    assert gfi.get_field_type(field) == 'string'
 
     field2 = {'type': 'number'}
-    assert gfi.get_field_type(field2) == ':number'
+    assert gfi.get_field_type(field2) == 'number'
 
 
 def test_is_subobject():
@@ -85,5 +85,5 @@ def test_build_field_list_embeds_with_dots(embed_properties):
     field_list = gfi.build_field_list(embed_properties)
     assert 2 == len(field_list)
     assert field_list[0].name.startswith('experiment_relation')
-    assert "This field is a member of the experiment_relation array", field_list[0].comm
+    assert "array of embedded objects" in field_list[0].ftype
     assert field_list[1].name.startswith('experiment_relation')

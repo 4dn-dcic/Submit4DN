@@ -140,36 +140,38 @@ def md5(path):
     return md5sum.hexdigest()
 
 
+sheet_order = [
+    "User",
+    "Award",
+    "Lab",
+    "Document",
+    "Protocol",
+    "Publication",
+    "Organism",
+    "IndividualMouse",
+    "IndividualHuman",
+    "Vendor",
+    "Biosource",
+    "Construct",
+    "TreatmentRnai",
+    "TreatmentChemical",
+    "GenomicRegion",
+    "Target",
+    "Modification",
+    "Image",
+    "BiosampleCellCulture",
+    "Biosample",
+    "Enzyme",
+    "FileSet",
+    "FileFastq",
+    "ExperimentSet",
+    "ExperimentHiC",
+    "ExperimentCaptureC"
+    ]
+
+
 def order_FDN(input_xls):
     """Order and filter created xls file."""
-    sheet_order = [
-        "User",
-        "Award",
-        "Lab",
-        "Document",
-        "Protocol",
-        "Publication",
-        "Organism",
-        "IndividualMouse",
-        "IndividualHuman",
-        "Vendor",
-        "Biosource",
-        "Construct",
-        "TreatmentRnai",
-        "TreatmentChemical",
-        "GenomicRegion",
-        "Target",
-        "Modification",
-        "Image",
-        "BiosampleCellCulture",
-        "Biosample",
-        "Enzyme",
-        "FileSet",
-        "FileFastq",
-        "ExperimentSet",
-        "ExperimentHiC",
-        "ExperimentCaptureC"
-        ]
 
     do_not_use = [
         "submitted_by",
@@ -208,9 +210,8 @@ def order_FDN(input_xls):
         'alternate_accessions'
         ]
 
-    folder = os.path.dirname(os.path.abspath(__file__))
-    ReadFile = folder+'/'+input_xls
-    OutputFile = folder+'/'+input_xls[:-4]+'_ordered.xls'
+    ReadFile = input_xls
+    OutputFile = input_xls[:-4]+'_ordered.xls'
     bookread = xlrd.open_workbook(ReadFile)
     book_w = xlwt.Workbook()
     Sheets_read = bookread.sheet_names()
@@ -256,4 +257,3 @@ def order_FDN(input_xls):
             for write_column_index, cell_value in enumerate(column_val):
                 new_sheet.write(write_column_index, write_row_index, cell_value)
     book_w.save(OutputFile)
-

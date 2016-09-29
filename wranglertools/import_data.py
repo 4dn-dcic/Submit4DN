@@ -6,7 +6,7 @@ import argparse
 import os.path
 from wranglertools import fdnDCIC
 from wranglertools.fdnDCIC import md5
-from wranglertools.fdnDCIC.order_FDN import sheet_order
+from wranglertools.fdnDCIC import sheet_order
 import xlrd
 import datetime
 import sys
@@ -24,41 +24,34 @@ import subprocess
 
 EPILOG = '''
 This script takes in an Excel file with the data
-This is a dryrun-default script, run with --update or --patchall to work
+This is a dryrun-default script, run with --update, --patchall or both (--update --patchall) to work
 
 By DEFAULT:
-If there is a uuid, @id, or accession in the document
+If there is a uuid, @id, accession, or previously submitted alias in the document:
 it will ask if you want to PATCH that object
 Use '--patchall' if you want to patch ALL objects in your document and ignore that message
 
-If no object identifiers are found in the document you need to use '--update'
+If you want to upload new items(no object identifiers are found), in the document you need to use '--update'
 for POSTing to occur
 
 Defining Object type:
-    Name each "sheet" of the excel file the name of the object type you are using
+    Each "sheet" of the excel file is named after the object type you are uploading,
     with the format used on https://www.encodeproject.org/profiles/
 Ex: ExperimentHiC, Biosample, Document, Target
 
 If there is a single sheet that needs to be posted or patched, you can name the single sheet
-with the object name or use the '--type' argument
+with the object name and use the '--type' argument
 Ex: %(prog)s mydata.xsls --type ExperimentHiC
 
 The header of each sheet should be the names of the fields.
 Ex: award, lab, target, etc.
 
-    For integers use ':int' or ':integer'
-    For lists use ':list' or ':array'
-    String are the default and do not require an identifier
-
-To upload objects with attachments, have a column titled "attachment"
-containing the name of the file you wish to attach
-
-FOR EMBEDDED SUBOBJECTS:
-This part needs to be updated
+To upload objects with attachments, use the column titled "attachment"
+containing the full path to the file you wish to attach
 
 For more details:
+please see README.rst
 
-        %(prog)s --help
 '''
 
 
@@ -317,8 +310,8 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         for field, ftype in fields2types.items():
             if 'array' in ftype:
                 fields2types[field] = 'array'
-    #print(fields2types)
-    #sys.exit()
+    # print(fields2types)
+    # sys.exit()
 
     total = 0
     error = 0
