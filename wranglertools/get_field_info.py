@@ -8,6 +8,15 @@ import xlwt
 
 
 EPILOG = '''
+    To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
+        --type           use for each sheet that you want to add to the excel workbook
+        --descriptions   adds the descriptions in the second line (by default True)
+        --enums          adds the list of options for a fields if it has a controlled vocabulary (by default True)
+        --comments       adds the comments together with enums (by default False)
+        --writexls       creates the xls file (by default True)
+        --outfile        change the default file name "fields.xls" to a specified one
+        --order          create an ordered and filtered version of the excel (by default True)
+
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
 
@@ -15,16 +24,15 @@ EPILOG = '''
 
             %(prog)s --type Biosample --type Biosource
 
-    to include description and enum for all types use the appropriate flags
+    to include comments (useful tips) for all types use the appropriate flag at the end
 
-            %(prog)s --type Biosample --descriptions --enum
-            %(prog)s --type Biosample --type Biosource --enum
+            %(prog)s --type Biosample --comments
+            %(prog)s --type Biosample --type Biosource --comments
 
-    To write the result to an excel file with one sheet for each type use
-    the --writexls switch:
+    To change the result filename use --outfile flag followed by the new file name
 
-            %(prog)s --type User --writexls
-            %(prog)s --type Biosample --type Experiment --descriptions --writexls
+            %(prog)s --type Biosample --outfile biosample_only.xls
+            %(prog)s --type Biosample --type Experiment --outfile my_selection.xls
 
     '''
 
