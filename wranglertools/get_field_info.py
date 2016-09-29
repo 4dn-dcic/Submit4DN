@@ -8,7 +8,8 @@ import xlwt
 
 
 EPILOG = '''
-    To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
+    To create an xls file with sheets to be filled use the example and modify to your needs.
+    It will accept the following parameters.
         --type           use for each sheet that you want to add to the excel workbook
         --descriptions   adds the descriptions in the second line (by default True)
         --enums          adds the list of options for a fields if it has a controlled vocabulary (by default True)
@@ -147,7 +148,13 @@ def build_field_list(properties, required_fields=None, include_description=False
                 desc = '' if not include_description else props.get('description', '')
                 comm = '' if not include_comment else props.get('comment', '')
                 enum = '' if not include_enums else props.get('enum', '')
-                fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
+                # copy paste exp set for ease of keeping track of different types in experiment objects
+                if field_name == 'experiment_sets':
+                    set_types = ['Technical Replicates', 'Biological Replicates', 'Analysis Set', 'Others']
+                    for num, set_type in enumerate(set_types):
+                        fields.append(FieldInfo(field_name+":"+str(num), field_type, desc, set_type, enum))
+                else:
+                    fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
     return fields
 
 

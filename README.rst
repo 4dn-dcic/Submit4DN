@@ -3,8 +3,8 @@
 
 Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format::
 
-    python -m wranglertools.get_field_info —type Biosource
-    python -m wranglertools.import_data filename.xls
+    python3 -m wranglertools.get_field_info —-type Biosource
+    python3 -m wranglertools.import_data filename.xls
 
 ##Connection
 first thing you need is the keyfile to access the REST application
