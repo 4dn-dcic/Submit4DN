@@ -325,8 +325,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        print(post_json)
-
+        # print(post_json)
         # combine exp sets
         if "Experiment" in sheet:
             comb_sets = []
@@ -337,13 +336,10 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                     continue
                 post_json.pop(set_key, None)
             post_json['experiment_sets'] = comb_sets
-        print(post_json)
-
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
-
         # should I upload files as well?
         file_to_upload = False
         filename_to_post = post_json.get('filename')
