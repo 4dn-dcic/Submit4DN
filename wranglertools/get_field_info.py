@@ -111,8 +111,8 @@ def dotted_field_name(field_name, parent_name=None):
         return field_name
 
 
-def build_field_list(properties, required_fields=None, include_description=False, include_comment=False,
-                     include_enums=False, parent='', is_submember=False):
+def build_field_list(properties, required_fields=None, include_description=False,
+                     include_comment=False, include_enums=False, parent='', is_submember=False):
     fields = []
     for name, props in properties.items():
         is_member_of_array_of_objects = False

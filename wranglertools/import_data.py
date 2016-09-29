@@ -6,7 +6,7 @@ import argparse
 import os.path
 from wranglertools import fdnDCIC
 from wranglertools.fdnDCIC import md5
-from wranglertools.fdnDCIC.order_FDN import sheet_order
+from wranglertools.fdnDCIC import sheet_order
 import xlrd
 import datetime
 import sys
@@ -317,8 +317,8 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         for field, ftype in fields2types.items():
             if 'array' in ftype:
                 fields2types[field] = 'array'
-    #print(fields2types)
-    #sys.exit()
+    # print(fields2types)
+    # sys.exit()
 
     total = 0
     error = 0
