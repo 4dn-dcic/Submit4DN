@@ -185,7 +185,11 @@ def order_FDN(input_xls):
         "notes",
         "restricted",
         "file_size",
-        "filename"
+        "filename",
+        "alternate_accessions",
+        "content_md5sum",
+        "md5sum",
+        "quality_metric"
         ]
 
     move_frond = [
@@ -206,8 +210,7 @@ def order_FDN(input_xls):
         'documents',
         'references',
         'url',
-        'dbxrefs',
-        'alternate_accessions'
+        'dbxrefs'
         ]
 
     ReadFile = input_xls
