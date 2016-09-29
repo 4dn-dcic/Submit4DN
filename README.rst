@@ -30,10 +30,11 @@ To create an xls file with sheets to be filled use the example and modify to you
 --comments       adds the comments together with enums (by default False)
 --writexls       creates the xls file (by default True)
 --outfile        change the default file name "fields.xls" to a specified one
+--order          create an ordered and filtered version of the excel (by default True)
 
 *Full list*
 ~~~~
-python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --outfile AllItems.xls --order
+python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
 
 ~~~~
 *To get a single sheet use*
@@ -41,7 +42,6 @@ python3 get_field_info.py --type Publication --type Document --type Vendor --typ
 python3 get_field_info.py --type Biosample
 python3 get_field_info.py --type Biosample --comments
 python3 get_field_info.py --type Biosample --comments --outfile biosample.xls
-python3 get_field_info.py --type Biosample --comments --outfile biosample.xls --order
 ```
 
 #Specifications for fields.xls

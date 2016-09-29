@@ -1,0 +1,18 @@
+language: python
+sudo: false
+python:
+    - "3.5"
+    - "3.4"
+    - "3.3"
+install:
+    - pip install -U -r requirements.txt
+    - pip install coveralls
+    - pip install codacy-coverage
+script:
+    - invoke test
+    - python setup.py test
+after_success:
+    - python-codacy-coverage -r coverage.xml
+    - coveralls
+
+

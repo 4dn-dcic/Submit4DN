@@ -5,9 +5,18 @@ import argparse
 from wranglertools import fdnDCIC
 import attr
 import xlwt
-import xlrd
+
 
 EPILOG = '''
+    To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
+        --type           use for each sheet that you want to add to the excel workbook
+        --descriptions   adds the descriptions in the second line (by default True)
+        --enums          adds the list of options for a fields if it has a controlled vocabulary (by default True)
+        --comments       adds the comments together with enums (by default False)
+        --writexls       creates the xls file (by default True)
+        --outfile        change the default file name "fields.xls" to a specified one
+        --order          create an ordered and filtered version of the excel (by default True)
+
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
 
@@ -15,16 +24,15 @@ EPILOG = '''
 
             %(prog)s --type Biosample --type Biosource
 
-    to include description and enum for all types use the appropriate flags
+    to include comments (useful tips) for all types use the appropriate flag at the end
 
-            %(prog)s --type Biosample --descriptions --enum
-            %(prog)s --type Biosample --type Biosource --enum
+            %(prog)s --type Biosample --comments
+            %(prog)s --type Biosample --type Biosource --comments
 
-    To write the result to an excel file with one sheet for each type use
-    the --writexls switch:
+    To change the result filename use --outfile flag followed by the new file name
 
-            %(prog)s --type User --writexls
-            %(prog)s --type Biosample --type Experiment --descriptions --writexls
+            %(prog)s --type Biosample --outfile biosample_only.xls
+            %(prog)s --type Biosample --type Experiment --outfile my_selection.xls
 
     '''
 
@@ -111,8 +119,8 @@ def dotted_field_name(field_name, parent_name=None):
         return field_name
 
 
-def build_field_list(properties, required_fields=None, include_description=False, include_comment=False,
-                     include_enums=False, parent='', is_submember=False):
+def build_field_list(properties, required_fields=None, include_description=False,
+                     include_comment=False, include_enums=False, parent='', is_submember=False):
     fields = []
     for name, props in properties.items():
         is_member_of_array_of_objects = False
@@ -187,50 +195,6 @@ def create_xls(fields, filename):
     wb.save(filename)
 
 
-def ordered(input_file, reference_file="System_Files/reference_fields.xls"):
-    folder = os.path.dirname(os.path.abspath(__file__))
-    ReadFile = folder+'/'+input_file
-    RefFile = folder+'/'+reference_file
-    OutputFile = folder+'/'+input_file[:-4]+'_ordered.xls'
-
-    bookref = xlrd.open_workbook(RefFile)
-    bookread = xlrd.open_workbook(ReadFile)
-    book_w = xlwt.Workbook()
-    Sheets_read = bookread.sheet_names()
-    Sheets_ref = bookref.sheet_names()
-    Sheets = []
-    for sh in Sheets_ref:
-        if sh in Sheets_read:
-            Sheets.append(sh)
-            Sheets_read.remove(sh)
-    Sheets.extend(Sheets_read)
-
-    for sheet in Sheets:
-        try:
-            active_sheet_ref = bookref.sheet_by_name(sheet)
-        except:
-            print('The object {} does not exist in referece file, please update'.format(sheet))
-            continue
-        active_sheet_read = bookread.sheet_by_name(sheet)
-        first_row_values_read = active_sheet_read.row_values(rowx=0)
-        first_row_values_ref = active_sheet_ref.row_values(rowx=0)
-
-        new_sheet = book_w.add_sheet(sheet)
-        for write_row_index, write_item in enumerate(first_row_values_ref):
-            try:
-                read_col_ind = first_row_values_read.index(write_item)
-            except:
-                new_sheet.write(0, write_row_index, write_item)
-                continue
-            column_val = active_sheet_read.col_values(read_col_ind)
-            for write_column_index, cell_value in enumerate(column_val):
-                new_sheet.write(write_column_index, write_row_index, cell_value)
-    try:
-        book_w.save(OutputFile)
-    except:
-        print('Ordered xls is not created, reference might be missing ordered object sheets')
-
-
 def main():
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
@@ -248,8 +212,8 @@ def main():
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-        # if args.order:
-        #    ordered(file_name)
+        if args.order:
+            fdnDCIC.order_FDN(file_name)
 
 if __name__ == '__main__':
     main()

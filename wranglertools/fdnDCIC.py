@@ -6,6 +6,8 @@ import json
 import logging
 import os.path
 import hashlib
+import xlrd
+import xlwt
 
 
 class FDN_Key:
@@ -136,3 +138,122 @@ def md5(path):
         for chunk in iter(lambda: f.read(1024*1024), b''):
             md5sum.update(chunk)
     return md5sum.hexdigest()
+
+
+sheet_order = [
+    "User",
+    "Award",
+    "Lab",
+    "Document",
+    "Protocol",
+    "Publication",
+    "Organism",
+    "IndividualMouse",
+    "IndividualHuman",
+    "Vendor",
+    "Biosource",
+    "Construct",
+    "TreatmentRnai",
+    "TreatmentChemical",
+    "GenomicRegion",
+    "Target",
+    "Modification",
+    "Image",
+    "BiosampleCellCulture",
+    "Biosample",
+    "Enzyme",
+    "FileSet",
+    "FileFastq",
+    "ExperimentSet",
+    "ExperimentHiC",
+    "ExperimentCaptureC"
+    ]
+
+
+def order_FDN(input_xls):
+    """Order and filter created xls file."""
+
+    do_not_use = [
+        "submitted_by",
+        "date_created",
+        "organism",
+        "schema_version",
+        "accession",
+        "uuid",
+        "status",
+        "quality_metric_flags",
+        "notes",
+        "restricted",
+        "file_size",
+        "filename"
+        ]
+
+    move_frond = [
+        'award',
+        '*award',
+        'lab',
+        '*lab',
+        'description',
+        'title',
+        '*title',
+        'name',
+        '*name',
+        'aliases',
+        '#Field Name:'
+        ]
+
+    move_end = [
+        'documents',
+        'references',
+        'url',
+        'dbxrefs',
+        'alternate_accessions'
+        ]
+
+    ReadFile = input_xls
+    OutputFile = input_xls[:-4]+'_ordered.xls'
+    bookread = xlrd.open_workbook(ReadFile)
+    book_w = xlwt.Workbook()
+    Sheets_read = bookread.sheet_names()
+    Sheets = []
+    # reorder sheets based on sheet_order list and report if there are missing one from this list
+    for sh in sheet_order:
+        if sh in Sheets_read:
+            Sheets.append(sh)
+            Sheets_read.remove(sh)
+    if Sheets_read:
+        print(Sheets_read, "not in sheet_order list, please update")
+        Sheets.extend(Sheets_read)
+
+    for sheet in Sheets:
+        useful = []
+        active_sheet = bookread.sheet_by_name(sheet)
+        first_row_values = active_sheet.row_values(rowx=0)
+        for field in first_row_values:
+            if field in do_not_use:
+                pass
+            else:
+                useful.append(field)
+        useful = sorted(useful)
+        # move selected to front
+        for frond in move_frond:
+            try:
+                useful.insert(0, useful.pop(useful.index(frond)))
+            except:
+                pass
+        # move selected to end
+        for end in move_end:
+            try:
+                useful.pop(useful.index(end))
+                useful.append(end)
+            except:
+                pass
+        # create a new sheet and write the data
+        new_sheet = book_w.add_sheet(sheet)
+        for write_row_index, write_item in enumerate(useful):
+            read_col_ind = first_row_values.index(write_item)
+            column_val = active_sheet.col_values(read_col_ind)
+            # column_val.pop(2)
+            for write_column_index, cell_value in enumerate(column_val):
+                new_sheet.write(write_column_index, write_row_index, cell_value)
+    book_w.save(OutputFile)
