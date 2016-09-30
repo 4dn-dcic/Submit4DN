@@ -198,8 +198,7 @@ def clear_out_empty_field(field_name, fields):
 
 def get_field_name(field_name):
     '''handle type at end, plus embedded objets'''
-    field_name = field_name.replace('*', '')
-    field = field_name.split(":")[0]
+    field = field_name.replace('*', '')
     return field.split(".")[0]
 
 
@@ -222,6 +221,7 @@ def is_embedded_field(field_name):
 
 
 def get_sub_field_number(field_name):
+    field_name = field_name.replace('*', '')
     field = field_name.split(":")[0]
     try:
         return int(field.split("-")[1])
@@ -327,12 +327,21 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
         # print(post_json)
-
+        # combine exp sets
+        if "Experiment" in sheet:
+            if sheet != "ExperimentSet":
+                comb_sets = []
+                for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
+                    try:
+                        comb_sets.extend(post_json.get(set_key))
+                    except:
+                        continue
+                    post_json.pop(set_key, None)
+                post_json['experiment_sets'] = comb_sets
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
-
         # should I upload files as well?
         file_to_upload = False
         filename_to_post = post_json.get('filename')
