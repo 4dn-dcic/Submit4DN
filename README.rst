@@ -1,3 +1,22 @@
+========================
+Submit 4DN - Data Submiter Tools
+========================
+
+|Build status|_
+
+.. |Build status| image:: https://travis-ci.org/hms-dbmi/submit4dn.png?branch=master
+.. _Build status: https://travis-ci.org/hms-dbmi/submit4dn
+
+|Coverage|_
+
+.. |Coverage| image:: https://coveralls.io/repos/github/hms-dbmi/submit4dn/badge.svg?branch=master
+.. _Coverage: https://coveralls.io/github/hms-dbmi/submit4dn?branch=master
+
+|Code quality|_
+
+.. |Code quality| image:: https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538    
+.. _Code quality https://www.codacy.com/app/jeremy_7/Submit4DN?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=hms-dbmi/Submit4DN&amp;utm_campaign=Badge_Grade
+
 
 ##Installing the package
 
