@@ -204,7 +204,7 @@ def get_field_name(field_name):
 
 def get_sub_field(field_name):
     try:
-        return field_name.split(".")[1]
+        return field_name.split(".")[1].rstrip('-0123456789')
     except:
         return ''
 
@@ -400,7 +400,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
-
+    #print(post_json)
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
 
