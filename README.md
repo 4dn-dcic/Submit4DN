@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/hms-dbmi/Submit4DN.svg?branch=master)](https://travis-ci.org/hms-dbmi/Submit4DN)
 [![Coverage Status](https://coveralls.io/repos/github/hms-dbmi/Submit4DN/badge.svg?branch=master)](https://coveralls.io/github/hms-dbmi/Submit4DN?branch=master)
-[![Build Status](https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538)](https://www.codacy.com/app/jeremy_7/Submit4DN)
+[![Code Quality](https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538)](https://www.codacy.com/app/jeremy_7/Submit4DN)
 
 ##Installing the package
 
@@ -25,17 +25,19 @@ is /Users/user/keypairs.json
       }
     }
 if file name is different and the key is not named default add it to the code:
-python3 code.py --keyfile nameoffile.json --key NotDefault
+
+    python3 code.py --keyfile nameoffile.json --key NotDefault
 
 ## Generate fields.xls
 To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
---type           use for each sheet that you want to add to the excel workbook
---descriptions   adds the descriptions in the second line (by default True)
---enums          adds the enum options in the third line (by default True)
---comments       adds the comments together with enums (by default False)
---writexls       creates the xls file (by default True)
---outfile        change the default file name "fields.xls" to a specified one
---order          create an ordered and filtered version of the excel (by default True)
+
+    --type           use for each sheet that you want to add to the excel workbook
+    --descriptions   adds the descriptions in the second line (by default True)
+    --enums          adds the enum options in the third line (by default True)
+    --comments       adds the comments together with enums (by default False)
+    --writexls       creates the xls file (by default True)
+    --outfile        change the default file name "fields.xls" to a specified one
+    --order          create an ordered and filtered version of the excel (by default True)
 
 *Full list*
 ~~~~
