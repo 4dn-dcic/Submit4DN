@@ -3,7 +3,7 @@ from setuptools import setup
 
 # variables used in buildout
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.rst')).read()
+README = open(os.path.join(here, 'README.md')).read()
 
 requires = [
     'attrs==16.0.0',
