@@ -1,22 +1,8 @@
-========================
-Submit 4DN - Data Submiter Tools
-========================
+# Submit 4DN - Data Submiter Tools
 
-|Build status|_
-
-.. |Build status| image:: https://travis-ci.org/hms-dbmi/submit4dn.png?branch=master
-.. _Build status: https://travis-ci.org/hms-dbmi/submit4dn
-
-|Coverage|_
-
-.. |Coverage| image:: https://coveralls.io/repos/github/hms-dbmi/submit4dn/badge.svg?branch=master
-.. _Coverage: https://coveralls.io/github/hms-dbmi/submit4dn?branch=master
-
-|Code quality|_
-
-.. |Code quality| image:: https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538    
-.. _Code quality https://www.codacy.com/app/jeremy_7/Submit4DN?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=hms-dbmi/Submit4DN&amp;utm_campaign=Badge_Grade
-
+[![Build Status](https://travis-ci.org/hms-dbmi/Submit4DN.svg?branch=master)](https://travis-ci.org/hms-dbmi/Submit4DN)
+[![Coverage Status](https://coveralls.io/repos/github/hms-dbmi/Submit4DN/badge.svg?branch=master)](https://coveralls.io/github/hms-dbmi/Submit4DN?branch=master)
+[![Build Status](https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538)](https://www.codacy.com/app/jeremy_7/Submit4DN)
 
 ##Installing the package
 
@@ -41,7 +27,7 @@ is /Users/user/keypairs.json
 if file name is different and the key is not named default add it to the code:
 python3 code.py --keyfile nameoffile.json --key NotDefault
 
-##Generate fields.xls
+## Generate fields.xls
 To create an xls file with sheets to be filled use the example and modify to your needs. It will accept the following parameters.
 --type           use for each sheet that you want to add to the excel workbook
 --descriptions   adds the descriptions in the second line (by default True)
@@ -61,9 +47,10 @@ python3 get_field_info.py --type Publication --type Document --type Vendor --typ
 python3 get_field_info.py --type Biosample
 python3 get_field_info.py --type Biosample --comments
 python3 get_field_info.py --type Biosample --comments --outfile biosample.xls
+
 ```
 
-#Specifications for fields.xls
+## Specifications for fields.xls
 In fields.xls, each excel sheet is named after an object type, like ExperimentHiC, Biosample, Construct, Protocol...
 
 *Each sheet has at least 4 rows that begin with a #*
@@ -85,10 +72,10 @@ Some objects containing fields that are grouped together, called embedded sub-ob
 * experiment_relations.experiment
 
 If the embedded sub-object is a list, you can increase the number of items by creating new columns and appending numbers to the fields names
-* experiment_relations.relationship_type1
-* experiment_relations.experiment1
-* experiment_relations.relationship_type2
-* experiment_relations.experiment2
+* experiment_relations.relationship_type-1
+* experiment_relations.experiment-1
+* experiment_relations.relationship_type-2
+* experiment_relations.experiment-2
 
 
 **Aliases**
@@ -96,7 +83,7 @@ If the embedded sub-object is a list, you can increase the number of items by cr
 When you create new object types at the same time, it is not possible to reference one item in another with an accession or uuid since it is not assigned yet. For example, if you have a new experiment with a new biosample in the same excel workbook (different sheets), what are you going to put in biosample field in experiments sheet? To overcome this problem, a lab specific identifier called alias is used. "aliases" field accepts multiple entries in the form of "labname:refname,labname:refname2" (testlab:expHic001). If you add lab:bisample1 to aliases field in biosample, you can then use this value in biosample field in experiment.
 
 
-#Specifications for import_data.py
+## Specifications for import_data.py
 You can use import_data.py either to upload new metadata or patch fields of an existing metadata.
 When you import file data, the status has to be "uploading". if you have some other status, like "uploaded" and then patch the status to "uploading", you will not be able to upload file, because the dedicated url for aws upload is creating during post if the status is uploading.
 
