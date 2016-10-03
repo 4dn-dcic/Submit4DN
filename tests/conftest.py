@@ -153,23 +153,27 @@ def file_metadata():
             'experiment_relation.relationship_type': 'controlled by',
             'experiment_relation.experiment-1': 'test:exp003',
             'experiment_relation.relationship_type-1': 'source for',
+            'experiment_relation.experiment-2': 'test:exp004',
+            'experiment_relation.relationship_type-2': 'source for',
             'status': 'uploaded'}
 
 
 @pytest.fixture
 def file_metadata_type():
-    return {'aliases': 'array of strings',
+    return {'aliases': 'array',
             'award': 'string',
             'file_classification': 'string',
             'file_format': 'string',
-            'filesets': 'array of Item:FileSets',
+            'filesets': 'array',
             'instrument': 'string',
             'lab': 'string',
             'paired_end': 'string',
-            'related_files.file': 'array of embedded objects, Item:File',
-            'related_files.relationship_type': 'array of embedded objects, string',
-            'experiment_relation.experiment': 'array of embedded objects, Item:Experiment',
-            'experiment_relation.relationship_type': 'array of embedded objects, string',
-            'experiment_relation.experiment-1': 'array of embedded objects, Item:Experiment',
-            'experiment_relation.relationship_type-1': 'array of embedded objects, string',
+            'related_files.file': 'array',
+            'related_files.relationship_type': 'array',
+            'experiment_relation.experiment': 'array',
+            'experiment_relation.relationship_type': 'array',
+            'experiment_relation.experiment-1': 'array',
+            'experiment_relation.relationship_type-1': 'array',
+            'experiment_relation.experiment-2': 'array',
+            'experiment_relation.relationship_type-2': 'array',
             'status': 'string'}
