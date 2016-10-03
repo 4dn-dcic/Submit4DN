@@ -24,10 +24,9 @@ tests_require = [
 ]
 
 setup(
-    name='4DNWranglerTools',
-    version='0.1',
+    name='Submit4DN',
+    version=open("wranglertools/_version.py").readlines()[-1].split()[-1].strip("\"'"),
     description='Tools for data wrangling and submission to data.4dnucleome.org',
-    long_description=README,
     packages=['wranglertools'],
     zip_safe=False,
     author='4DN Team at Harvard Medical School',

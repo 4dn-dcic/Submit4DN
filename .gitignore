@@ -11,4 +11,5 @@ README.html
 build/
 dist/
 4DNWranglerTools.egg-info/*
+Submit4DN.egg-info/*
 
