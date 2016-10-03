@@ -221,14 +221,24 @@ def order_FDN(input_xls):
         ['Biosource', 'cell_line', 'SOP_cell_line'],
         ['GenomicRegion', 'start_coordinate', 'end_coordinate'],
         ['GenomicRegion', 'start_location', 'end_location'],
-        ['GenomicRegion', 'location_description', 'start_location']
+        ['GenomicRegion', 'location_description', 'start_location'],
         ['BiosampleCellCulture', 'protocol_documents', 'protocol_SOP_deviations'],
         ['Biosample', 'biosample_relation.relationship_type', 'biosample_relation.biosample'],
         ['Enzyme', 'catalog_number', 'attachment'],
         ['Enzyme', 'recognition_sequence', 'attachment'],
         ['Enzyme', 'site_length', 'attachment'],
         ['Enzyme', 'cut_position', 'attachment'],
-        ['FileFastq', 'related_files.relationship_type', 'related_files.file'],
+        ['File', 'related_files.relationship_type', 'related_files.file'],
+        ['Experiment', 'average_fragment_size', 'fragment_size_range'],
+        ['Experiment', 'files', 'documents'],
+        ['Experiment', 'filesets', 'documents'],
+        ['Experiment', 'experiment_relation.relationship_type', 'documents'],
+        ['Experiment', 'experiment_relation.experiment', 'documents'],
+        ['Experiment', 'experiment_sets|0', 'documents'],
+        ['Experiment', 'experiment_sets|1', 'documents'],
+        ['Experiment', 'experiment_sets|2', 'documents'],
+        ['Experiment', 'experiment_sets|3', 'documents'],
+
     ]
 
     ReadFile = input_xls
@@ -259,7 +269,8 @@ def order_FDN(input_xls):
         # move selected to front
         for frond in move_frond:
             try:
-                useful.insert(0, useful.pop(useful.index(frond)))
+                useful.remove(frond)
+                useful.insert(0, frond)
             except:
                 pass
         # move selected to end
@@ -271,8 +282,12 @@ def order_FDN(input_xls):
                 pass
         # reorder some items based on reorder list
         for sort_case in reorder:
-            if sheet == sort_case[0]:
-                useful.insert(useful.index(sort_case[2]), useful.pop(useful.index(sort_case[1])))
+            if sort_case[0] in sheet:
+                try:
+                    useful.remove(sort_case[1])
+                    useful.insert(useful.index(sort_case[2]), sort_case[1])
+                except:
+                    pass
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
