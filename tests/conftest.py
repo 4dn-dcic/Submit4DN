@@ -149,6 +149,10 @@ def file_metadata():
             'paired_end': '',
             'related_files.file': 'testfile.fastq',
             'related_files.relationship_type': 'related_to',
+            'experiment_relation.experiment': 'test:exp002',
+            'experiment_relation.relationship_type': 'controlled by',
+            'experiment_relation.experiment-1': 'test:exp003',
+            'experiment_relation.relationship_type-1': 'source for',
             'status': 'uploaded'}
 
 
@@ -164,4 +168,8 @@ def file_metadata_type():
             'paired_end': 'string',
             'related_files.file': 'array of embedded objects, Item:File',
             'related_files.relationship_type': 'array of embedded objects, string',
+            'experiment_relation.experiment': 'array of embedded objects, Item:Experiment',
+            'experiment_relation.relationship_type': 'array of embedded objects, string',
+            'experiment_relation.experiment-1': 'array of embedded objects, Item:Experiment',
+            'experiment_relation.relationship_type-1': 'array of embedded objects, string',
             'status': 'string'}
