@@ -189,7 +189,10 @@ def order_FDN(input_xls):
         "alternate_accessions",
         "content_md5sum",
         "md5sum",
-        "quality_metric"
+        "quality_metric",
+        "files_in_set",
+        "experiments",
+        "experiments_in_set"
         ]
 
     move_frond = [
@@ -212,6 +215,21 @@ def order_FDN(input_xls):
         'url',
         'dbxrefs'
         ]
+
+    # reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
+    reorder = [
+        ['Biosource', 'cell_line', 'SOP_cell_line'],
+        ['GenomicRegion', 'start_coordinate', 'end_coordinate'],
+        ['GenomicRegion', 'start_location', 'end_location'],
+        ['GenomicRegion', 'location_description', 'start_location']
+        ['BiosampleCellCulture', 'protocol_documents', 'protocol_SOP_deviations'],
+        ['Biosample', 'biosample_relation.relationship_type', 'biosample_relation.biosample'],
+        ['Enzyme', 'catalog_number', 'attachment'],
+        ['Enzyme', 'recognition_sequence', 'attachment'],
+        ['Enzyme', 'site_length', 'attachment'],
+        ['Enzyme', 'cut_position', 'attachment'],
+        ['FileFastq', 'related_files.relationship_type', 'related_files.file'],
+    ]
 
     ReadFile = input_xls
     OutputFile = input_xls[:-4]+'_ordered.xls'
@@ -251,6 +269,10 @@ def order_FDN(input_xls):
                 useful.append(end)
             except:
                 pass
+        # reorder some items based on reorder list
+        for sort_case in reorder:
+            if sheet == sort_case[0]:
+                useful.insert(useful.index(sort_case[2]), useful.pop(useful.index(sort_case[1])))
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
