@@ -150,6 +150,7 @@ def reader(filename, sheetname=None):
 
 
 def cell_value(cell, datemode):
+    """Get cell value from excel."""
     ctype = cell.ctype
     value = cell.value
 
@@ -178,7 +179,7 @@ def cell_value(cell, datemode):
 
 
 def data_formatter(value, val_type):
-    ''' returns formatted data'''
+    """Return formatted data."""
     if val_type in ["int", "integer"]:
         return int(value)
     elif val_type in ["num", "number"]:
@@ -192,17 +193,19 @@ def data_formatter(value, val_type):
 
 
 def clear_out_empty_field(field_name, fields):
+    """Remove fields with empty value."""
     if fields[field_name] == '':
         fields.pop(field_name)
 
 
 def get_field_name(field_name):
-    '''handle type at end, plus embedded objets'''
+    """handle type at end, plus embedded objets."""
     field = field_name.replace('*', '')
     return field.split(".")[0]
 
 
 def get_sub_field(field_name):
+    """Construct embeded field names."""
     try:
         return field_name.split(".")[1].rstrip('-0123456789')
     except:
@@ -210,6 +213,7 @@ def get_sub_field(field_name):
 
 
 def get_field_type(field_name):
+    """Grab old style (ENCODE) data field type."""
     try:
         return field_name.split(":")[1]
     except:
@@ -217,10 +221,12 @@ def get_field_type(field_name):
 
 
 def is_embedded_field(field_name):
+    """See if field is embedded."""
     return '.' in field_name
 
 
 def get_sub_field_number(field_name):
+    """Name clearing for multiple objects."""
     field_name = field_name.replace('*', '')
     field = field_name.split(":")[0]
     try:
@@ -400,7 +406,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
-    #print(post_json)
+    # print(post_json)
     print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
         sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
 
