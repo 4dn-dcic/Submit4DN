@@ -38,3 +38,10 @@ def test_build_patch_json_embeds_fields(file_metadata, file_metadata_type):
 
     expected = [{'file': 'testfile.fastq', 'relationship_type': 'related_to'}]
     assert expected == post_json.get('related_files', None)
+
+def test_build_patch_json_join_multiple_embeds_fields(file_metadata, file_metadata_type):
+    post_json = imp.build_patch_json(file_metadata, file_metadata_type)
+    expected = [{'experiment': 'test:exp002', 'relationship_type': 'controlled by'},
+                {'experiment': 'test:exp003', 'relationship_type': 'source for'}]
+    assert expected == post_json.get('experiment_relation', None)
+
