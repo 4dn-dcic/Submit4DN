@@ -3,13 +3,18 @@
 [![Build Status](https://travis-ci.org/hms-dbmi/Submit4DN.svg?branch=master)](https://travis-ci.org/hms-dbmi/Submit4DN)
 [![Coverage Status](https://coveralls.io/repos/github/hms-dbmi/Submit4DN/badge.svg?branch=master)](https://coveralls.io/github/hms-dbmi/Submit4DN?branch=master)
 [![Code Quality](https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538)](https://www.codacy.com/app/jeremy_7/Submit4DN)
+[![PyPI version](https://badge.fury.io/py/Submit4DN.svg)](https://badge.fury.io/py/Submit4DN)
 
 ##Installing the package
 
-Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format::
+The Submit4DN package is registered with Pypi so installation is as simple as:
 
-    python3 -m wranglertools.get_field_info —-type Biosource
-    python3 -m wranglertools.import_data filename.xls
+```
+pip install submit4dn
+```
+
+Once installed then follow the directions below:
+
 
 ##Connection
 first thing you need is the keyfile to access the REST application
@@ -97,3 +102,10 @@ If you use '--patchall' if you want to patch ALL objects in your document and ig
 If no object identifiers are found in the document, you need to use '--update' for POSTing to occur.
 
 To upload objects with attachments, use the column titled "attachment" containing the path the file you wish to attach
+
+# Development
+Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format::
+
+    python3 -m wranglertools.get_field_info —-type Biosource
+        python3 -m wranglertools.import_data filename.xls
+
