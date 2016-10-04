@@ -5,7 +5,7 @@
 [![Code Quality](https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538)](https://www.codacy.com/app/jeremy_7/Submit4DN)
 [![PyPI version](https://badge.fury.io/py/Submit4DN.svg)](https://badge.fury.io/py/Submit4DN)
 
-The Submit4DN package is written by the [4DN Data Coordination and Integration Center](http://dcic.4dnucleome.org/) for data submitters from the 4DN Network. Please [contact us](mailto:4DN.DCIC.support@hms-dbmi.atlassian.net) to get access to the system, or if you have any questions or suggestions.
+The Submit4DN package is written by the [4DN Data Coordination and Integration Center](http://dcic.4dnucleome.org/) for data submitters from the 4DN Network. Please [contact us](mailto:4DN.DCIC.support@hms-dbmi.atlassian.net) to get access to the system, or if you have any questions or suggestions.  Detailed documentation on data submission can be found [at this link](https://docs.google.com/document/d/1Xh4GxapJxWXCbCaSqKwUd9a2wTiXmfQByzP0P8q5rnE/edit?usp=sharing)
 
 ## Installing the package
 
@@ -79,3 +79,12 @@ Note if you are attempting to run the scripts in the wranglertools directory wit
 
     python3 -m wranglertools.get_field_info —-type Biosource
 	python3 -m wranglertools.import_data filename.xls
+
+pypi page is - https://pypi.python.org/pypi/Submit4DN
+
+
+The proper way to create a new release is `invoke deploy` which will prompt
+you to update the release number, then tag the code with that version number
+and push it to github, which will trigger travis to build and test and if
+tests pass it will deploy to production version of pypi. Note that travis will
+automatically deploy the new version if you push a tag to git.
