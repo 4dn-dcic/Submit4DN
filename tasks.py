@@ -10,12 +10,13 @@ build_dir = os.path.join(docs_dir, '_build')
 
 
 @task
-def test(ctx, watch=False, last_failing=False):
+def test(ctx, watch=False, last_failing=False, no_flake=False):
     """Run the tests.
     Note: --watch requires pytest-xdist to be installed.
     """
     import pytest
-    flake(ctx)
+    if not no_flake:
+        flake(ctx)
     args = []
     if watch:
         args.append('-f')
