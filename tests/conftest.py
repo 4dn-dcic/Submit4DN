@@ -139,23 +139,24 @@ def embed_properties():
 
 @pytest.fixture
 def file_metadata():
-    return {'aliases': 'dcic:HIC00test2',
-            'award': '/awards/OD008540-01/',
-            'file_classification': 'raw file',
-            'file_format': 'fastq',
-            'filesets': '',
-            'instrument': 'Illumina HiSeq 2000',
-            'lab': '/labs/erez-liebermanaiden-lab/',
-            'paired_end': '',
-            'related_files.file': 'testfile.fastq',
-            'related_files.relationship_type': 'related_to',
-            'experiment_relation.experiment': 'test:exp002',
-            'experiment_relation.relationship_type': 'controlled by',
-            'experiment_relation.experiment-1': 'test:exp003',
-            'experiment_relation.relationship_type-1': 'source for',
-            'experiment_relation.experiment-2': 'test:exp004',
-            'experiment_relation.relationship_type-2': 'source for',
-            'status': 'uploaded'}
+    from collections import OrderedDict
+    return OrderedDict([('aliases', 'dcic:HIC00test2'),
+                        ('award', '/awards/OD008540-01/'),
+                        ('file_classification', 'raw file'),
+                        ('file_format', 'fastq'),
+                        ('filesets', ''),
+                        ('instrument', 'Illumina HiSeq 2000'),
+                        ('lab', '/labs/erez-liebermanaiden-lab/'),
+                        ('paired_end', ''),
+                        ('related_files.file', 'testfile.fastq'),
+                        ('related_files.relationship_type', 'related_to'),
+                        ('experiment_relation.experiment', 'test:exp002'),
+                        ('experiment_relation.relationship_type', 'controlled by'),
+                        ('experiment_relation.experiment-1', 'test:exp003'),
+                        ('experiment_relation.relationship_type-1', 'source for'),
+                        ('experiment_relation.experiment-2', 'test:exp004'),
+                        ('experiment_relation.relationship_type-2', 'source for'),
+                        ('status', 'uploaded')])
 
 
 @pytest.fixture

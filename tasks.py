@@ -10,19 +10,20 @@ build_dir = os.path.join(docs_dir, '_build')
 
 
 @task
-def test(ctx, watch=False, last_failing=False):
+def test(ctx, watch=False, last_failing=False, no_flake=False):
     """Run the tests.
     Note: --watch requires pytest-xdist to be installed.
     """
     import pytest
-    flake(ctx)
+    if not no_flake:
+        flake(ctx)
     args = []
     if watch:
         args.append('-f')
     if last_failing:
         args.append('--lf')
     retcode = pytest.main(args)
-    sys.exit(retcode)
+    return(retcode)
 
 
 @task
@@ -42,6 +43,52 @@ def clean(ctx):
 
 
 @task
+def deploy(ctx, version=None):
+    print("preparing for deploy...")
+    print("first lets clean everythign up.")
+    clean(ctx)
+    print("now lets make sure the tests pass")
+    test(ctx)
+    print("next get version information")
+    version = update_version(ctx, version)
+    print("then tag the release in git")
+    git_tag(ctx, version, "new production release %s" % (version))
+    print("Build is now triggered for production deployment of %s "
+          "check travis for build status" % (version))
+
+
+@task
+def update_version(ctx, version=None):
+    from wranglertools._version import __version__
+    print("Current version is ", __version__)
+    if version is None:
+        version = input("What version would you like to set for new release (please use x.x.x / "
+                        " semantic versioning): ")
+
+    # read the versions file
+    lines = []
+    with open("wranglertools/_version.py") as readfile:
+        lines = readfile.readlines()
+
+    if lines:
+        with open("wranglertools/_version.py", 'w') as writefile:
+            lines[-1] = '__version__ = "%s"\n' % (version.strip())
+            writefile.writelines(lines)
+
+    run("git add wranglertools/_version.py")
+    run("git commit -m 'version bump'")
+    print("version updated to", version)
+    return version
+
+
+@task
+def git_tag(ctx, tag_name, msg):
+    run('git tag -a %s -m "%s"' % (tag_name, msg))
+    run('git push --tags')
+    run('git push')
+
+
+@task
 def clean_docs(ctx):
     run("rm -rf %s" % build_dir, echo=True)
 
@@ -56,12 +103,12 @@ def browse_docs(ctx):
 def docs(ctx, clean=False, browse=False, watch=False):
     """Build the docs."""
     if clean:
-        clean_docs()
+        clean_docs(ctx)
     run("sphinx-build %s %s" % (docs_dir, build_dir), echo=True)
     if browse:
-        browse_docs()
+        browse_docs(ctx)
     if watch:
-        watch_docs()
+        watch_docs(ctx)
 
 
 @task
