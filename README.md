@@ -32,7 +32,7 @@ to get an account and to learn how to generate a key. Place your key in a json f
 The default path for your keyfile is `/Users/<user>/keypairs.json`.
 If you prefer to use a different file location or a different key name (not "default"), you can specify your key with the `keyfile` and `key` parameters:
 
-    python3 code.py --keyfile nameoffile.json --key NotDefault
+    import_data --keyfile nameoffile.json --key NotDefault
 
 ## Generating data submission forms
 To create the data submission xls forms, you can use the `wranglertools.get_field_info` method.
@@ -49,22 +49,22 @@ It will accept the following parameters:
 
 Examples generating a single sheet:
 ```
-python3 get_field_info.py --type Biosample
-python3 get_field_info.py --type Biosample --comments
-python3 get_field_info.py --type Biosample --comments --outfile biosample.xls
+get_field_info --type Biosample
+get_field_info --type Biosample --comments
+get_field_info --type Biosample --comments --outfile biosample.xls
 
 ```
 
 Complete list of sheets:
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
+get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
 ~~~~
 
 
 ## Data submission
 After you fill out the data submission forms, you can use the `wranglertools.import_data` method to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
 
-	python3 -m wranglertools.import_data filename.xls
+	import_data filename.xls
 
 **Uploading vs Patching**
 
@@ -75,7 +75,7 @@ If no object identifiers are found in the document, you need to use `--update` f
 
 
 # Development
-Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format::
+Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format:
 
     python3 -m wranglertools.get_field_info —-type Biosource
 	python3 -m wranglertools.import_data filename.xls
