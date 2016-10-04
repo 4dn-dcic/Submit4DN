@@ -118,7 +118,7 @@ for exp in HiC[:]:
     Tecrep = 0
     bio_all = [i[1] for i in Group]
     bio_count = Counter(bio_all)
-    Tecreplist =[]
+    Tecreplist = []
     for gr in Group:
         if gr[1] in Tecreplist:
             gr.append('dciclab:reptec'+'0'*(3-len(str(Biorep)))+str(Biorep)+'_'+'0'*(3-len(str(Tecrep)))+str(Tecrep))
@@ -149,17 +149,3 @@ AllTec = list(set(AllTec))
 AllTec = sorted(AllTec)
 for i in AllTec:
     print(i)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
