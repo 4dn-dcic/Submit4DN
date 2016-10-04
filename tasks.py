@@ -85,6 +85,7 @@ def update_version(ctx, version=None):
 def git_tag(ctx, tag_name, msg):
     run('git tag -a %s -m "%s"' % (tag_name, msg))
     run('git push --tags')
+    run('git push')
 
 
 @task
