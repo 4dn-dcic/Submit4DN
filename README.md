@@ -29,13 +29,13 @@ to get an account and to learn how to generate a key. Place your key in a json f
       }
     }
 
-The default path for your keyfile is `/Users/<user>/keypairs.json`.
+The default location for the keyfile is your home directory `~/keypairs.json`.
 If you prefer to use a different file location or a different key name (not "default"), you can specify your key with the `keyfile` and `key` parameters:
 
-    import_data --keyfile nameoffile.json --key NotDefault
+    import_data --keyfile path/to/filename.json --key NotDefault
 
 ## Generating data submission forms
-To create the data submission xls forms, you can use the `wranglertools.get_field_info` method.
+To create the data submission xls forms, you can use `get_field_info`.
 It will accept the following parameters:
 
     --type           use for each sheet that you want to add to the excel workbook
@@ -62,7 +62,7 @@ get_field_info --type Publication --type Document --type Vendor --type Protocol 
 
 
 ## Data submission
-After you fill out the data submission forms, you can use the `wranglertools.import_data` method to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
+After you fill out the data submission forms, you can use `import_data` to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
 
 	import_data filename.xls
 
@@ -79,4 +79,3 @@ Note if you are attempting to run the scripts in the wranglertools directory wit
 
     python3 -m wranglertools.get_field_info —-type Biosource
 	python3 -m wranglertools.import_data filename.xls
-
