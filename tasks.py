@@ -103,12 +103,12 @@ def browse_docs(ctx):
 def docs(ctx, clean=False, browse=False, watch=False):
     """Build the docs."""
     if clean:
-        clean_docs()
+        clean_docs(ctx)
     run("sphinx-build %s %s" % (docs_dir, build_dir), echo=True)
     if browse:
-        browse_docs()
+        browse_docs(ctx)
     if watch:
-        watch_docs()
+        watch_docs(ctx)
 
 
 @task
