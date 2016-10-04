@@ -42,6 +42,49 @@ def clean(ctx):
 
 
 @task
+def deploy(ctx, version=None):
+    print("preparing for deploy...")
+    print("first lets clean everythign up.")
+    clean(ctx)
+    print("now lets make sure the tests pass")
+    test(ctx)
+    print("next get version information")
+    version = update_version(ctx, version)
+    print("then tag the release in git")
+    git_tag(version, "new production release %s" % (version))
+    print("Build is now triggered for production deployment of %s "
+          "check travis for build status" % (version))
+
+
+@task
+def update_version(ctx, version=None):
+    from wranglertools._version import __version__
+    print("Current version is ", __version__)
+    if version is None:
+        version = input("What version would you like to set for new release (please use x.x.x / "
+                        " semantic versioning): ")
+
+    # read the versions file
+    lines = []
+    with open("wranglertools/_version.py") as readfile:
+        lines = readfile.readlines()
+
+    if lines:
+        with open("wranglertools/_version.py", 'w') as writefile:
+            lines[-1] = '__version__ = "%s"\n' % (version.strip())
+            writefile.writelines(lines)
+
+    print("version updated to", version)
+    return version
+
+
+@task
+def git_tag(ctx, tag_name, msg):
+    run('git tag -a %s -m %s' % (tag_name, msg))
+    run('git push --tags')
+
+
+@task
 def clean_docs(ctx):
     run("rm -rf %s" % build_dir, echo=True)
 
