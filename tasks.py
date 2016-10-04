@@ -23,7 +23,7 @@ def test(ctx, watch=False, last_failing=False, no_flake=False):
     if last_failing:
         args.append('--lf')
     retcode = pytest.main(args)
-    sys.exit(retcode)
+    return(retcode)
 
 
 @task
@@ -52,7 +52,7 @@ def deploy(ctx, version=None):
     print("next get version information")
     version = update_version(ctx, version)
     print("then tag the release in git")
-    git_tag(version, "new production release %s" % (version))
+    git_tag(ctx, version, "new production release %s" % (version))
     print("Build is now triggered for production deployment of %s "
           "check travis for build status" % (version))
 
@@ -75,6 +75,8 @@ def update_version(ctx, version=None):
             lines[-1] = '__version__ = "%s"\n' % (version.strip())
             writefile.writelines(lines)
 
+    run("git add wranglertools/_version.py")
+    run("git commit -m 'version bump'")
     print("version updated to", version)
     return version
 
