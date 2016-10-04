@@ -167,7 +167,7 @@ sheet_order = [
     "ExperimentSet",
     "ExperimentHiC",
     "ExperimentCaptureC"
-    ]
+]
 
 
 def order_FDN(input_xls):
@@ -193,7 +193,7 @@ def order_FDN(input_xls):
         "files_in_set",
         "experiments",
         "experiments_in_set"
-        ]
+    ]
 
     move_frond = [
         'award',
@@ -207,18 +207,19 @@ def order_FDN(input_xls):
         '*name',
         'aliases',
         '#Field Name:'
-        ]
+    ]
 
     move_end = [
         'documents',
         'references',
         'url',
         'dbxrefs'
-        ]
+    ]
 
     # reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
     reorder = [
         ['Biosource', 'cell_line', 'SOP_cell_line'],
+        ['Biosource', 'cell_line_tier', 'SOP_cell_line'],
         ['GenomicRegion', 'start_coordinate', 'end_coordinate'],
         ['GenomicRegion', 'start_location', 'end_location'],
         ['GenomicRegion', 'location_description', 'start_location'],
