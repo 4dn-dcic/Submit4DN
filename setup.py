@@ -7,6 +7,7 @@ README = open(os.path.join(here, 'README.md')).read()
 
 requires = [
     'attrs==16.0.0',
+    'Pillow==3.3.0',
     'py==1.4.31',
     'python-magic==0.4.12',
     'requests==2.11.0',
@@ -14,7 +15,6 @@ requires = [
     'xlrd==1.0.0',
     'xlwt==1.1.2',
     'awscli==1.10.62',
-    'Pillow==3.3.0',
 ]
 
 tests_require = [
