@@ -13,7 +13,27 @@ The Submit4DN package is registered with Pypi so installation is as simple as:
 pip install submit4dn
 ```
 
+### Troubleshooting
+
+If you encounter an error containint something like:  
+
+```
+ Symbol not found: _PyInt_AsLong
+```
+
+Then it means that the imaging library Pillow / PIL is missing some required libraries.  You can fix it by doing the following.
+
+```shell
+$ pip uninstall pillow
+$ brew install libjpeg zlib libtiff littlecms webp openjpeg tcl-tk
+$ pip install pillow
+```
+
+That should fix it!
+
+
 Once installed then follow the directions below:
+
 
 
 ##Connection
