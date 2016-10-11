@@ -17,7 +17,7 @@ pip3 install submit4dn
 
 ### Troubleshooting
 
-If you encounter an error containint something like:  
+If you encounter an error containing something like:  
 
 ```
  Symbol not found: _PyInt_AsLong
