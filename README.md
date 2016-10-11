@@ -1,4 +1,4 @@
-# Submit 4DN - Data Submiter Tools
+# Submit 4DN - Data Submitter Tools
 
 [![Build Status](https://travis-ci.org/hms-dbmi/Submit4DN.svg?branch=master)](https://travis-ci.org/hms-dbmi/Submit4DN)
 [![Coverage Status](https://coveralls.io/repos/github/hms-dbmi/Submit4DN/badge.svg?branch=master)](https://coveralls.io/github/hms-dbmi/Submit4DN?branch=master)
@@ -80,6 +80,7 @@ get_field_info --type Biosample --comments --outfile biosample.xls
 Complete list of sheets:
 ~~~~
 get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
+
 ~~~~
 
 
@@ -95,6 +96,9 @@ You can use the `--patchall` flag, if you want to patch ALL objects in your docu
 
 If no object identifiers are found in the document, you need to use `--update` for POSTing to occur.
 
+Please refer to the submission guidelines provided by data wranglers, and get familiar with the metadata structure on example excel workbooks, like one for Rao et al data. You can find examples under the folder "Data Files". Once you understand how to fill in the fields in the excel workbook
+
+<img src="https://media.giphy.com/media/l0HlN5Y28D9MzzcRy/giphy.gif" width="200" height="200" />
 
 # Development
 Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format:
