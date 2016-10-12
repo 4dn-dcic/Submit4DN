@@ -371,7 +371,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
             if sheet == sh:
                 for field_cycle in fl:
                     if post_json.get(field_cycle):
-                        append_cycle['aliases'] = post_json['aliases']
                         append_cycle[field_cycle] = post_json[field_cycle]
                         del post_json[field_cycle]
         dict_cycle.append(append_cycle)
@@ -415,6 +414,9 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
                 elif e["status"] == "success":
                     success += 1
                     patch += 1
+                    # if patch successful, append uuid to append_cycle if full
+                    if append_cycle != {}:
+                        append_cycle['uuid'] = e['@graph'][0]['uuid']
         else:
             if update:
                 # add the md5
@@ -429,6 +431,9 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
                     error += 1
                 elif e["status"] == "success":
                     success += 1
+                    # if post successful, append uuid to append_cycle if full
+                    if append_cycle != {}:
+                        append_cycle['uuid'] = e['@graph'][0]['uuid']
             else:
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
@@ -501,7 +506,7 @@ def loadxl_cycle(patch_list, connection):
         for entry in patch_list[n]:
             if entry != {}:
                 total = total + 1
-                fdnDCIC.patch_FDN(entry["aliases"][0], connection, entry)
+                fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
