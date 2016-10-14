@@ -93,11 +93,11 @@ def getArgs():
 # should be in sync with loadxl.py in fourfront
 list_to_cycle = [
     ['User', ['lab', 'submits_for']],
-    ['FileFastq', ['experiments', 'filesets']],
-    ['FileFasta', ['experiments', 'filesets']],
+    ['FileFastq', ['experiments']],
+    ['FileFasta', ['experiments']],
     ['FileSet', ['files_in_set']],
-    ['ExperimentHiC', ['experiment_relation', 'experiment_sets']],
-    ['ExperimentCaptureC', ['experiment_relation', 'experiment_sets']],
+    ['ExperimentHiC', ['experiment_relation']],
+    ['ExperimentCaptureC', ['experiment_relation']],
     ['ExperimentSet', ['experiments_in_set']],
     ['Publication', ['experiment_sets_in_pub']]
 ]
