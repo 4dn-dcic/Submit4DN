@@ -363,7 +363,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
             if not patchall:
                 not_patched += 1
 
-            if patchall == 'y':
+            if patchall:
                 # add the md5
                 if file_to_upload and not post_json.get('md5sum'):
                     print("calculating md5 sum for file %s " % (filename_to_post))
@@ -409,9 +409,9 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
             sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
     if not_patched > 0:
-        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched, \
-            {not_patched} not patched (use --patchall to patch)".format(
-            sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patched=not_patched))
+        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched, "
+              "{not_patched} not patched (use --patchall to patch)".format(
+               sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patched=not_patched))
 
 
 def get_upload_creds(file_id, connection, file_info):
