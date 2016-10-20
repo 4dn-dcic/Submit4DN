@@ -323,6 +323,7 @@ def excel_reader(datafile, sheet, update, connection, patchall):
     error = 0
     success = 0
     patch = 0
+    not_patched = 0
     for values in row:
         # Rows that start with # are skipped
         if values[0].startswith("#"):
@@ -359,13 +360,10 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         existing_data = get_existing(post_json, connection)
 
         if existing_data.get("uuid"):
-            to_patch = 'n'
             if not patchall:
-                print("Object {} already exists.  Would you like to patch it "
-                      "instead?".format(existing_data["uuid"]))
-                to_patch = input("PATCH? y/n ")
+                not_patched += 1
 
-            if patchall or to_patch.lower() == 'y':
+            if patchall == 'y':
                 # add the md5
                 if file_to_upload and not post_json.get('md5sum'):
                     print("calculating md5 sum for file %s " % (filename_to_post))
@@ -407,8 +405,13 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                       " post new data")
                 return
     # print(post_json)
-    print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
-        sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+    if not_patched == 0:
+        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
+            sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+    if not_patched > 0:
+        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched, \
+            {not_patched} not patched (use --patchall to patch)".format(
+            sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patched=not_patched))
 
 
 def get_upload_creds(file_id, connection, file_info):
