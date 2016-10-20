@@ -36,7 +36,7 @@ class FDN_Connection(object):
 
 def format_schema_name(supplied_name, search_name=None):
     if supplied_name.endswith('s'):
-        schema_name = search_name + '.json'
+        schema_name = supplied_name + '.json'
     elif supplied_name.endswith('.json'):
         schema_name = supplied_name
     else:
