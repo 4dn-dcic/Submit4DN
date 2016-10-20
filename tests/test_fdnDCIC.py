@@ -5,7 +5,7 @@ import wranglertools.fdnDCIC as fdnDCIC
 
 keypairs = {
             "default":
-            {"server": "https://test.FDNdcc.org",
+            {"server": "https://test.FDN.org",
              "key": "keystring",
              "secret": "secretstring"
              }
@@ -34,9 +34,9 @@ def test_connection():
     assert(connection.server)
 
 
-@pytest.mark.get
-def test_get():
-    key = fdnDCIC.FDN_Key(keypairs, "default")
-    connection = fdnDCIC.FDN_Connection(key)
-    result = fdnDCIC.get_FDN("/profiles/", connection)
-    assert(type(result) is dict)
+# @pytest.mark.get
+# def test_get():
+#     key = fdnDCIC.FDN_Key(keypairs, "default")
+#     connection = fdnDCIC.FDN_Connection(key)
+#     result = fdnDCIC.get_FDN("/profiles/", connection)
+#     assert(type(result) is dict)
