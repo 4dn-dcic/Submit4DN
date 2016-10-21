@@ -458,13 +458,16 @@ def upload_file(metadata_post_response, path):
 # used to avoid dependencies... i.e. biosample needs the biosource to exist
 
 
-def order_sorter(key):
-    ORDER = [i.lower for i in sheet_order]
-    key = key.lower()
-    if key in ORDER:
-        return ORDER.index(key)
-    else:
-        return 999
+def order_sorter(list_of_names):
+    ret_list = []
+    for i in sheet_order:
+        if i in list_of_names:
+            ret_list.append(i)
+    if list(set(list_of_names)-set(ret_list)) != []:
+        missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
+        print("WARNING!", missing_items, "sheet(s) are not loaded")
+        print("WARNING! Check the sheet names and the reference list \"sheet_order\"")
+    return ret_list
 
 
 def main():
@@ -487,8 +490,7 @@ def main():
     supported_collections = [s.lower() for s in list(profiles.keys())]
 
     # we want to read through names in proper upload order
-    # that way we have dependencies inserted in the proper order
-    sorted_names = sorted(names, key=order_sorter)
+    sorted_names = order_sorter(names)
 
     for n in sorted_names:
         if n.lower() in supported_collections:
