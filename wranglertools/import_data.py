@@ -436,7 +436,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
-    # print(post_json)
     if not_patched == 0:
         print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
             sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
@@ -534,6 +533,7 @@ def main():
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     # we want to read through names in proper upload order
+    dict_loadxl = {}
     sorted_names = order_sorter(names)
     dict_loadxl = {}
     for n in sorted_names:
