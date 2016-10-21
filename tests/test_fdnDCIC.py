@@ -40,11 +40,3 @@ def test_connection():
 #     connection = fdnDCIC.FDN_Connection(key)
 #     result = fdnDCIC.get_FDN("/profiles/", connection)
 #     assert(type(result) is dict)
-
-
-def test_format_schema_name():
-    test_names = ["Vendors", "enzyme.json", "Experiment-HiC"]
-    test_results = ["Vendors.json", "enzyme.json", "Experiment_HiC.json"]
-    for i, ix in enumerate(test_names):
-        res = fdnDCIC.format_schema_name(ix)
-        assert res == test_results[i]

@@ -34,16 +34,6 @@ class FDN_Connection(object):
         self.auth = (key.authid, key.authpw)
 
 
-def format_schema_name(supplied_name, search_name=None):
-    if supplied_name.endswith('s'):
-        schema_name = supplied_name + '.json'
-    elif supplied_name.endswith('.json'):
-        schema_name = supplied_name
-    else:
-        schema_name = supplied_name.replace('-', '_') + '.json'
-    return schema_name
-
-
 class FDN_Schema(object):
     def __init__(self, connection, uri):
         self.uri = uri
