@@ -91,7 +91,7 @@ def getArgs():
 
 # list of [sheet, [fields]] that need to be patched as a second step
 # should be in sync with loadxl.py in fourfront
-list_to_cycle = [
+list_of_loadxl_fields = [
     ['User', ['lab', 'submits_for']],
     ['FileFastq', ['experiments']],
     ['FileFasta', ['experiments']],
@@ -316,10 +316,10 @@ def get_existing(post_json, connection):
     return temp
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
+def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
-    dict_cycle = []
+    patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
@@ -341,7 +341,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
     not_patched = 0
     for values in row:
         # dictionary to collect patch items
-        append_cycle = {}
+        patch_loadxl_item = {}
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
@@ -350,8 +350,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        # print(post_json)
-        # combine exp sets
+
+        # Experiments sets are seperated to 4 columns in get_field_info.py and this combines them back
         if "Experiment" in sheet:
             if sheet != "ExperimentSet":
                 comb_sets = []
@@ -367,14 +367,13 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
 
-        # strip the fields that will be patched in the second cycle
-        for sh, fl in list_to_cycle:
-            if sheet == sh:
-                for field_cycle in fl:
-                    if post_json.get(field_cycle):
-                        append_cycle[field_cycle] = post_json[field_cycle]
-                        del post_json[field_cycle]
-        dict_cycle.append(append_cycle)
+        # All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary
+        for sheet_loadxl, fields_loadxl in list_of_loadxl_fields:
+            if sheet == sheet_loadxl:
+                for field_loadxl in fields_loadxl:
+                    if post_json.get(field_loadxl):
+                        patch_loadxl_item[field_loadxl] = post_json[field_loadxl]
+                        del post_json[field_loadxl]
         # should I upload files as well?
         file_to_upload = False
         filename_to_post = post_json.get('filename')
@@ -412,9 +411,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
                 elif e["status"] == "success":
                     success += 1
                     patch += 1
-                    # if patch successful, append uuid to append_cycle if full
-                    if append_cycle != {}:
-                        append_cycle['uuid'] = e['@graph'][0]['uuid']
+                    # if patch successful, append uuid to patch_loadxl_item if full
+                    if patch_loadxl_item != {}:
+                        patch_loadxl_item['uuid'] = e['@graph'][0]['uuid']
+                        patch_loadxl.append(patch_loadxl_item)
         else:
             if update:
                 # add the md5
@@ -429,21 +429,22 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict2cycle):
                     error += 1
                 elif e["status"] == "success":
                     success += 1
-                    # if post successful, append uuid to append_cycle if full
-                    if append_cycle != {}:
-                        append_cycle['uuid'] = e['@graph'][0]['uuid']
+                    # if post successful, append uuid to patch_loadxl_item if full
+                    if patch_loadxl_item != {}:
+                        patch_loadxl_item['uuid'] = e['@graph'][0]['uuid']
+                        patch_loadxl.append(patch_loadxl_item)
             else:
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
-    if not_patched == 0:
-        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
-            sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+    # add all object loadxl patches to dictionary
+    dict_patch_loadxl[sheet] = patch_loadxl
+    # print final report, and if there are not patched entries, add to report
+    not_patched_note = '.'
     if not_patched > 0:
-        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched, "
-              "{not_patched} not patched (use --patchall to patch)".format(
-               sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patched=not_patched))
-    dict2cycle[sheet] = dict_cycle
+        not_patched_note = ", " + str(not_patched) + " not patched (use --patchall to patch)."
+    print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched{not_patch}".format(
+        sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patch=not_patched_note))
 
 
 def get_upload_creds(file_id, connection, file_info):
