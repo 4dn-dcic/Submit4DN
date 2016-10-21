@@ -154,6 +154,7 @@ sheet_order = [
     "Enzyme",
     "FileSet",
     "FileFastq",
+    "FileFasta",
     "ExperimentSet",
     "ExperimentHiC",
     "ExperimentCaptureC"

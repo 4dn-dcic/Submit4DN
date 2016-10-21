@@ -89,6 +89,19 @@ def getArgs():
     args = parser.parse_args()
     return args
 
+# list of [sheet, [fields]] that need to be patched as a second step
+# should be in sync with loadxl.py in fourfront
+list_of_loadxl_fields = [
+    ['User', ['lab', 'submits_for']],
+    ['FileFastq', ['experiments']],
+    ['FileFasta', ['experiments']],
+    ['FileSet', ['files_in_set']],
+    ['ExperimentHiC', ['experiment_relation']],
+    ['ExperimentCaptureC', ['experiment_relation']],
+    ['ExperimentSet', ['experiments_in_set']],
+    ['Publication', ['experiment_sets_in_pub']]
+]
+
 
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url."""
@@ -303,7 +316,10 @@ def get_existing(post_json, connection):
     return temp
 
 
-def excel_reader(datafile, sheet, update, connection, patchall):
+def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl):
+    """takes an excel sheet and post or patched the data in."""
+    # dict for acumulating cycle patch data
+    patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
@@ -318,13 +334,14 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 fields2types[field] = 'array'
     # print(fields2types)
     # sys.exit()
-
     total = 0
     error = 0
     success = 0
     patch = 0
     not_patched = 0
     for values in row:
+        # dictionary to collect patch items
+        patch_loadxl_item = {}
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
@@ -333,8 +350,8 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        # print(post_json)
-        # combine exp sets
+
+        # Experiments sets are seperated to 4 columns in get_field_info.py and this combines them back
         if "Experiment" in sheet:
             if sheet != "ExperimentSet":
                 comb_sets = []
@@ -349,6 +366,14 @@ def excel_reader(datafile, sheet, update, connection, patchall):
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
+
+        # All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary
+        for sheet_loadxl, fields_loadxl in list_of_loadxl_fields:
+            if sheet == sheet_loadxl:
+                for field_loadxl in fields_loadxl:
+                    if post_json.get(field_loadxl):
+                        patch_loadxl_item[field_loadxl] = post_json[field_loadxl]
+                        del post_json[field_loadxl]
         # should I upload files as well?
         file_to_upload = False
         filename_to_post = post_json.get('filename')
@@ -386,6 +411,10 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                 elif e["status"] == "success":
                     success += 1
                     patch += 1
+                    # if patch successful, append uuid to patch_loadxl_item if full
+                    if patch_loadxl_item != {}:
+                        patch_loadxl_item['uuid'] = e['@graph'][0]['uuid']
+                        patch_loadxl.append(patch_loadxl_item)
         else:
             if update:
                 # add the md5
@@ -400,18 +429,22 @@ def excel_reader(datafile, sheet, update, connection, patchall):
                     error += 1
                 elif e["status"] == "success":
                     success += 1
+                    # if post successful, append uuid to patch_loadxl_item if full
+                    if patch_loadxl_item != {}:
+                        patch_loadxl_item['uuid'] = e['@graph'][0]['uuid']
+                        patch_loadxl.append(patch_loadxl_item)
             else:
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
-    # print(post_json)
-    if not_patched == 0:
-        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched".format(
-            sheet=sheet.upper(), success=success, total=total, error=error, patch=patch))
+    # add all object loadxl patches to dictionary
+    dict_patch_loadxl[sheet] = patch_loadxl
+    # print final report, and if there are not patched entries, add to report
+    not_patched_note = '.'
     if not_patched > 0:
-        print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched, "
-              "{not_patched} not patched (use --patchall to patch)".format(
-               sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patched=not_patched))
+        not_patched_note = ", " + str(not_patched) + " not patched (use --patchall to patch)."
+    print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched{not_patch}".format(
+        sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patch=not_patched_note))
 
 
 def get_upload_creds(file_id, connection, file_info):
@@ -473,6 +506,16 @@ def order_sorter(list_of_names):
     return ret_list
 
 
+def loadxl_cycle(patch_list, connection):
+    for n in patch_list.keys():
+        total = 0
+        for entry in patch_list[n]:
+            if entry != {}:
+                total = total + 1
+                fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
+        print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
+
+
 def main():
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
@@ -486,20 +529,21 @@ def main():
     else:
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
-
     # get me a list of all the data_types in the system
     profiles = fdnDCIC.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
-
     # we want to read through names in proper upload order
+    dict_loadxl = {}
     sorted_names = order_sorter(names)
-
+    dict_loadxl = {}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
+    loadxl_cycle(dict_loadxl, connection)
+
 
 if __name__ == '__main__':
         main()
