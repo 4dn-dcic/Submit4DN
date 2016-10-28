@@ -36,7 +36,7 @@ for POSTing to occur
 
 Defining Object type:
     Each "sheet" of the excel file is named after the object type you are uploading,
-    with the format used on https://www.encodeproject.org/profiles/
+    with the format used on http://data.4dnucleome.org//profiles/
 Ex: ExperimentHiC, Biosample, Document, Target
 
 If there is a single sheet that needs to be posted or patched, you can name the single sheet
