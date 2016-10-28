@@ -91,7 +91,7 @@ After you fill out the data submission forms, you can use `import_data` to submi
 
 **Uploading vs Patching**
 
-If there are uuid, alias, @id, or accession fields in the xls form that match existing entries in the database, you will be asked if you want to PATCH each object.
+If there are uuid, alias, @id, or accession fields in the xls form that match existing entries in the database, your entries will be counted as "not patched".
 You can use the `--patchall` flag, if you want to patch ALL objects in your document and ignore that message.
 
 If no object identifiers are found in the document, you need to use `--update` for POSTing to occur.
