@@ -41,6 +41,24 @@ def test_connection():
     assert(connection.server)
 
 
+def test_FDN_url():
+    key = fdnDCIC.FDN_Key(keypairs, "default")
+    connection = fdnDCIC.FDN_Connection(key)
+    test_objid_frame = [["trial", None],
+                        ["trial?some", None],
+                        ["trial", "object"],
+                        ["trial?some", "object"]
+                        ]
+    expected_url = ["https://test.FDN.org/trial?limit=all",
+                    "https://test.FDN.org/trial?some&limit=all",
+                    "https://test.FDN.org/trial?limit=all&frame=object",
+                    "https://test.FDN.org/trial?some&limit=all&frame=object"
+                    ]
+    for n, case in enumerate(test_objid_frame):
+        t_url = fdnDCIC.FDN_url(case[0], connection, case[1])
+        assert t_url == expected_url[n]
+
+
 # @pytest.mark.get
 # def test_get():
 #     key = fdnDCIC.FDN_Key(keypairs, "default")

@@ -46,8 +46,7 @@ class FDN_Schema(object):
             self.required = response['required']
 
 
-def get_FDN(obj_id, connection, frame="object"):
-    '''GET an FDN object as JSON and return as dict'''
+def FDN_url(obj_id, connection, frame):
     if frame is None:
         if '?' in obj_id:
             url = connection.server + obj_id+'&limit=all'
@@ -57,6 +56,12 @@ def get_FDN(obj_id, connection, frame="object"):
         url = connection.server + obj_id+'&limit=all&frame='+frame
     else:
         url = connection.server + obj_id+'?limit=all&frame='+frame
+    return url
+
+
+def get_FDN(obj_id, connection, frame="object"):
+    '''GET an FDN object as JSON and return as dict'''
+    url = FDN_url(obj_id, connection, frame)
     logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
     logging.debug('GET RESPONSE code %s' % (response.status_code))
