@@ -32,6 +32,7 @@ def test_key_file():
     assert(type(key.authid) is str)
 
 
+@pytest.mark.connection
 def test_connection():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
