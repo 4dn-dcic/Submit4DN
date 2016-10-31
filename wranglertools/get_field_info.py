@@ -174,14 +174,14 @@ def get_uploadable_fields(connection, types, include_description=False,
     return fields
 
 
-def create_xls(fields, filename):
+def create_xls(all_fields, filename):
     '''
     fields being a dictionary of sheet -> FieldInfo(objects)
     create one sheet per dictionary item, with three columns of fields
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
-    for obj_name, fields in fields.items():
+    for obj_name, fields in all_fields.items():
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
         ws.write(1, 0, "#Field Type:")
