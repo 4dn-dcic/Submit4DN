@@ -130,109 +130,109 @@ def md5(path):
     return md5sum.hexdigest()
 
 
+############################################################
+############################################################
+# use the following order to process the sheets
+# if name is not here, will not be processed during ordering
+############################################################
+############################################################
 sheet_order = [
-    "User",
-    "Award",
-    "Lab",
-    "Document",
-    "Protocol",
-    "Publication",
-    "Organism",
-    "IndividualMouse",
-    "IndividualHuman",
-    "Vendor",
-    "Biosource",
-    "Construct",
-    "TreatmentRnai",
-    "TreatmentChemical",
-    "GenomicRegion",
-    "Target",
-    "Modification",
-    "Image",
-    "BiosampleCellCulture",
-    "Biosample",
-    "Enzyme",
-    "FileSet",
-    "FileFastq",
-    "FileFasta",
-    "ExperimentSet",
-    "ExperimentHiC",
-    "ExperimentCaptureC"
+    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
+    "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
+    "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
+    "FileSet", "FileFastq", "FileFasta", "ExperimentSet", "ExperimentHiC", "ExperimentCaptureC"]
+
+do_not_use = [
+    "submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
+    "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
+    "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set"]
+
+
+def filter_and_sort(list_names):
+    """Filter and sort fields"""
+    for field in list_names:
+        if field in do_not_use:
+            pass
+        else:
+            list_names.append(field)
+    # sort alphabetically
+    list_names = sorted(list_names)
+    return list_names
+
+move_frond = ['award', '*award', 'lab', '*lab', 'description',
+              'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
+
+
+def move_to_frond(list_names):
+    """Move names frond"""
+    for frond in move_frond:
+        try:
+            list_names.remove(frond)
+            list_names.insert(0, frond)
+        except:
+            pass
+        return list_names
+
+move_end = ['documents', 'references', 'url', 'dbxrefs']
+
+
+def move_to_end(list_names):
+    """Move names to end"""
+    for end in move_end:
+        try:
+            list_names.pop(list_names.index(end))
+            list_names.append(end)
+        except:
+            pass
+    return list_names
+
+# reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
+reorder = [
+    ['Biosource', 'cell_line', 'SOP_cell_line'],
+    ['Biosource', 'cell_line_tier', 'SOP_cell_line'],
+    ['GenomicRegion', 'start_coordinate', 'end_coordinate'],
+    ['GenomicRegion', 'start_location', 'end_location'],
+    ['GenomicRegion', 'location_description', 'start_location'],
+    ['BiosampleCellCulture', 'protocol_documents', 'protocol_SOP_deviations'],
+    ['Biosample', 'biosample_relation.relationship_type', 'biosample_relation.biosample'],
+    ['Enzyme', 'catalog_number', 'attachment'],
+    ['Enzyme', 'recognition_sequence', 'attachment'],
+    ['Enzyme', 'site_length', 'attachment'],
+    ['Enzyme', 'cut_position', 'attachment'],
+    ['File', 'related_files.relationship_type', 'related_files.file'],
+    ['Experiment', 'average_fragment_size', 'fragment_size_range'],
+    ['Experiment', 'files', 'documents'],
+    ['Experiment', 'filesets', 'documents'],
+    ['Experiment', 'experiment_relation.relationship_type', 'documents'],
+    ['Experiment', 'experiment_relation.experiment', 'documents'],
+    ['Experiment', 'experiment_sets|0', 'documents'],
+    ['Experiment', 'experiment_sets|1', 'documents'],
+    ['Experiment', 'experiment_sets|2', 'documents'],
+    ['Experiment', 'experiment_sets|3', 'documents'],
 ]
+
+
+def switch_fields(list_names, sheet):
+    for sort_case in reorder:
+        # to look for all experiments with "Experiment" name, it will also get ExperimentSet
+        # there are no conflicting field names
+        if sort_case[0] in sheet:
+            try:
+                # tihs is working more consistently then the pop item method
+                list_names.remove(sort_case[1])
+                list_names.insert(list_names.index(sort_case[2]), sort_case[1])
+            except:
+                pass
+    return list_names
+
+# if object name is in the following list, fetch all current/released items and add to xls
+fetch_items = [
+    "Protocol", "Enzymes", "Biosource", "Publication", "Vendor"
+    ]
 
 
 def order_FDN(input_xls):
     """Order and filter created xls file."""
-
-    do_not_use = [
-        "submitted_by",
-        "date_created",
-        "organism",
-        "schema_version",
-        "accession",
-        "uuid",
-        "status",
-        "quality_metric_flags",
-        "notes",
-        "restricted",
-        "file_size",
-        "filename",
-        "alternate_accessions",
-        "content_md5sum",
-        "md5sum",
-        "quality_metric",
-        "files_in_set",
-        "experiments",
-        "experiments_in_set"
-    ]
-
-    move_frond = [
-        'award',
-        '*award',
-        'lab',
-        '*lab',
-        'description',
-        'title',
-        '*title',
-        'name',
-        '*name',
-        'aliases',
-        '#Field Name:'
-    ]
-
-    move_end = [
-        'documents',
-        'references',
-        'url',
-        'dbxrefs'
-    ]
-
-    # reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
-    reorder = [
-        ['Biosource', 'cell_line', 'SOP_cell_line'],
-        ['Biosource', 'cell_line_tier', 'SOP_cell_line'],
-        ['GenomicRegion', 'start_coordinate', 'end_coordinate'],
-        ['GenomicRegion', 'start_location', 'end_location'],
-        ['GenomicRegion', 'location_description', 'start_location'],
-        ['BiosampleCellCulture', 'protocol_documents', 'protocol_SOP_deviations'],
-        ['Biosample', 'biosample_relation.relationship_type', 'biosample_relation.biosample'],
-        ['Enzyme', 'catalog_number', 'attachment'],
-        ['Enzyme', 'recognition_sequence', 'attachment'],
-        ['Enzyme', 'site_length', 'attachment'],
-        ['Enzyme', 'cut_position', 'attachment'],
-        ['File', 'related_files.relationship_type', 'related_files.file'],
-        ['Experiment', 'average_fragment_size', 'fragment_size_range'],
-        ['Experiment', 'files', 'documents'],
-        ['Experiment', 'filesets', 'documents'],
-        ['Experiment', 'experiment_relation.relationship_type', 'documents'],
-        ['Experiment', 'experiment_relation.experiment', 'documents'],
-        ['Experiment', 'experiment_sets|0', 'documents'],
-        ['Experiment', 'experiment_sets|1', 'documents'],
-        ['Experiment', 'experiment_sets|2', 'documents'],
-        ['Experiment', 'experiment_sets|3', 'documents'],
-
-    ]
-
     ReadFile = input_xls
     OutputFile = input_xls[:-4]+'_ordered.xls'
     bookread = xlrd.open_workbook(ReadFile)
@@ -250,39 +250,18 @@ def order_FDN(input_xls):
     if Sheets_read:
         print(Sheets_read, "not in sheet_order list, please update")
         Sheets.extend(Sheets_read)
-
     for sheet in Sheets:
         useful = []
         active_sheet = bookread.sheet_by_name(sheet)
         first_row_values = active_sheet.row_values(rowx=0)
-        for field in first_row_values:
-            if field in do_not_use:
-                pass
-            else:
-                useful.append(field)
-        useful = sorted(useful)
+        # remove items from fields in xls
+        useful = filter_and_sort(first_row_values)
         # move selected to front
-        for frond in move_frond:
-            try:
-                useful.remove(frond)
-                useful.insert(0, frond)
-            except:
-                pass
+        useful = move_to_frond(useful)
         # move selected to end
-        for end in move_end:
-            try:
-                useful.pop(useful.index(end))
-                useful.append(end)
-            except:
-                pass
+        useful = move_to_end(useful)
         # reorder some items based on reorder list
-        for sort_case in reorder:
-            if sort_case[0] in sheet:
-                try:
-                    useful.remove(sort_case[1])
-                    useful.insert(useful.index(sort_case[2]), sort_case[1])
-                except:
-                    pass
+        useful = switch_fields(useful, sheet)
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
@@ -294,5 +273,10 @@ def order_FDN(input_xls):
         for i in range(100):
             for ix in range(len(useful)):
                 new_sheet.write(write_column_index+1+i, ix, '', style)
-
     book_w.save(OutputFile)
+    ############################################################
+    ############################################################
+    # use the following order to process the sheets
+    # if name is not here, will not be processed during ordering
+    ############################################################
+    ############################################################
