@@ -227,12 +227,18 @@ def switch_fields(list_names, sheet):
     return list_names
 
 # if object name is in the following list, fetch all current/released items and add to xls
-fetch_items = [
-    "Protocol", "Enzymes", "Biosource", "Publication", "Vendor"
-    ]
+fetch_items = {
+    "Protocol": "protocol", "Enzymes": "enzymes", "Biosource": "biosources",
+    "Publication": "publications", "Vendor": "vendors"}
 
 
-def order_FDN(input_xls):
+def fetch_all_items(sheet, field_list, connection):
+    if sheet in fetch_items.keys():
+        json_list = get_FDN(fetch_items[sheet], connection)
+        return(json_list)
+
+
+def order_FDN(input_xls, connection):
     """Order and filter created xls file."""
     ReadFile = input_xls
     OutputFile = input_xls[:-4]+'_ordered.xls'
@@ -255,24 +261,18 @@ def order_FDN(input_xls):
         useful = []
         active_sheet = bookread.sheet_by_name(sheet)
         first_row_values = active_sheet.row_values(rowx=0)
-        print('1')
-        print(first_row_values)
         # remove items from fields in xls
         useful = filter_and_sort(first_row_values)
-        print('2')
-        print(useful)
         # move selected to front
         useful = move_to_frond(useful)
-        print('3')
-        print(useful)
         # move selected to end
         useful = move_to_end(useful)
-        print('4')
-        print(useful)
         # reorder some items based on reorder list
         useful = switch_fields(useful, sheet)
-        print('5')
-        print(useful)
+        # fetch all items for common objects
+        all_items = fetch_all_items(sheet, useful, connection)
+        print(all_items)
+
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
