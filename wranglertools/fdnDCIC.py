@@ -150,15 +150,14 @@ do_not_use = [
 
 def filter_and_sort(list_names):
     """Filter and sort fields"""
-    useful = []
     for field in list_names:
         if field in do_not_use:
             pass
         else:
-            useful.append(field)
+            list_names.append(field)
     # sort alphabetically
-    useful = sorted(useful)
-    return useful
+    list_names = sorted(list_names)
+    return list_names
 
 move_frond = ['award', '*award', 'lab', '*lab', 'description',
               'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
@@ -255,24 +254,14 @@ def order_FDN(input_xls):
         useful = []
         active_sheet = bookread.sheet_by_name(sheet)
         first_row_values = active_sheet.row_values(rowx=0)
-        print('1')
-        print(first_row_values)
         # remove items from fields in xls
         useful = filter_and_sort(first_row_values)
-        print('2')
-        print(useful)
         # move selected to front
         useful = move_to_frond(useful)
-        print('3')
-        print(useful)
         # move selected to end
         useful = move_to_end(useful)
-        print('4')
-        print(useful)
         # reorder some items based on reorder list
         useful = switch_fields(useful, sheet)
-        print('5')
-        print(useful)
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
