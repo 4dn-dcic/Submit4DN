@@ -181,6 +181,8 @@ def create_xls(fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
+    # set the style to text with XFStype
+
     for obj_name, fields in fields.items():
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
