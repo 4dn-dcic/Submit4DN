@@ -244,6 +244,9 @@ def order_FDN(input_xls):
     book_w = xlwt.Workbook()
     Sheets_read = bookread.sheet_names()
     Sheets = []
+    # text styling for all columns
+    style = xlwt.XFStyle()
+    style.num_format_str = "@"
     # reorder sheets based on sheet_order list and report if there are missing one from this list
     for sh in sheet_order:
         if sh in Sheets_read:
@@ -290,7 +293,11 @@ def order_FDN(input_xls):
         for write_row_index, write_item in enumerate(useful):
             read_col_ind = first_row_values.index(write_item)
             column_val = active_sheet.col_values(read_col_ind)
-            # column_val.pop(2)
             for write_column_index, cell_value in enumerate(column_val):
-                new_sheet.write(write_column_index, write_row_index, cell_value)
+                new_sheet.write(write_column_index, write_row_index, cell_value, style)
+        # write 50 empty lines with text formatting
+        for i in range(100):
+            for ix in range(len(useful)):
+                new_sheet.write(write_column_index+1+i, ix, '', style)
+
     book_w.save(OutputFile)
