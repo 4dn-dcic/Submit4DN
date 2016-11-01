@@ -232,15 +232,13 @@ fetch_items = {
     "Publication": "publication", "Vendor": "vendor"}
 
 
-def fetch_all_items(sheet, field_list):
+def fetch_all_items(sheet, field_list, connection):
     """For a given sheet, get all released items"""
     all_items = []
     if sheet in fetch_items.keys():
-        obj = fetch_items[sheet]
-        HEADERS = {'accept': 'application/json'}
-        URL = "http://data.4dnucleome.org/search/?type={}&frame=object&limit=all&format=json".format(obj)
-        response = requests.get(URL, headers=HEADERS)
-        items_list = response.json()['@graph']
+        obj_id = "search/?type=" + fetch_items[sheet]
+        get_FDN(obj_id, connection)
+        items_list = get_FDN(obj_id, connection)['@graph']
         for item in items_list:
             item_info = []
             for field in field_list:
@@ -254,7 +252,7 @@ def fetch_all_items(sheet, field_list):
         return
 
 
-def order_FDN(input_xls):
+def order_FDN(input_xls, connection):
     """Order and filter created xls file."""
     ReadFile = input_xls
     OutputFile = input_xls[:-4]+'_ordered.xls'
@@ -286,7 +284,7 @@ def order_FDN(input_xls):
         # reorder some items based on reorder list
         useful = switch_fields(useful, sheet)
         # fetch all items for common objects
-        all_items = fetch_all_items(sheet, useful)
+        all_items = fetch_all_items(sheet, useful, connection)
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
