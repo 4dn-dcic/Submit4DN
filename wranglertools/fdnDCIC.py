@@ -175,7 +175,7 @@ def move_to_frond(list_names):
         try:
             list_names.remove(frond)
             list_names.insert(0, frond)
-        except:
+        except:  # pragma: no cover
             pass
     return list_names
 
@@ -188,7 +188,7 @@ def move_to_end(list_names):
         try:
             list_names.pop(list_names.index(end))
             list_names.append(end)
-        except:
+        except:  # pragma: no cover
             pass
     return list_names
 
@@ -227,7 +227,7 @@ def switch_fields(list_names, sheet):
                 # tihs is working more consistently then the pop item method
                 list_names.remove(sort_case[1])
                 list_names.insert(list_names.index(sort_case[2]), sort_case[1])
-            except:
+            except:  # pragma: no cover
                 pass
     return list_names
 
