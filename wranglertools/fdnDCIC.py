@@ -172,7 +172,7 @@ def move_to_frond(list_names):
             list_names.insert(0, frond)
         except:
             pass
-        return list_names
+    return list_names
 
 move_end = ['documents', 'references', 'url', 'dbxrefs']
 
@@ -228,17 +228,33 @@ def switch_fields(list_names, sheet):
 
 # if object name is in the following list, fetch all current/released items and add to xls
 fetch_items = {
-    "Protocol": "protocol", "Enzymes": "enzymes", "Biosource": "biosources",
-    "Publication": "publications", "Vendor": "vendors"}
+    "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
+    "Publication": "publication", "Vendor": "vendor"}
 
 
-def fetch_all_items(sheet, field_list, connection):
+def fetch_all_items(sheet, field_list):
+    """For a given sheet, get all released items"""
+    all_items = []
     if sheet in fetch_items.keys():
-        json_list = get_FDN(fetch_items[sheet], connection)
-        return(json_list)
+        obj = fetch_items[sheet]
+        HEADERS = {'accept': 'application/json'}
+        URL = "http://data.4dnucleome.org/search/?type={}&frame=object&limit=all&format=json".format(obj)
+        response = requests.get(URL, headers=HEADERS)
+        items_list = response.json()['@graph']
+        for item in items_list:
+            item_info = []
+            for field in field_list:
+                if field == "#Field Name:":
+                    item_info.append("#")
+                else:
+                    item_info.append(item.get(field, ''))
+            all_items.append(item_info)
+        return all_items
+    else:
+        return
 
 
-def order_FDN(input_xls, connection):
+def order_FDN(input_xls):
     """Order and filter created xls file."""
     ReadFile = input_xls
     OutputFile = input_xls[:-4]+'_ordered.xls'
@@ -270,9 +286,7 @@ def order_FDN(input_xls, connection):
         # reorder some items based on reorder list
         useful = switch_fields(useful, sheet)
         # fetch all items for common objects
-        all_items = fetch_all_items(sheet, useful, connection)
-        print(all_items)
-
+        all_items = fetch_all_items(sheet, useful)
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
@@ -280,10 +294,19 @@ def order_FDN(input_xls, connection):
             column_val = active_sheet.col_values(read_col_ind)
             for write_column_index, cell_value in enumerate(column_val):
                 new_sheet.write(write_column_index, write_row_index, cell_value, style)
+        # write common objects
+        if all_items:
+            for i, item in enumerate(all_items):
+                for ix in range(len(useful)):
+                    write_column_index_II = write_column_index+1+i
+                    new_sheet.write(write_column_index_II, ix, item[ix], style)
+        else:
+            write_column_index_II = write_column_index
         # write 50 empty lines with text formatting
         for i in range(100):
             for ix in range(len(useful)):
-                new_sheet.write(write_column_index+1+i, ix, '', style)
+                write_column_index_III = write_column_index_II+1+i
+                new_sheet.write(write_column_index_III, ix, '', style)
     book_w.save(OutputFile)
     ############################################################
     ############################################################

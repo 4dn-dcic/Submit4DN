@@ -220,7 +220,7 @@ def main():
         file_name = args.outfile
         create_xls(fields, file_name)
         if args.order:
-            fdnDCIC.order_FDN(file_name, connection)
+            fdnDCIC.order_FDN(file_name)
 
 if __name__ == '__main__':
     main()
