@@ -83,6 +83,11 @@ get_field_info --type Publication --type Document --type Vendor --type Protocol 
 
 ~~~~
 
+Complete list of sheets: (using python scripts)
+~~~~
+python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
+
+~~~~
 
 ## Data submission
 After you fill out the data submission forms, you can use `import_data` to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
@@ -91,7 +96,7 @@ After you fill out the data submission forms, you can use `import_data` to submi
 
 **Uploading vs Patching**
 
-If there are uuid, alias, @id, or accession fields in the xls form that match existing entries in the database, your entries will be counted as "not patched".
+If there are uuid, alias, @id, or accession fields in the xls form that match existing entries in the database, you will be asked if you want to PATCH each object.
 You can use the `--patchall` flag, if you want to patch ALL objects in your document and ignore that message.
 
 If no object identifiers are found in the document, you need to use `--update` for POSTing to occur.
