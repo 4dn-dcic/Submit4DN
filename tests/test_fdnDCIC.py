@@ -124,9 +124,6 @@ def test_switch_fields():
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
 
 
-
-
-
 # def fetch_all_items(sheet, field_list, connection):
 #     """For a given sheet, get all released items"""
 #     all_items = []
