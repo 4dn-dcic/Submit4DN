@@ -125,3 +125,11 @@ def test_switch_fields():
                     'experiment_sets|1', 'experiment_sets|2', 'experiment_sets|3', 'documents']]
     for n, (a, b) in enumerate(cases):
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
+
+
+def test_fetch_all_items(connection_public):
+    fields = ['#Field Name:', 'aliases', 'name', '*title', 'description', 'lab', 'award', 'url']
+    all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection_public)
+    for vendor in all_vendor_items:
+        assert len(vendor) == len(fields)
+        assert vendor[0].startswith("#")
