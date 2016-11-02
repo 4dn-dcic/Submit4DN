@@ -133,3 +133,13 @@ def test_fetch_all_items(connection_public):
     for vendor in all_vendor_items:
         assert len(vendor) == len(fields)
         assert vendor[0].startswith("#")
+
+
+def test_order_FDN(connection_public):
+    import os
+    try:
+        os.remove("./tests/data_files/Vendor_ordered.xls")
+    except:
+        pass
+    fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection_public)
+    assert os.path.isfile('./tests/data_files/Vendor.xls')
