@@ -252,6 +252,12 @@ def fetch_all_items(sheet, field_list, connection):
             for field in field_list:
                 if field == "#Field Name:":
                     item_info.append("#")
+                # the attachment fields returns a dictionary
+                elif field == "attachment":
+                    try:
+                        item_info.append(item.get(field)['download'])
+                    except:
+                        item_info.append("")
                 else:
                     item_info.append(item.get(field, ''))
             all_items.append(item_info)
