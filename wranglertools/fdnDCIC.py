@@ -31,7 +31,10 @@ class FDN_Connection(object):
     def __init__(self, key):
         self.headers = {'content-type': 'application/json', 'accept': 'application/json'}
         self.server = key.server
-        self.auth = (key.authid, key.authpw)
+        if (key.authid, key.authpw) == ("", ""):
+            self.auth = ()
+        else:
+            self.auth = (key.authid, key.authpw)
 
 
 class FDN_Schema(object):
@@ -40,6 +43,7 @@ class FDN_Schema(object):
         self.connection = connection
         self.server = connection.server
         response = get_FDN(uri, connection)
+        print(response)
         self.properties = response['properties']
         self.required = None
         if 'required' in response:

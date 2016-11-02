@@ -1,4 +1,19 @@
 import pytest
+import wranglertools.fdnDCIC as fdnDCIC
+
+
+@pytest.fixture
+def connection_public():
+    keypairs2 = {
+                "default":
+                {"server": "http://data.4dnucleome.org/",
+                 "key": "",
+                 "secret": ""
+                 }
+                }
+    key2 = fdnDCIC.FDN_Key(keypairs2, "default")
+    connection = fdnDCIC.FDN_Connection(key2)
+    return connection
 
 
 @pytest.fixture(scope="module")

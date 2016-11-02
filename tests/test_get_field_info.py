@@ -34,8 +34,8 @@ def test_dotted_field_name_no_parent():
     assert "child" == gfi.dotted_field_name("child")
 
 
-def test_build_field_list(item_properties, required_fields=["title", "pi"]):
-    field_list = gfi.build_field_list(item_properties, required_fields)
+def test_build_field_list(item_properties):
+    field_list = gfi.build_field_list(item_properties, required_fields=["title", "pi"])
     assert field_list
     assert len(field_list) == 16
     names = [i.name for i in field_list]
@@ -91,3 +91,8 @@ def test_build_field_list_embeds_with_dots(embed_properties):
     assert field_list[0].name.startswith('experiment_relation')
     assert "array of embedded objects" in field_list[0].ftype
     assert field_list[1].name.startswith('experiment_relation')
+
+
+def test_get_uploadable_fields(connection_public):
+    field_dict = gfi.get_uploadable_fields(connection_public, ['Vendor'])
+    assert field_dict
