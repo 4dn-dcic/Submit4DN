@@ -11,6 +11,15 @@ def item_properties():
             'description': {'rdfs:subPropertyOf': 'dc:description',
                             'title': 'Description',
                             'type': 'string'},
+            "experiment_sets": {"type": "array",
+                                "description": "Experiment Sets that are associated with this experiment.",
+                                "title": "Experiment Sets",
+                                "items": {
+                                    "type": "string",
+                                    "description": "An experiment set that is associated wtih this experiment.",
+                                    "linkTo": "ExperimentSet",
+                                    "title": "Experiment Set"},
+                                "uniqueItems": True},
             'end_date': {'anyOf': [{'format': 'date-time'}, {'format': 'date'}],
                          'comment': 'Date can be submitted as YYYY-MM-DD or '
                          'YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone '
