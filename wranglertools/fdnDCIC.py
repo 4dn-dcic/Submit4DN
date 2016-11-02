@@ -137,6 +137,9 @@ def md5(path):
 
 ############################################################
 ############################################################
+# following part is for ordering fields in the created excel
+# and also populating it with the existing fields for common
+# items.
 # use the following order to process the sheets
 # if name is not here, will not be processed during ordering
 ############################################################
@@ -233,7 +236,7 @@ def switch_fields(list_names, sheet):
 
 # if object name is in the following list, fetch all current/released items and add to xls
 fetch_items = {
-    "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
+    "Document": "document", "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
     "Publication": "publication", "Vendor": "vendor"}
 
 
@@ -311,9 +314,7 @@ def order_FDN(input_xls, connection):
                 write_column_index_III = write_column_index_II+1+i
                 new_sheet.write(write_column_index_III, ix, '', style)
     book_w.save(OutputFile)
-    ############################################################
-    ############################################################
-    # use the following order to process the sheets
-    # if name is not here, will not be processed during ordering
-    ############################################################
-    ############################################################
+############################################################
+############################################################
+############################################################
+############################################################
