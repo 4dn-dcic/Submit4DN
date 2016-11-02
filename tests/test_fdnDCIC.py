@@ -59,28 +59,25 @@ def test_FDN_url():
         assert t_url == expected_url[n]
 
 
-# content of test_module.py
-# import os.path
-# def getssh(): # pseudo application code
-#     return os.path.join(os.path.expanduser("~admin"), '.ssh')
-#
-# def test_mytest(monkeypatch):
-#     def mockreturn(path):
-#         return '/abc'
-#     monkeypatch.setattr(os.path, 'expanduser', mockreturn)
-#     x = getssh()
-#     assert x == '/abc/.ssh'
-
-# @pytest.mark.get
-# def test_get():
-#     key = fdnDCIC.FDN_Key(keypairs, "default")
-#     connection = fdnDCIC.FDN_Connection(key)
-#     result = fdnDCIC.get_FDN("/profiles/", connection)
-#     assert(type(result) is dict)
-
 def test_md5():
     md5_keypairs = fdnDCIC.md5('./tests/data_files/keypairs.json')
     assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
+
+
+def test_get_FDN(connection_public):
+    award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
+    assert award_schema['title'] == 'Grant'
+    assert award_schema['properties'].get('description')
+
+
+def test_schema(connection_public):
+    vendor_schema = fdnDCIC.FDN_Schema(connection_public, "/profiles/vendor.json")
+    assert vendor_schema.uri == "/profiles/vendor.json"
+    assert vendor_schema.server == connection_public.server
+    assert vendor_schema.properties['title'] == {'description': 'The complete name of the originating lab or vendor. ',
+                                                 'title': 'Name',
+                                                 'type': 'string'}
+    assert vendor_schema.required == ["title"]
 
 
 def test_filter_and_sort():
