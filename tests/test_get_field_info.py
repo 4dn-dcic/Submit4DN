@@ -34,7 +34,7 @@ def test_dotted_field_name_no_parent():
     assert "child" == gfi.dotted_field_name("child")
 
 
-def test_build_field_list(item_properties):
+def test_build_field_list(item_properties, required_fields="title"):
     field_list = gfi.build_field_list(item_properties)
     assert field_list
 
