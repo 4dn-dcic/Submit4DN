@@ -75,6 +75,7 @@ def get_FDN(obj_id, connection, frame="object"):
     except:
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:
+        print("\nWARNING!: Problem with access, please check your keys.\n")
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
@@ -319,7 +320,7 @@ def order_FDN(input_xls, connection):
             for i, item in enumerate(all_items):
                 for ix in range(len(useful)):
                     write_column_index_II = write_column_index+1+i
-                    new_sheet.write(write_column_index_II, ix, item[ix], style)
+                    new_sheet.write(write_column_index_II, ix, str(item[ix]), style)
         else:
             write_column_index_II = write_column_index
         # write 50 empty lines with text formatting
