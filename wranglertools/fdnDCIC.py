@@ -243,6 +243,11 @@ def fetch_all_items(sheet, field_list, connection):
         for item in items_list:
             item_info = []
             for field in field_list:
+                # required fields will have a star
+                field = field.strip('*')
+                # in case we ever want to have experiment sets in experiment
+                # this will put all exeperiment sets in the others category
+                field = field.replace("|3", "")
                 if field == "#Field Name:":
                     item_info.append("#")
                 else:

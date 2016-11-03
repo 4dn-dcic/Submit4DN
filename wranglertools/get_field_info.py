@@ -126,39 +126,40 @@ def build_field_list(properties, required_fields=None, include_description=False
     for name, props in properties.items():
         is_member_of_array_of_objects = False
         if not props.get('calculatedProperty', False):
-            if is_subobject(props):
-                if get_field_type(props).startswith('array'):
-                    is_member_of_array_of_objects = True
-                fields.extend(build_field_list(props['items']['properties'],
-                                               required_fields,
-                                               include_description,
-                                               include_comment,
-                                               include_enums,
-                                               name,
-                                               is_member_of_array_of_objects)
-                              )
-            else:
-                field_name = dotted_field_name(name, parent)
-                if required_fields is not None:
-                    if field_name in required_fields:
-                        field_name = '*' + field_name
-                field_type = get_field_type(props)
-                if is_submember:
-                    field_type = "array of embedded objects, " + field_type
-                desc = '' if not include_description else props.get('description', '')
-                comm = '' if not include_comment else props.get('comment', '')
-                enum = '' if not include_enums else props.get('enum', '')
-                # if array of string with enum
-                if field_type == "array of strings":
-                    sub_props = props.get('items', '')
-                    enum = '' if not include_enums else sub_props.get('enum', '')
-                # copy paste exp set for ease of keeping track of different types in experiment objects
-                if field_name == 'experiment_sets':
-                    set_types = ['Technical Replicates', 'Biological Replicates', 'Analysis Set', 'Others']
-                    for num, set_type in enumerate(set_types):
-                        fields.append(FieldInfo(field_name+"|"+str(num), field_type, desc, set_type, enum))
+            if not props.get('exclude_from', False) == 'submit4dn':
+                if is_subobject(props):
+                    if get_field_type(props).startswith('array'):
+                        is_member_of_array_of_objects = True
+                    fields.extend(build_field_list(props['items']['properties'],
+                                                   required_fields,
+                                                   include_description,
+                                                   include_comment,
+                                                   include_enums,
+                                                   name,
+                                                   is_member_of_array_of_objects)
+                                  )
                 else:
-                    fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
+                    field_name = dotted_field_name(name, parent)
+                    if required_fields is not None:
+                        if field_name in required_fields:
+                            field_name = '*' + field_name
+                    field_type = get_field_type(props)
+                    if is_submember:
+                        field_type = "array of embedded objects, " + field_type
+                    desc = '' if not include_description else props.get('description', '')
+                    comm = '' if not include_comment else props.get('comment', '')
+                    enum = '' if not include_enums else props.get('enum', '')
+                    # if array of string with enum
+                    if field_type == "array of strings":
+                        sub_props = props.get('items', '')
+                        enum = '' if not include_enums else sub_props.get('enum', '')
+                    # copy paste exp set for ease of keeping track of different types in experiment objects
+                    if field_name == 'experiment_sets':
+                        set_types = ['Technical Replicates', 'Biological Replicates', 'Analysis Set', 'Others']
+                        for num, set_type in enumerate(set_types):
+                            fields.append(FieldInfo(field_name+"|"+str(num), field_type, desc, set_type, enum))
+                    else:
+                        fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
     return fields
 
 
