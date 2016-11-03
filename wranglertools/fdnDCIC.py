@@ -291,10 +291,6 @@ def order_FDN(input_xls, connection):
         useful = switch_fields(useful, sheet)
         # fetch all items for common objects
         all_items = fetch_all_items(sheet, useful, connection)
-        for i in all_items:
-            print()
-            print(i)
-        # del all_items[3]
         # create a new sheet and write the data
         new_sheet = book_w.add_sheet(sheet)
         for write_row_index, write_item in enumerate(useful):
