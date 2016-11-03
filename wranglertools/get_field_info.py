@@ -149,6 +149,10 @@ def build_field_list(properties, required_fields=None, include_description=False
                     desc = '' if not include_description else props.get('description', '')
                     comm = '' if not include_comment else props.get('comment', '')
                     enum = '' if not include_enums else props.get('enum', '')
+                    # if array of string with enum
+                    if field_type == "array of strings":
+                        sub_props = props.get('items', '')
+                        enum = '' if not include_enums else sub_props.get('enum', '')
                     # copy paste exp set for ease of keeping track of different types in experiment objects
                     if field_name == 'experiment_sets':
                         set_types = ['Technical Replicates', 'Biological Replicates', 'Analysis Set', 'Others']
