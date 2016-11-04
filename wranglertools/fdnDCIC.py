@@ -31,7 +31,10 @@ class FDN_Connection(object):
     def __init__(self, key):
         self.headers = {'content-type': 'application/json', 'accept': 'application/json'}
         self.server = key.server
-        self.auth = (key.authid, key.authpw)
+        if (key.authid, key.authpw) == ("", ""):
+            self.auth = ()
+        else:
+            self.auth = (key.authid, key.authpw)
 
 
 class FDN_Schema(object):
@@ -46,8 +49,7 @@ class FDN_Schema(object):
             self.required = response['required']
 
 
-def get_FDN(obj_id, connection, frame="object"):
-    '''GET an FDN object as JSON and return as dict'''
+def FDN_url(obj_id, connection, frame):
     if frame is None:
         if '?' in obj_id:
             url = connection.server + obj_id+'&limit=all'
@@ -57,6 +59,12 @@ def get_FDN(obj_id, connection, frame="object"):
         url = connection.server + obj_id+'&limit=all&frame='+frame
     else:
         url = connection.server + obj_id+'?limit=all&frame='+frame
+    return url
+
+
+def get_FDN(obj_id, connection, frame="object"):
+    '''GET an FDN object as JSON and return as dict'''
+    url = FDN_url(obj_id, connection, frame)
     logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
     logging.debug('GET RESPONSE code %s' % (response.status_code))
@@ -133,6 +141,9 @@ def md5(path):
 
 ############################################################
 ############################################################
+# following part is for ordering fields in the created excel
+# and also populating it with the existing fields for common
+# items.
 # use the following order to process the sheets
 # if name is not here, will not be processed during ordering
 ############################################################
@@ -171,7 +182,7 @@ def move_to_frond(list_names):
         try:
             list_names.remove(frond)
             list_names.insert(0, frond)
-        except:
+        except:  # pragma: no cover
             pass
     return list_names
 
@@ -184,7 +195,7 @@ def move_to_end(list_names):
         try:
             list_names.pop(list_names.index(end))
             list_names.append(end)
-        except:
+        except:  # pragma: no cover
             pass
     return list_names
 
@@ -223,13 +234,13 @@ def switch_fields(list_names, sheet):
                 # tihs is working more consistently then the pop item method
                 list_names.remove(sort_case[1])
                 list_names.insert(list_names.index(sort_case[2]), sort_case[1])
-            except:
+            except:  # pragma: no cover
                 pass
     return list_names
 
 # if object name is in the following list, fetch all current/released items and add to xls
 fetch_items = {
-    "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
+    "Document": "document", "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
     "Publication": "publication", "Vendor": "vendor"}
 
 
@@ -250,6 +261,12 @@ def fetch_all_items(sheet, field_list, connection):
                 field = field.replace("|3", "")
                 if field == "#Field Name:":
                     item_info.append("#")
+                # the attachment fields returns a dictionary
+                elif field == "attachment":
+                    try:
+                        item_info.append(item.get(field)['download'])
+                    except:
+                        item_info.append("")
                 else:
                     item_info.append(item.get(field, ''))
             all_items.append(item_info)
@@ -312,9 +329,7 @@ def order_FDN(input_xls, connection):
                 write_column_index_III = write_column_index_II+1+i
                 new_sheet.write(write_column_index_III, ix, '', style)
     book_w.save(OutputFile)
-    ############################################################
-    ############################################################
-    # use the following order to process the sheets
-    # if name is not here, will not be processed during ordering
-    ############################################################
-    ############################################################
+############################################################
+############################################################
+############################################################
+############################################################

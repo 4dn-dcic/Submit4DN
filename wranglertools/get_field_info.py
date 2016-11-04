@@ -38,7 +38,7 @@ EPILOG = '''
     '''
 
 
-def getArgs():
+def getArgs():  # pragma: no cover
     parser = argparse.ArgumentParser(
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

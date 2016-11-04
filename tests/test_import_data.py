@@ -49,3 +49,10 @@ def test_build_patch_json_join_multiple_embeds_fields(file_metadata, file_metada
     assert expected1 in exp_rel
     assert expected2 in exp_rel
     assert expected3 in exp_rel
+
+
+def test_get_fields_type():
+    test_case = ["name", "number:num", "integer:int", "list:array"]
+    expected_result = ["string", "num", "int", "array"]
+    for i, ix in enumerate(test_case):
+        assert imp.get_field_type(ix) == expected_result[i]
