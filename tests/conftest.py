@@ -3,10 +3,24 @@ import wranglertools.fdnDCIC as fdnDCIC
 
 
 @pytest.fixture
+def connection():
+    keypairs2 = {
+                "default":
+                {"server": "https://data.4dnucleome.org/",
+                 "key": "testkey",
+                 "secret": "testsecret"
+                 }
+                }
+    key = fdnDCIC.FDN_Key(keypairs2, "default")
+    connection = fdnDCIC.FDN_Connection(key)
+    return connection
+
+
+@pytest.fixture
 def connection_public():
     keypairs2 = {
                 "default":
-                {"server": "http://data.4dnucleome.org/",
+                {"server": "https://data.4dnucleome.org/",
                  "key": "",
                  "secret": ""
                  }
@@ -202,3 +216,203 @@ def file_metadata_type():
             'experiment_relation.experiment-2': 'array',
             'experiment_relation.relationship_type-2': 'array',
             'status': 'string'}
+
+
+@pytest.fixture
+def returned_schema():
+    return '''
+    {
+    "title": "Grant",
+    "id": "/profiles/award.json",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "required": [
+        "name"
+    ],
+    "identifyingProperties": [
+        "uuid",
+        "name",
+        "title"
+    ],
+    "additionalProperties": false,
+    "mixinProperties": [
+        {
+            "$ref": "mixins.json#/schema_version"
+        },
+        {
+            "$ref": "mixins.json#/uuid"
+        },
+        {
+            "$ref": "mixins.json#/submitted"
+        },
+        {
+            "$ref": "mixins.json#/status"
+        }
+    ],
+    "type": "object",
+    "properties": {
+        "status": {
+            "readonly": true,
+            "type": "string",
+            "default": "released",
+            "enum": [
+                "released",
+                "current",
+                "revoked",
+                "deleted",
+                "replaced",
+                "in review by lab",
+                "in review by project",
+                "released to project"
+            ],
+            "title": "Status",
+            "permission": "import_items"
+        },
+        "submitted_by": {
+            "readonly": true,
+            "type": "string",
+            "serverDefault": "userid",
+            "linkTo": "User",
+            "comment": "Do not submit, value is assigned by the server. The user that created the object.",
+            "title": "Submitted by",
+            "rdfs:subPropertyOf": "dc:creator",
+            "permission": "import_items"
+        },
+        "date_created": {
+            "readonly": true,
+            "type": "string",
+            "serverDefault": "now",
+            "anyOf": [
+                {
+                    "format": "date-time"
+                },
+                {
+                    "format": "date"
+                }
+            ],
+            "comment": "Do not submit, value is assigned by the server. The date the object is created.",
+            "title": "Date created",
+            "rdfs:subPropertyOf": "dc:created",
+            "permission": "import_items"
+        },
+        "uuid": {
+            "requestMethod": "POST",
+            "readonly": true,
+            "type": "string",
+            "serverDefault": "uuid4",
+            "format": "uuid",
+            "title": "UUID",
+            "permission": "import_items"
+        },
+        "schema_version": {
+            "requestMethod": [],
+            "type": "string",
+            "default": "1",
+            "pattern": "^\\d+(\\.\\d+)*$",
+            "comment": "Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.",
+            "title": "Schema Version"
+        },
+        "title": {
+            "description": "The grant name from the NIH database, if applicable.",
+            "type": "string",
+            "title": "Name",
+            "rdfs:subPropertyOf": "dc:title"
+        },
+        "name": {
+            "description": "The official grant number from the NIH database, if applicable",
+            "uniqueKey": true,
+            "type": "string",
+            "title": "Number",
+            "pattern": "^[A-Za-z0-9\\-]+$"
+        },
+        "description": {
+            "type": "string",
+            "title": "Description",
+            "rdfs:subPropertyOf": "dc:description"
+        },
+        "start_date": {
+            "anyOf": [
+                {
+                    "format": "date-time"
+                },
+                {
+                    "format": "date"
+                }
+            ],
+            "comment": "Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).",
+            "type": "string",
+            "title": "Start date"
+        },
+        "end_date": {
+            "anyOf": [
+                {
+                    "format": "date-time"
+                },
+                {
+                    "format": "date"
+                }
+            ],
+            "comment": "Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).",
+            "type": "string",
+            "title": "End date"
+        },
+        "url": {
+            "format": "uri",
+            "type": "string",
+            "@type": "@id",
+            "description": "An external resource with additional information about the grant.",
+            "title": "URL",
+            "rdfs:subPropertyOf": "rdfs:seeAlso"
+        },
+        "pi": {
+            "description": "Principle Investigator of the grant.",
+            "comment": "See user.json for available identifiers.",
+            "type": "string",
+            "title": "P.I.",
+            "linkTo": "User"
+        },
+        "project": {
+            "description": "The name of the consortium project",
+            "type": "string",
+            "title": "Project",
+            "enum": [
+                "4DN",
+                "External"
+            ]
+        },
+        "viewing_group": {
+            "description": "The group that determines which set of data the user has permission to view.",
+            "type": "string",
+            "title": "View access group",
+            "enum": [
+                "4DN",
+                "Not 4DN"
+            ]
+        },
+        "@id": {
+            "calculatedProperty": true,
+            "type": "string",
+            "title": "ID"
+        },
+        "@type": {
+            "calculatedProperty": true,
+            "title": "Type",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "boost_values": {
+        "name": 1,
+        "title": 1,
+        "pi.title": 1
+    },
+    "@type": [
+        "JSONSchema"
+    ]
+}'''
+
+
+@pytest.fixture
+def award_dict():
+    return {'properties': {'project': {'type': 'string', 'title': 'Project', 'description': 'The name of the consortium project', 'enum': ['4DN', 'External']}, 'start_date': {'anyOf': [{'format': 'date-time'}, {'format': 'date'}], 'type': 'string', 'title': 'Start date', 'comment': 'Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).'}, '@id': {'type': 'string', 'title': 'ID', 'calculatedProperty': True}, 'description': {'type': 'string', 'rdfs:subPropertyOf': 'dc:description', 'title': 'Description'}, 'end_date': {'anyOf': [{'format': 'date-time'}, {'format': 'date'}], 'type': 'string', 'title': 'End date', 'comment': 'Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).'}, 'name': {'uniqueKey': True, 'type': 'string', 'pattern': '^[A-Za-z0-9\\-]+$', 'title': 'Number', 'description': 'The official grant number from the NIH database, if applicable'}, '@type': {'items': {'type': 'string'}, 'type': 'array', 'title': 'Type', 'calculatedProperty': True}, 'submitted_by': {'serverDefault': 'userid', 'permission': 'import_items', 'type': 'string', 'rdfs:subPropertyOf': 'dc:creator', 'title': 'Submitted by', 'readonly': True, 'linkTo': 'User', 'comment': 'Do not submit, value is assigned by the server. The user that created the object.'}, 'date_created': {'serverDefault': 'now', 'permission': 'import_items', 'type': 'string', 'rdfs:subPropertyOf': 'dc:created', 'title': 'Date created', 'readonly': True, 'comment': 'Do not submit, value is assigned by the server. The date the object is created.', 'anyOf': [{'format': 'date-time'}, {'format': 'date'}]}, 'title': {'type': 'string', 'rdfs:subPropertyOf': 'dc:title', 'title': 'Name', 'description': 'The grant name from the NIH database, if applicable.'}, 'viewing_group': {'type': 'string', 'title': 'View access group', 'description': 'The group that determines which set of data the user has permission to view.', 'enum': ['4DN', 'Not 4DN']}, 'schema_version': {'type': 'string', 'pattern': '^\\d+(\\.\\d+)*$', 'title': 'Schema Version', 'default': '1', 'requestMethod': [], 'comment': 'Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.'}, 'url': {'type': 'string', 'rdfs:subPropertyOf': 'rdfs:seeAlso', 'format': 'uri', 'title': 'URL', 'description': 'An external resource with additional information about the grant.', '@type': '@id'}, 'uuid': {'serverDefault': 'uuid4', 'permission': 'import_items', 'type': 'string', 'format': 'uuid', 'title': 'UUID', 'readonly': True, 'requestMethod': 'POST'}, 'status': {'enum': ['released', 'current', 'revoked', 'deleted', 'replaced', 'in review by lab', 'in review by project', 'released to project'], 'permission': 'import_items', 'type': 'string', 'title': 'Status', 'readonly': True, 'default': 'released'}, 'pi': {'linkTo': 'User', 'type': 'string', 'title': 'P.I.', 'description': 'Principle Investigator of the grant.', 'comment': 'See user.json for available identifiers.'}}, 'type': 'object', 'mixinProperties': [{'$ref': 'mixins.json#/schema_version'}, {'$ref': 'mixins.json#/uuid'}, {'$ref': 'mixins.json#/submitted'}, {'$ref': 'mixins.json#/status'}], 'title': 'Grant', 'required': ['name'], 'boost_values': {'pi.title': 1.0, 'title': 1.0, 'name': 1.0}, 'identifyingProperties': ['uuid', 'name', 'title'], 'additionalProperties': False, '$schema': 'http://json-schema.org/draft-04/schema#', '@type': ['JSONSchema'], 'id': '/profiles/award.json'}
