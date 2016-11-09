@@ -72,8 +72,7 @@ def test_md5():
 
 
 def test_get_FDN_mock(connection_public, mocker, returned_award_schema):
-    with mocker.patch('wranglertools.fdnDCIC.requests.get') as mocked_get:
-        mocked_get.return_value = returned_award_schema
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_award_schema):
         award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
         assert award_schema['title'] == 'Grant'
         assert award_schema['properties'].get('description')
