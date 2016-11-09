@@ -75,6 +75,7 @@ def get_FDN(obj_id, connection, frame="object"):
     except:
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:
+        print('status code is {}'.format(str(response.status_code)))
         print("\nWARNING!: Problem with access, please check your keys.\n")
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
