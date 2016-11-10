@@ -91,39 +91,6 @@ def test_schema_mock(connection, mocker, returned_vendor_schema):
         assert vendor_schema.required == ["title"]
 
 
-def test_new_FDN_mock_post_item_dict(connection, mocker, returned_post_new_vendor):
-    post_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description', 'title': 'Test Vendor',
-                 'url': 'http://www.test_vendor.com'}
-    with mocker.patch('wranglertools.fdnDCIC.requests.post', return_value=returned_post_new_vendor):
-        fdnDCIC.new_FDN(connection, 'Vendor', post_item)
-        url = 'https://data.4dnucleome.org/Vendor'
-        auth = ('testkey', 'testsecret')
-        headers = {'accept': 'application/json', 'content-type': 'application/json'}
-        data = json.dumps(post_item)
-        args = fdnDCIC.requests.post.call_args
-        assert args[0][0] == url
-        assert args[1]['auth'] == auth
-        assert args[1]['headers'] == headers
-        assert args[1]['data'] == data
-
-
-def test_new_FDN_mock_post_item_str(connection, mocker, returned_post_new_vendor):
-    post_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description', 'title': 'Test Vendor',
-                 'url': 'http://www.test_vendor.com'}
-    data = json.dumps(post_item)
-    with mocker.patch('wranglertools.fdnDCIC.requests.post', return_value=returned_post_new_vendor):
-        fdnDCIC.new_FDN(connection, 'Vendor', data)
-        url = 'https://data.4dnucleome.org/Vendor'
-        auth = ('testkey', 'testsecret')
-        headers = {'accept': 'application/json', 'content-type': 'application/json'}
-        data = json.dumps(post_item)
-        args = fdnDCIC.requests.post.call_args
-        assert args[0][0] == url
-        assert args[1]['auth'] == auth
-        assert args[1]['headers'] == headers
-        assert args[1]['data'] == data
-
-
 def test_filter_and_sort():
     test_list = ["submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
                  "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
