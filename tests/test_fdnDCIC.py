@@ -1,7 +1,5 @@
 import pytest
 import wranglertools.fdnDCIC as fdnDCIC
-import json
-
 # test data is in conftest.py
 
 keypairs = {
@@ -138,19 +136,21 @@ def test_switch_fields():
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
 
 
-def test_fetch_all_items(connection_public):
+def test_fetch_all_items_mock(connection, mocker, returned_vendor_items):
     fields = ['#Field Name:', 'aliases', 'name', '*title', 'description', 'lab', 'award', 'url']
-    all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection_public)
-    for vendor in all_vendor_items:
-        assert len(vendor) == len(fields)
-        assert vendor[0].startswith("#")
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
+        all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection)
+        for vendor in all_vendor_items:
+            assert len(vendor) == len(fields)
+            assert vendor[0].startswith("#")
 
 
-def test_order_FDN(connection_public):
+def test_order_FDN_mock(connection, mocker, returned_vendor_items):
     import os
     try:
         os.remove("./tests/data_files/Vendor_ordered.xls")
     except:
         pass
-    fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection_public)
-    assert os.path.isfile('./tests/data_files/Vendor.xls')
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
+        fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection)
+        assert os.path.isfile('./tests/data_files/Vendor_ordered.xls')

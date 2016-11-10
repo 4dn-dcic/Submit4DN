@@ -248,8 +248,8 @@ def fetch_all_items(sheet, field_list, connection):
     all_items = []
     if sheet in fetch_items.keys():
         obj_id = "search/?type=" + fetch_items[sheet]
-        get_FDN(obj_id, connection)
-        items_list = get_FDN(obj_id, connection)['@graph']
+        resp = get_FDN(obj_id, connection)
+        items_list = resp['@graph']
         for item in items_list:
             item_info = []
             for field in field_list:
