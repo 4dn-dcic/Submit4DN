@@ -1,4 +1,4 @@
-# flake8: noqa 
+# flake8: noqa
 import pytest
 import wranglertools.fdnDCIC as fdnDCIC
 
@@ -14,29 +14,43 @@ class MockedResponse(object):
 
 @pytest.fixture
 def connection():
-    keypairs2 = {
+    keypairs = {
                 "default":
                 {"server": "https://data.4dnucleome.org/",
                  "key": "testkey",
                  "secret": "testsecret"
                  }
                 }
-    key = fdnDCIC.FDN_Key(keypairs2, "default")
+    key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
     return connection
 
 
 @pytest.fixture
 def connection_public():
-    keypairs2 = {
+    keypairs = {
                 "default":
                 {"server": "https://data.4dnucleome.org/",
                  "key": "",
                  "secret": ""
                  }
                 }
-    key2 = fdnDCIC.FDN_Key(keypairs2, "default")
+    key2 = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key2)
+    return connection
+
+
+@pytest.fixture
+def connection_koray():
+    keypairs = {
+                "default": {
+                  "key": "E2IG34B5",
+                  "secret": "x24acskzaavaqgva",
+                  "server": "http://4dn-web-dev.us-east-1.elasticbeanstalk.com/"
+                }
+                }
+    key = fdnDCIC.FDN_Key(keypairs, "default")
+    connection = fdnDCIC.FDN_Connection(key)
     return connection
 
 
@@ -232,6 +246,18 @@ def file_metadata_type():
 def returned_award_schema():
     data = {"title":"Grant","id":"/profiles/award.json","$schema":"http://json-schema.org/draft-04/schema#","required":["name"],"identifyingProperties":["uuid","name","title"],"additionalProperties":False,"mixinProperties":[{"$ref":"mixins.json#/schema_version"},{"$ref":"mixins.json#/uuid"},{"$ref":"mixins.json#/submitted"},{"$ref":"mixins.json#/status"}],"type":"object","properties":{"status":{"readonly":True,"type":"string","default":"released","enum":["released","current","revoked","deleted","replaced","in review by lab","in review by project","released to project"],"title":"Status","permission":"import_items"},"submitted_by":{"readonly":True,"type":"string","serverDefault":"userid","linkTo":"User","comment":"Do not submit, value is assigned by the server. The user that created the object.","title":"Submitted by","rdfs:subPropertyOf":"dc:creator","permission":"import_items"},"date_created":{"readonly":True,"type":"string","serverDefault":"now","anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Do not submit, value is assigned by the server. The date the object is created.","title":"Date created","rdfs:subPropertyOf":"dc:created","permission":"import_items"},"uuid":{"requestMethod":"POST","readonly":True,"type":"string","serverDefault":"uuid4","format":"uuid","title":"UUID","permission":"import_items"},"schema_version":{"requestMethod":[],"type":"string","default":"1","pattern":"^\\d+(\\.\\d+)*$","comment":"Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.","title":"Schema Version"},"title":{"description":"The grant name from the NIH database, if applicable.","type":"string","title":"Name","rdfs:subPropertyOf":"dc:title"},"name":{"description":"The official grant number from the NIH database, if applicable","uniqueKey":True,"type":"string","title":"Number","pattern":"^[A-Za-z0-9\\-]+$"},"description":{"type":"string","title":"Description","rdfs:subPropertyOf":"dc:description"},"start_date":{"anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).","type":"string","title":"Start date"},"end_date":{"anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).","type":"string","title":"End date"},"url":{"format":"uri","type":"string","@type":"@id","description":"An external resource with additional information about the grant.","title":"URL","rdfs:subPropertyOf":"rdfs:seeAlso"},"pi":{"description":"Principle Investigator of the grant.","comment":"See user.json for available identifiers.","type":"string","title":"P.I.","linkTo":"User"},"project":{"description":"The name of the consortium project","type":"string","title":"Project","enum":["4DN","External"]},"viewing_group":{"description":"The group that determines which set of data the user has permission to view.","type":"string","title":"View access group","enum":["4DN","Not 4DN"]},"@id":{"calculatedProperty":True,"type":"string","title":"ID"},"@type":{"calculatedProperty":True,"title":"Type","type":"array","items":{"type":"string"}}},"boost_values":{"name":1,"title":1,"pi.title":1},"@type":["JSONSchema"]}
     return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_vendor_schema():
+    data = {"title":"Vendor","description":"Schema for submitting an originating lab or vendor.","id":"/profiles/vendor.json","$schema":"http://json-schema.org/draft-04/schema#","type":"object","required":["title"],"identifyingProperties":["uuid","name"],"additionalProperties":False,"mixinProperties":[{"$ref":"mixins.json#/schema_version"},{"$ref":"mixins.json#/uuid"},{"$ref":"mixins.json#/status"},{"$ref":"mixins.json#/notes"},{"$ref":"mixins.json#/submitted"},{"$ref":"mixins.json#/attribution"},{"$ref":"mixins.json#/aliases"}],"properties":{"aliases":{"type":"array","default":[],"uniqueItems":True,"title":"Lab aliases","description":"Lab specific identifiers to reference an object.","items":{"comment":"Current convention is colon separated lab name and lab identifier. (e.g. john-doe:42).","pattern":"^\\S+:\\S+","uniqueKey":"alias","title":"Lab alias","description":"A lab specific identifier to reference an object.","type":"string"}},"award":{"comment":"See award.json for list of available identifiers.","title":"Grant","description":"Grant associated with the submission.","linkTo":"Award","type":"string"},"lab":{"description":"Lab associated with the submission.","linkSubmitsFor":True,"title":"Lab","comment":"See lab.json for list of available identifiers.","linkTo":"Lab","type":"string"},"date_created":{"anyOf":[{"format":"date-time"},{"format":"date"}],"serverDefault":"now","readonly":True,"type":"string","comment":"Do not submit, value is assigned by the server. The date the object is created.","title":"Date created","rdfs:subPropertyOf":"dc:created","permission":"import_items"},"submitted_by":{"serverDefault":"userid","readonly":True,"type":"string","comment":"Do not submit, value is assigned by the server. The user that created the object.","linkTo":"User","title":"Submitted by","rdfs:subPropertyOf":"dc:creator","permission":"import_items"},"notes":{"elasticsearch_mapping_index_type":{"title":"Field mapping index type","description":"Defines one of three types of indexing available","type":"string","enum":["analyzed","not_analyzed","no"],"default":"analyzed"},"description":"DCIC internal notes.","type":"string","title":"Notes"},"status":{"readonly":True,"default":"in review by lab","title":"Status","type":"string","enum":["released","current","revoked","deleted","replaced","in review by lab","in review by project","released to project"],"permission":"import_items"},"uuid":{"serverDefault":"uuid4","readonly":True,"requestMethod":"POST","type":"string","title":"UUID","format":"uuid","permission":"import_items"},"schema_version":{"default":"1","pattern":"^\\d+(\\.\\d+)*$","requestMethod":[],"title":"Schema Version","comment":"Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.","type":"string"},"description":{"title":"Description","description":"A plain text description of the source.","type":"string","default":""},"title":{"title":"Name","description":"The complete name of the originating lab or vendor. ","type":"string"},"name":{"uniqueKey":True,"type":"string","description":"DON'T SUBMIT, auto-generated, use for referencing vendors in other sheets.","pattern":"^[a-z0-9\\-]+$"},"url":{"title":"URL","description":"An external resource with additional information about the source.","type":"string","format":"uri"},"@type":{"calculatedProperty":True,"title":"Type","type":"array","items":{"type":"string"}},"@id":{"calculatedProperty":True,"title":"ID","type":"string"}},"boost_values":{"name":1,"title":1},"@type":["JSONSchema"]}
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_post_new_vendor():
+    data = {'status': 'success', '@type': ['result'], '@graph': [{'title': 'Test Vendor2', 'date_created': '2016-11-10T16:14:28.097832+00:00', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/', 'aliases': ['dcic:vendor_test2'], 'name': 'test-vendor', 'status': 'in review by lab', 'uuid': 'ab487748-5904-42c8-9a8b-47f82df9f049', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'url': 'http://www.test_vendor.com', '@id': '/vendors/test-vendor/', 'description': 'test description'}]}
+    return MockedResponse(data, 201)
 
 
 @pytest.fixture
