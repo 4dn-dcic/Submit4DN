@@ -102,10 +102,8 @@ def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         for field in field_dict['Vendor']:
-            assert field.name != None
-            assert field.ftype != None
-            assert field.desc != None
-            assert field.comm != None
-            assert field.enum != None
-            assert field.keys == ['name']
-
+            assert field.name is not None
+            assert field.ftype is not None
+            assert field.desc is not None
+            assert field.comm is not None
+            assert field.enum is not None
