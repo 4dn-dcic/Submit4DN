@@ -123,6 +123,38 @@ def test_new_FDN_mock_post_item_str(connection, mocker, returned_post_new_vendor
         assert args[1]['data'] == data
 
 
+def test_patch_FDN_mock_post_item_dict(connection, mocker, returned__patch_vendor):
+    patch_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description new'}
+    obj_id = 'some_uuid'
+    with mocker.patch('wranglertools.fdnDCIC.requests.patch', return_value=returned__patch_vendor):
+        fdnDCIC.patch_FDN(obj_id, connection, patch_item)
+        url = 'https://data.4dnucleome.org/some_uuid'
+        auth = ('testkey', 'testsecret')
+        headers = {'accept': 'application/json', 'content-type': 'application/json'}
+        data = json.dumps(patch_item)
+        args = fdnDCIC.requests.patch.call_args
+        assert args[0][0] == url
+        assert args[1]['auth'] == auth
+        assert args[1]['headers'] == headers
+        assert args[1]['data'] == data
+
+
+def test_patch_FDN_mock_post_item_str(connection, mocker, returned__patch_vendor):
+    patch_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description new'}
+    data = json.dumps(patch_item)
+    obj_id = 'some_uuid'
+    with mocker.patch('wranglertools.fdnDCIC.requests.patch', return_value=returned__patch_vendor):
+        fdnDCIC.patch_FDN(obj_id, connection, data)
+        url = 'https://data.4dnucleome.org/some_uuid'
+        auth = ('testkey', 'testsecret')
+        headers = {'accept': 'application/json', 'content-type': 'application/json'}
+        args = fdnDCIC.requests.patch.call_args
+        assert args[0][0] == url
+        assert args[1]['auth'] == auth
+        assert args[1]['headers'] == headers
+        assert args[1]['data'] == data
+
+
 def test_filter_and_sort():
     test_list = ["submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
                  "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
