@@ -131,7 +131,7 @@ def attachment(path):
             stream.seek(0, 0)
             im = Image.open(stream)
             im.verify()
-            if im.format != minor.upper():
+            if im.format != minor.upper():  # pragma: no cover
                 msg = "Image file format %r does not match extension for %s"
                 raise ValueError(msg % (im.format, filename))
             attach['width'], attach['height'] = im.size
@@ -149,7 +149,6 @@ def reader(filename, sheetname=None):
             sheet = book.sheet_by_name(sheetname)
         except xlrd.XLRDError:
             return
-
     datemode = sheet.book.datemode
     for index in range(sheet.nrows):
         yield [cell_value(cell, datemode) for cell in sheet.row(index)]

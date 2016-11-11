@@ -44,6 +44,24 @@ def test_attachment_not_accepted():
     assert str(excinfo.value) == 'Unknown file type for test.mp3'
 
 
+def test_reader(vendor_raw_xls_fields):
+    readxls = imp.reader('./tests/data_files/Vendor.xls')
+    for n, row in enumerate(readxls):
+        assert row == vendor_raw_xls_fields[n]
+
+
+def test_reader_with_sheetname(vendor_raw_xls_fields):
+    readxls = imp.reader('./tests/data_files/Vendor.xls', 'Vendor')
+    for n, row in enumerate(readxls):
+        assert row == vendor_raw_xls_fields[n]
+
+
+def test_reader_wrong_sheetname():
+    readxls = imp.reader('./tests/data_files/Vendor.xls', 'Enzyme')
+    list_readxls = list(readxls)
+    assert list_readxls == []
+
+
 def test_formatter_gets_ints_correctly():
     assert 6 == imp.data_formatter('6', 'int')
     assert 6 == imp.data_formatter(6, 'integer')
