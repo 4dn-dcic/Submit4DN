@@ -62,6 +62,13 @@ def test_reader_wrong_sheetname():
     assert list_readxls == []
 
 
+def test_cell_value():
+    readxls = imp.reader('./tests/data_files/test_cell_values.xls')
+    list_readxls = list(readxls)
+    print(list_readxls)
+    assert list_readxls == [['BOOLEAN', '1'], ['NUMBER', '10'], ['DATE', '2016-09-02']]
+
+
 def test_formatter_gets_ints_correctly():
     assert 6 == imp.data_formatter('6', 'int')
     assert 6 == imp.data_formatter(6, 'integer')
