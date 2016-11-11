@@ -132,20 +132,3 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
         with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_existing_item):
             response = imp.get_existing(post_json, connection)
             assert response == returned_vendor_existing_item.json()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
