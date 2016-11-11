@@ -159,7 +159,7 @@ def cell_value(cell, datemode):
     ctype = cell.ctype
     value = cell.value
 
-    if ctype == xlrd.XL_CELL_ERROR:
+    if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
         raise ValueError(repr(cell), 'cell error')
 
     elif ctype == xlrd.XL_CELL_BOOLEAN:
@@ -197,12 +197,6 @@ def data_formatter(value, val_type):
         return str(value)
 
 
-def clear_out_empty_field(field_name, fields):
-    """Remove fields with empty value."""
-    if fields[field_name] == '':
-        fields.pop(field_name)
-
-
 def get_field_name(field_name):
     """handle type at end, plus embedded objets."""
     field = field_name.replace('*', '')
@@ -213,7 +207,7 @@ def get_sub_field(field_name):
     """Construct embeded field names."""
     try:
         return field_name.split(".")[1].rstrip('-0123456789')
-    except:
+    except:  # pragma: no cover
         return ''
 
 
