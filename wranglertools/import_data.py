@@ -516,7 +516,7 @@ def loadxl_cycle(patch_list, connection):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def main():
+def main(): # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
     connection = fdnDCIC.FDN_Connection(key)
