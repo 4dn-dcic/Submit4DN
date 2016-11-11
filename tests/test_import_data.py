@@ -3,8 +3,12 @@ import wranglertools.import_data as imp
 # test data is in conftest.py
 
 
-def test_attachment():
+def test_attachment_image():
     imp.attachment("./tests/data_files/test.jpg")
+
+
+def test_attachment_pdf():
+    imp.attachment("./tests/data_files/test.pdf")
 
 
 def test_formatter_gets_ints_correctly():
