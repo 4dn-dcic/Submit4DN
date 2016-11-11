@@ -4,11 +4,26 @@ import wranglertools.import_data as imp
 
 
 def test_attachment_image():
-    imp.attachment("./tests/data_files/test.jpg")
+    attach = imp.attachment("./tests/data_files/test.jpg")
+    assert attach['height'] == 1080
+    assert attach['width'] == 1920
+    assert attach['download'] == 'test.jpg'
+    assert attach['type'] == 'image/jpeg'
+    assert attach['href'].startswith('data:image/jpeg;base64')
 
 
 def test_attachment_pdf():
-    imp.attachment("./tests/data_files/test.pdf")
+    attach = imp.attachment("./tests/data_files/test.pdf")
+    assert attach['download'] == 'test.pdf'
+    assert attach['type'] == 'application/pdf'
+    assert attach['href'].startswith('data:application/pdf;base64')
+
+
+def test_attachment_url():
+    attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
+    assert attach['download'] == 'readme.txt'
+    assert attach['type'] == 'text/plain'
+    assert attach['href'].startswith('data:text/plain;base64')
 
 
 def test_formatter_gets_ints_correctly():
