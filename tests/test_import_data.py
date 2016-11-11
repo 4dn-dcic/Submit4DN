@@ -1,5 +1,5 @@
 import wranglertools.import_data as imp
-
+import pytest
 # test data is in conftest.py
 
 
@@ -19,11 +19,29 @@ def test_attachment_pdf():
     assert attach['href'].startswith('data:application/pdf;base64')
 
 
+def test_attachment_image_wrong_extension():
+    with pytest.raises(ValueError) as excinfo:
+        imp.attachment("./tests/data_files/test_jpeg.tiff")
+    assert str(excinfo.value) == 'Wrong extension for image/jpeg: test_jpeg.tiff'
+
+
+def test_attachment_text_wrong_extension():
+    with pytest.raises(ValueError) as excinfo:
+        imp.attachment("./tests/data_files/test_txt.pdf")
+    assert str(excinfo.value) == 'Wrong extension for text/plain: test_txt.pdf'
+
+
 def test_attachment_url():
     attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
     assert attach['download'] == 'readme.txt'
     assert attach['type'] == 'text/plain'
     assert attach['href'].startswith('data:text/plain;base64')
+
+
+def test_attachment_not_accepted():
+    with pytest.raises(ValueError) as excinfo:
+        imp.attachment("./tests/data_files/test.mp3")
+    assert str(excinfo.value) == 'Unknown file type for test.mp3'
 
 
 def test_formatter_gets_ints_correctly():
@@ -58,7 +76,6 @@ def test_build_patch_json_keeps_valid_fields(file_metadata, file_metadata_type):
 
 def test_build_patch_json_embeds_fields(file_metadata, file_metadata_type):
     post_json = imp.build_patch_json(file_metadata, file_metadata_type)
-
     expected = [{'file': 'testfile.fastq', 'relationship_type': 'related_to'}]
     assert expected == post_json.get('related_files', None)
 
