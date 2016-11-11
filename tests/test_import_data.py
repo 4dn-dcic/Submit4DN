@@ -3,6 +3,10 @@ import wranglertools.import_data as imp
 # test data is in conftest.py
 
 
+def test_attachment():
+    imp.attachment("./tests/data_files/test.jpg")
+
+
 def test_formatter_gets_ints_correctly():
     assert 6 == imp.data_formatter('6', 'int')
     assert 6 == imp.data_formatter(6, 'integer')
