@@ -107,3 +107,16 @@ def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
             assert field.desc is not None
             assert field.comm is not None
             assert field.enum is not None
+
+
+def test_create_xls(connection, mocker, returned_vendor_schema):
+    xls_file = "./tests/data_files/Vendor_ordered.xls"
+    import os
+    try:
+        os.remove(xls_file)
+    except:
+        pass
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
+        field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
+        gfi.create_xls(field_dict, xls_file)
+        assert os.path.isfile(xls_file)
