@@ -174,13 +174,13 @@ def cell_value(cell, datemode):
         value = xlrd.xldate_as_tuple(value, datemode)
         if value[3:] == (0, 0, 0):
             return datetime.date(*value[:3]).isoformat()
-        else:
+        else:  # pragma: no cover
             return datetime.datetime(*value).isoformat()
 
     elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
         return value
 
-    raise ValueError(repr(cell), 'unknown cell type')
+    raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
 def data_formatter(value, val_type):

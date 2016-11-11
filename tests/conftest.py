@@ -285,3 +285,9 @@ def vendor_raw_xls_fields():
            ['#Description:', 'A plain text description of the source.', '', 'Grant associated with the submission.', 'Lab associated with the submission.', 'Lab specific identifiers to reference an object.', 'An external resource with additional information about the source.', 'DCIC internal notes.', 'The complete name of the originating lab or vendor. ', '', '', '', '', ''],
            ['#Additional Info:', '', 'Do not submit, value is assigned by the server. The user that created the object.', 'See award.json for list of available identifiers.', 'See lab.json for list of available identifiers.', '', '', '', '', 'Do not submit, value is auto generated from the title as lower cased and hyphen delimited.', 'Do not submit, value is assigned by the server. The date the object is created.', '', "Choices:['released', 'current', 'revoked', 'deleted', 'replaced', 'in review by lab', 'in review by project', 'released to project']", 'Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.']
           ]
+
+
+@pytest.fixture
+def returned_vendor_existing_item():
+    data = {'title': 'Test Vendor2', 'date_created': '2016-11-10T16:14:28.097832+00:00', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/', 'aliases': ['dcic:vendor_test2'], 'name': 'test-vendor', 'status': 'in review by lab', 'uuid': 'ab487748-5904-42c8-9a8b-47f82df9f049', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'url': 'http://www.test_vendor.com', '@id': '/vendors/test-vendor/', 'description': 'test description'}
+    return MockedResponse(data, 200)

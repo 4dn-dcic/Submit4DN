@@ -121,3 +121,31 @@ def test_get_fields_type():
     expected_result = ["string", "num", "int", "array"]
     for i, ix in enumerate(test_case):
         assert imp.get_field_type(ix) == expected_result[i]
+
+
+def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
+    post_jsons = [{'uuid': 'some_uuid'},
+                  {'accession': 'some_accession'},
+                  {'aliases': ['some_uuid']},
+                  {'@id': 'some_@id'}]
+    for post_json in post_jsons:
+        with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_existing_item):
+            response = imp.get_existing(post_json, connection)
+            assert response == returned_vendor_existing_item.json()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
