@@ -27,12 +27,11 @@ def test_key():
 def test_key_file():
     key = fdnDCIC.FDN_Key('./tests/data_files/keypairs.json', "default")
     assert(key)
-    assert(type(key.server) is str)
-    assert(type(key.authpw) is str)
-    assert(type(key.authid) is str)
+    assert isinstance(key.server, str)
+    assert isinstance(key.authpw, str)
+    assert isinstance(key.authid, str)
 
 
-@pytest.mark.connection
 def test_connection():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)

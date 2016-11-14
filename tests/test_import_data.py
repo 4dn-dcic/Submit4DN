@@ -32,10 +32,15 @@ def test_attachment_text_wrong_extension():
 
 
 def test_attachment_url():
+    import os
     attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
     assert attach['download'] == 'readme.txt'
     assert attach['type'] == 'text/plain'
     assert attach['href'].startswith('data:text/plain;base64')
+    try:
+        os.remove('./readme.txt')
+    except OSError:
+        pass
 
 
 def test_attachment_not_accepted():
