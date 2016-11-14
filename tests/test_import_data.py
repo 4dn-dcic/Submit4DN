@@ -150,7 +150,7 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
 
 
 def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
-    test_insert = './tests/data_files/vendor_insert.xls'
+    test_insert = './tests/data_files/Vendor_insert.xls'
     dict_load = {}
     # message = "This looks like a new row but the update flag wasn't passed, use --update to post new data"
     post_json = {'lab': 'sample-lab',
@@ -171,7 +171,7 @@ def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connec
     import os
     cwd = os.getcwd()
     print(cwd)
-    test_insert = "./tests/data_files/vendor_insert.xls"
+    test_insert = "./tests/data_files/Vendor_insert.xls"
     dict_load = {}
     # message = "VENDOR: 0 out of 1 posted, 0 errors, 0 patched, 1 not patched (use --patchall to patch)."
     post_json = {'lab': 'sample-lab',
