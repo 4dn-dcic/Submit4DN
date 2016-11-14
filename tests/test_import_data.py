@@ -141,9 +141,46 @@ def test_get_fields_type():
 def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
     post_jsons = [{'uuid': 'some_uuid'},
                   {'accession': 'some_accession'},
-                  {'aliases': ['some_uuid']},
+                  {'aliases': ['some_acc']},
                   {'@id': 'some_@id'}]
     for post_json in post_jsons:
         with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_existing_item):
             response = imp.get_existing(post_json, connection)
             assert response == returned_vendor_existing_item.json()
+
+
+def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
+    test_insert = './tests/data_files/vendor_insert.xls'
+    dict_load = {}
+    message = "This looks like a new row but the update flag wasn't passed, use --update to post new data"
+    post_json = {'lab': 'sample-lab',
+                 'description': 'Sample description',
+                 'award': 'SampleAward',
+                 'title': 'Sample Vendor',
+                 'url': 'https://www.sample_vendor.com/',
+                 'aliases': ['dcic:sample_vendor']}
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load)
+        args = imp.get_existing.call_args
+        assert args[0][0] == post_json
+        out, err = capsys.readouterr()
+        assert out.strip() == message
+
+
+def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
+    test_insert = './tests/data_files/vendor_insert.xls'
+    dict_load = {}
+    message = "VENDOR: 0 out of 1 posted, 0 errors, 0 patched, 1 not patched (use --patchall to patch)."
+    post_json = {'lab': 'sample-lab',
+                 'description': 'Sample description',
+                 'award': 'SampleAward',
+                 'title': 'Sample Vendor',
+                 'url': 'https://www.sample_vendor.com/',
+                 'aliases': ['dcic:sample_vendor']}
+    existing_vendor = {'uuid': 'sample_uuid'}
+    with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
+        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load)
+        args = imp.get_existing.call_args
+        assert args[0][0] == post_json
+        out, err = capsys.readouterr()
+        assert out.strip() == message
