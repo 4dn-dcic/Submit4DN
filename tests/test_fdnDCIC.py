@@ -1,4 +1,3 @@
-import pytest
 import wranglertools.fdnDCIC as fdnDCIC
 import json
 # test data is in conftest.py
