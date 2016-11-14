@@ -18,9 +18,9 @@ def test_nothing():
 def test_key():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     assert(key)
-    assert(type(key.server) is str)
-    assert(type(key.authpw) is str)
-    assert(type(key.authid) is str)
+    assert isinstance(key.server, str)
+    assert isinstance(key.authpw, str)
+    assert isinstance(key.authid, str)
 
 
 def test_key_file():
