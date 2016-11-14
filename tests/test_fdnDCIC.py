@@ -213,12 +213,12 @@ def test_order_FDN_mock(connection, mocker, returned_vendor_items):
     import os
     try:
         os.remove("./tests/data_files/Vendor_ordered.xls")
-    except:
+    except OSError:
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
         fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection)
         assert os.path.isfile('./tests/data_files/Vendor_ordered.xls')
     try:
         os.remove("./tests/data_files/Vendor_ordered.xls")
-    except:
+    except OSError:
         pass

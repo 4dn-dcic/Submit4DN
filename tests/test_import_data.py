@@ -89,6 +89,16 @@ def test_formatter_gets_lists_correctly():
     assert ['1', '2', '3'] == imp.data_formatter("'[1,2,3]'", 'array')
 
 
+def test_build_field_empty_is_skipped():
+    assert imp.build_field('some_field', '', 'string') is None
+    assert imp.build_field('', 'some_data', 'string') is None
+
+
+def test_build_field_old_stype_field():
+    old_style = imp.build_field('some_field:int', "5", None)
+    assert old_style == {'some_field': 5}
+
+
 def test_build_patch_json_removes_empty_fields(file_metadata, file_metadata_type):
     post_json = imp.build_patch_json(file_metadata, file_metadata_type)
 
