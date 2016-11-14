@@ -254,14 +254,18 @@ def fetch_all_items(sheet, field_list, connection):
                 field = field.replace("|3", "")
                 if field == "#Field Name:":
                     item_info.append("#")
-                # the attachment fields returns a dictionary
+                # the attachment field returns a dictionary
                 elif field == "attachment":
                     try:
                         item_info.append(item.get(field)['download'])
                     except:
                         item_info.append("")
                 else:
-                    item_info.append(item.get(field, ''))
+                    # when writing values, check for the lists and turn them into string
+                    write_value = item.get(field, '')
+                    if isinstance(write_value, list):
+                        write_value = ','.join(write_value)
+                    item_info.append(write_value)
             all_items.append(item_info)
         return all_items
     else:

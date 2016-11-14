@@ -110,7 +110,7 @@ def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
 
 
 def test_create_xls(connection, mocker, returned_vendor_schema):
-    xls_file = "./tests/data_files/Vendor_ordered.xls"
+    xls_file = "./tests/data_files/Vendor_gfi_test.xls"
     import os
     try:
         os.remove(xls_file)
