@@ -95,10 +95,8 @@ def patch_FDN(obj_id, connection, patch_input):
     url = connection.server + obj_id
     logging.debug('PATCH URL : %s' % (url))
     logging.debug('PATCH data: %s' % (json_payload))
-    response = requests.patch(url, auth=connection.auth, data=json_payload,
-                              headers=connection.headers)
-    logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4,
-                                                     separators=(',', ': '))))
+    response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
+    logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
     if not response.status_code == 200:
         logging.warning('PATCH failure.  Response = %s' % (response.text))
     return response.json()
@@ -115,17 +113,13 @@ def new_FDN(connection, collection_name, post_input):
         print('Datatype to POST is not string or dict.')
     url = connection.server + collection_name
     logging.debug("POST URL : %s" % (url))
-    logging.debug("POST data: %s" % (json.dumps(post_input,
-                                     sort_keys=True, indent=4,
+    logging.debug("POST data: %s" % (json.dumps(post_input, sort_keys=True, indent=4,
                                      separators=(',', ': '))))
-    response = requests.post(url, auth=connection.auth,
-                             headers=connection.headers, data=json_payload)
-    logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(),
-                                         indent=4, separators=(',', ': '))))
+    response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
+    logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
     if not response.status_code == 201:
         logging.warning('POST failure. Response = %s' % (response.text))
-    logging.debug("Return object: %s" % (json.dumps(response.json(),
-                                         sort_keys=True, indent=4,
+    logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
                                          separators=(',', ': '))))
     return response.json()
 

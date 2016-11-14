@@ -207,7 +207,7 @@ def create_xls(all_fields, filename):
     wb.save(filename)
 
 
-def main():
+def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
     connection = fdnDCIC.FDN_Connection(key)

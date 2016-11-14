@@ -114,35 +114,28 @@ def attachment(path):
     mime_type, encoding = mimetypes.guess_type(path)
     major, minor = mime_type.split('/')
     detected_type = magic.from_file(path, mime=True)
-
     # XXX This validation logic should move server-side.
     if not (detected_type == mime_type or
             detected_type == 'text/plain' and major == 'text'):
         raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
-
     with open(path, 'rb') as stream:
         attach = {
             'download': filename,
             'type': mime_type,
-            'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))
-        }
-
+            'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
         if mime_type in ('application/pdf', 'text/plain', 'text/tab-separated-values', 'text/html'):
             # XXX Should use chardet to detect charset for text files here.
             return attach
-
         if major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
             # XXX we should just convert our tiffs to pngs
             stream.seek(0, 0)
             im = Image.open(stream)
             im.verify()
-            if im.format != minor.upper():
+            if im.format != minor.upper():  # pragma: no cover
                 msg = "Image file format %r does not match extension for %s"
                 raise ValueError(msg % (im.format, filename))
-
             attach['width'], attach['height'] = im.size
             return attach
-
     raise ValueError("Unknown file type for %s" % filename)
 
 
@@ -156,7 +149,6 @@ def reader(filename, sheetname=None):
             sheet = book.sheet_by_name(sheetname)
         except xlrd.XLRDError:
             return
-
     datemode = sheet.book.datemode
     for index in range(sheet.nrows):
         yield [cell_value(cell, datemode) for cell in sheet.row(index)]
@@ -167,7 +159,7 @@ def cell_value(cell, datemode):
     ctype = cell.ctype
     value = cell.value
 
-    if ctype == xlrd.XL_CELL_ERROR:
+    if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
         raise ValueError(repr(cell), 'cell error')
 
     elif ctype == xlrd.XL_CELL_BOOLEAN:
@@ -182,13 +174,13 @@ def cell_value(cell, datemode):
         value = xlrd.xldate_as_tuple(value, datemode)
         if value[3:] == (0, 0, 0):
             return datetime.date(*value[:3]).isoformat()
-        else:
+        else:  # pragma: no cover
             return datetime.datetime(*value).isoformat()
 
     elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
         return value
 
-    raise ValueError(repr(cell), 'unknown cell type')
+    raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
 def data_formatter(value, val_type):
@@ -205,12 +197,6 @@ def data_formatter(value, val_type):
         return str(value)
 
 
-def clear_out_empty_field(field_name, fields):
-    """Remove fields with empty value."""
-    if fields[field_name] == '':
-        fields.pop(field_name)
-
-
 def get_field_name(field_name):
     """handle type at end, plus embedded objets."""
     field = field_name.replace('*', '')
@@ -221,7 +207,7 @@ def get_sub_field(field_name):
     """Construct embeded field names."""
     try:
         return field_name.split(".")[1].rstrip('-0123456789')
-    except:
+    except:  # pragma: no cover
         return ''
 
 
@@ -516,7 +502,7 @@ def loadxl_cycle(patch_list, connection):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def main():
+def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
     connection = fdnDCIC.FDN_Connection(key)
