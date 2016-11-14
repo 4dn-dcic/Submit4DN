@@ -96,3 +96,14 @@ def test_build_field_list_embeds_with_dots(embed_properties):
 def test_get_uploadable_fields(connection_public):
     field_dict = gfi.get_uploadable_fields(connection_public, ['Vendor'])
     assert field_dict
+
+
+def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
+        field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
+        for field in field_dict['Vendor']:
+            assert field.name is not None
+            assert field.ftype is not None
+            assert field.desc is not None
+            assert field.comm is not None
+            assert field.enum is not None

@@ -1,6 +1,5 @@
 import pytest
 import wranglertools.fdnDCIC as fdnDCIC
-
 # test data is in conftest.py
 
 keypairs = {
@@ -65,19 +64,29 @@ def test_md5():
 
 
 def test_get_FDN(connection_public):
+    # test the schema retrival with public connection
     award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
     assert award_schema['title'] == 'Grant'
     assert award_schema['properties'].get('description')
 
 
-def test_schema(connection_public):
-    vendor_schema = fdnDCIC.FDN_Schema(connection_public, "/profiles/vendor.json")
-    assert vendor_schema.uri == "/profiles/vendor.json"
-    assert vendor_schema.server == connection_public.server
-    assert vendor_schema.properties['title'] == {'description': 'The complete name of the originating lab or vendor. ',
-                                                 'title': 'Name',
-                                                 'type': 'string'}
-    assert vendor_schema.required == ["title"]
+def test_get_FDN_mock(connection, mocker, returned_award_schema):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_award_schema):
+        award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection, frame="object")
+        assert award_schema['title'] == 'Grant'
+        assert award_schema['properties'].get('description')
+
+
+def test_schema_mock(connection, mocker, returned_vendor_schema):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
+        vendor_schema = fdnDCIC.FDN_Schema(connection, "/profiles/vendor.json")
+        assert vendor_schema.uri == "/profiles/vendor.json"
+        assert vendor_schema.server == connection.server
+        schema_title = {'description': 'The complete name of the originating lab or vendor. ',
+                        'title': 'Name',
+                        'type': 'string'}
+        assert vendor_schema.properties['title'] == schema_title
+        assert vendor_schema.required == ["title"]
 
 
 def test_filter_and_sort():
@@ -127,19 +136,21 @@ def test_switch_fields():
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
 
 
-def test_fetch_all_items(connection_public):
+def test_fetch_all_items_mock(connection, mocker, returned_vendor_items):
     fields = ['#Field Name:', 'aliases', 'name', '*title', 'description', 'lab', 'award', 'url']
-    all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection_public)
-    for vendor in all_vendor_items:
-        assert len(vendor) == len(fields)
-        assert vendor[0].startswith("#")
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
+        all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection)
+        for vendor in all_vendor_items:
+            assert len(vendor) == len(fields)
+            assert vendor[0].startswith("#")
 
 
-def test_order_FDN(connection_public):
+def test_order_FDN_mock(connection, mocker, returned_vendor_items):
     import os
     try:
         os.remove("./tests/data_files/Vendor_ordered.xls")
     except:
         pass
-    fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection_public)
-    assert os.path.isfile('./tests/data_files/Vendor.xls')
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
+        fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection)
+        assert os.path.isfile('./tests/data_files/Vendor_ordered.xls')
