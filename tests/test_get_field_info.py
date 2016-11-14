@@ -114,9 +114,13 @@ def test_create_xls(connection, mocker, returned_vendor_schema):
     import os
     try:
         os.remove(xls_file)
-    except:
+    except OSError:
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
