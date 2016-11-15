@@ -241,8 +241,6 @@ def test_order_FDN_mock(connection, mocker, returned_vendor_items):
         assert os.path.isfile(ordered_file)
     ord_list = xls_to_list(ordered_file, "Vendor")
     ref_list = xls_to_list(ref_file, "Vendor")
-    print(ord_list)
-    print(ref_list)
     assert ord_list == ref_list
     try:
         os.remove(ordered_file)

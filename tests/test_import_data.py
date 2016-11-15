@@ -70,7 +70,6 @@ def test_reader_wrong_sheetname():
 def test_cell_value():
     readxls = imp.reader('./tests/data_files/test_cell_values.xls')
     list_readxls = list(readxls)
-    print(list_readxls)
     assert list_readxls == [['BOOLEAN', '1'], ['NUMBER', '10'], ['DATE', '2016-09-02']]
 
 
@@ -209,7 +208,6 @@ def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocke
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False, dict_load)
         args = imp.get_existing.call_args
-        print(args[0][0])
         assert args[0][0] == post_json
 
 
@@ -263,7 +261,6 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     # check for cred getting updated (from old_creds to new_creds)
                     args_upload = imp.upload_file.call_args
                     updated_post = args_upload[0][0]
-                    print(updated_post)
                     assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
                     # check for output message
                     out, err = capsys.readouterr()
