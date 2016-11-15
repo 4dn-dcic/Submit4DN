@@ -150,6 +150,7 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
 
 
 def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
+    # test new item submission without patchall update tags and check the return message
     test_insert = './tests/data_files/Vendor_insert.xls'
     dict_load = {}
     message = "This looks like a new row but the update flag wasn't passed, use --update to post new data"
@@ -168,6 +169,7 @@ def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection)
 
 
 def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
+    # test exisiting item submission without patchall update tags and check the return message
     test_insert = "./tests/data_files/Vendor_insert.xls"
     dict_load = {}
     message = "VENDOR: 0 out of 1 posted, 0 errors, 0 patched, 1 not patched (use --patchall to patch)."
@@ -186,19 +188,74 @@ def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connec
         assert out.strip() == message
 
 
-def test_excel_reader_no_update_no_patchall_experiment_expset_combined(mocker, connection):
+def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocker, connection):
     # check if the separated exp set fields in experiments get combined.
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
     dict_load = {}
-    post_json = {'experiment_type': 'in situ Hi-C',
-                 'description': 'Test Experiment',
-                 'experiment_sets': ['a', 'b', 'c', 'd'],
-                 'biosample': 'test-biosample',
-                 'aliases': ['dcic:test'], 'award': 'test-award',
-                 'lab': 'test-lab',
-                 'digestion_enzyme': 'HindIII',
-                 'library_preparation_date': '2010-10-10'}
+    post_json = {'experiment_sets': ['a', 'b', 'c', 'd'], 'aliases': ['dcic:test'], 'award': 'test-award',
+                 'experiment_type': 'in situ Hi-C', 'lab': 'test-lab', 'filename': 'example.fastq.gz',
+                 'biosample': 'test-biosample'}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False, dict_load)
         args = imp.get_existing.call_args
+        print(args[0][0])
         assert args[0][0] == post_json
+
+
+def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker, connection):
+    # check if the separated exp set fields in experiments get combined
+    test_insert = './tests/data_files/Exp_HiC_insert.xls'
+    dict_load = {}
+    message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
+    message1 = "EXPERIMENTHIC: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+            # mock posting new items
+            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+                imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, dict_load)
+                args = imp.fdnDCIC.new_FDN.call_args
+                out, err = capsys.readouterr()
+                outlist = [i.strip() for i in out.split('\n') if i is not ""]
+                post_json_arg = args[0][2]
+                assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
+                assert message0 == outlist[0]
+                assert message1 == outlist[1]
+
+
+def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, connection):
+    # check if the separated exp set fields in experiments get combined
+    test_insert = './tests/data_files/Exp_HiC_insert.xls'
+    dict_load = {}
+    message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
+    message1 = "EXPERIMENTHIC: 1 out of 1 posted, 0 errors, 1 patched."
+    existing_exp = {'uuid': 'sample_uuid'}
+    e = {'status': 'success',
+         '@graph': [{'uuid': 'some_uuid',
+                     'upload_credentials': 'old_creds',
+                     'accession': 'some_accession'}]}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_exp):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+            # mock posting new items
+            with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
+                # mock get upload creds
+                with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
+                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, dict_load)
+                    # check for md5sum
+                    args = imp.fdnDCIC.patch_FDN.call_args
+                    post_json_arg = args[0][2]
+                    assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
+                    # check for cred getting updated (from old_creds to new_creds)
+                    args_upload = imp.upload_file.call_args
+                    updated_post = args_upload[0][0]
+                    print(updated_post)
+                    assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
+                    # check for output message
+                    out, err = capsys.readouterr()
+                    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+                    assert message0 == outlist[0]
+                    assert message1 == outlist[1]
