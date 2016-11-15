@@ -202,4 +202,3 @@ def test_excel_reader_no_update_no_patchall_experiment_expset_combined(mocker, c
         imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False, dict_load)
         args = imp.get_existing.call_args
         assert args[0][0] == post_json
-
