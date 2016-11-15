@@ -259,3 +259,17 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     outlist = [i.strip() for i in out.split('\n') if i is not ""]
                     assert message0 == outlist[0]
                     assert message1 == outlist[1]
+
+
+def test_order_sorter(capsys):
+    test_list = ["ExperimentHiC", "BiosampleCellCulture", "Biosource", "Document", "Modification",
+                 "IndividualMouse", "Biosample", "Lab", "User", "Trouble"]
+    ordered_list = ['User', 'Lab', 'Document', 'IndividualMouse', 'Biosource', 'Modification',
+                    'BiosampleCellCulture', 'Biosample', 'ExperimentHiC']
+    message0 = "WARNING! Trouble sheet(s) are not loaded"
+    message1 = '''WARNING! Check the sheet names and the reference list "sheet_order"'''
+    assert ordered_list == imp.order_sorter(test_list)
+    out, err = capsys.readouterr()
+    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    assert message0 == outlist[0]
+    assert message1 == outlist[1]

@@ -345,7 +345,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
                     try:
                         comb_sets.extend(post_json.get(set_key))
-                    except:
+                    except:  # pragma: no cover
                         continue
                     post_json.pop(set_key, None)
                 post_json['experiment_sets'] = comb_sets
@@ -387,7 +387,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                     e['@graph'][0]['upload_credentials'] = creds
                     # upload
                     upload_file(e, filename_to_post)
-                if e["status"] == "error":
+                if e["status"] == "error":  # pragma: no cover
                     error += 1
                 elif e["status"] == "success":
                     success += 1
@@ -406,7 +406,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
-                if e["status"] == "error":
+                if e["status"] == "error":  # pragma: no cover
                     error += 1
                 elif e["status"] == "success":
                     success += 1
@@ -448,12 +448,12 @@ def upload_file(metadata_post_response, path):
     ####################
     # POST file to S3
 
-    env = os.environ.copy()
+    env = os.environ.copy()  # pragma: no cover
     env.update({
         'AWS_ACCESS_KEY_ID': creds['access_key'],
         'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
         'AWS_SECURITY_TOKEN': creds['session_token'],
-    })
+    })  # pragma: no cover
 
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
