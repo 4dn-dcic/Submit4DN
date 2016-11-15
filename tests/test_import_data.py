@@ -149,6 +149,17 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
             assert response == returned_vendor_existing_item.json()
 
 
+def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection):
+    # test new item submission without patchall update tags and check the return message
+    test_insert = './tests/data_files/Document_insert.xls'
+    dict_load = {}
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        imp.excel_reader(test_insert, 'Document', False, connection, False, dict_load)
+        args = imp.get_existing.call_args
+        attach = args[0][0]['attachment']
+        assert attach['href'].startswith('data:image/jpeg;base64')
+
+
 def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
     # test new item submission without patchall update tags and check the return message
     test_insert = './tests/data_files/Vendor_insert.xls'
