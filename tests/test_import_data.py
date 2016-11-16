@@ -3,6 +3,7 @@ import pytest
 # test data is in conftest.py
 
 
+@pytest.mark.file_operation
 def test_attachment_image():
     attach = imp.attachment("./tests/data_files/test.jpg")
     assert attach['height'] == 1080
@@ -12,6 +13,7 @@ def test_attachment_image():
     assert attach['href'].startswith('data:image/jpeg;base64')
 
 
+@pytest.mark.file_operation
 def test_attachment_pdf():
     attach = imp.attachment("./tests/data_files/test.pdf")
     assert attach['download'] == 'test.pdf'
@@ -19,18 +21,21 @@ def test_attachment_pdf():
     assert attach['href'].startswith('data:application/pdf;base64')
 
 
+@pytest.mark.file_operation
 def test_attachment_image_wrong_extension():
     with pytest.raises(ValueError) as excinfo:
         imp.attachment("./tests/data_files/test_jpeg.tiff")
     assert str(excinfo.value) == 'Wrong extension for image/jpeg: test_jpeg.tiff'
 
 
+@pytest.mark.file_operation
 def test_attachment_text_wrong_extension():
     with pytest.raises(ValueError) as excinfo:
         imp.attachment("./tests/data_files/test_txt.pdf")
     assert str(excinfo.value) == 'Wrong extension for text/plain: test_txt.pdf'
 
 
+@pytest.mark.webtest
 def test_attachment_url():
     import os
     attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
@@ -43,30 +48,35 @@ def test_attachment_url():
         pass
 
 
+@pytest.mark.file_operation
 def test_attachment_not_accepted():
     with pytest.raises(ValueError) as excinfo:
         imp.attachment("./tests/data_files/test.mp3")
     assert str(excinfo.value) == 'Unknown file type for test.mp3'
 
 
+@pytest.mark.file_operation
 def test_reader(vendor_raw_xls_fields):
     readxls = imp.reader('./tests/data_files/Vendor.xls')
     for n, row in enumerate(readxls):
         assert row == vendor_raw_xls_fields[n]
 
 
+@pytest.mark.file_operation
 def test_reader_with_sheetname(vendor_raw_xls_fields):
     readxls = imp.reader('./tests/data_files/Vendor.xls', 'Vendor')
     for n, row in enumerate(readxls):
         assert row == vendor_raw_xls_fields[n]
 
 
+@pytest.mark.file_operation
 def test_reader_wrong_sheetname():
     readxls = imp.reader('./tests/data_files/Vendor.xls', 'Enzyme')
     list_readxls = list(readxls)
     assert list_readxls == []
 
 
+@pytest.mark.file_operation
 def test_cell_value():
     readxls = imp.reader('./tests/data_files/test_cell_values.xls')
     list_readxls = list(readxls)
@@ -148,6 +158,7 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
             assert response == returned_vendor_existing_item.json()
 
 
+@pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection):
     # test new item submission without patchall update tags and check the return message
     test_insert = './tests/data_files/Document_insert.xls'
@@ -159,6 +170,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
         assert attach['href'].startswith('data:image/jpeg;base64')
 
 
+@pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
     # test new item submission without patchall update tags and check the return message
     test_insert = './tests/data_files/Vendor_insert.xls'
@@ -178,6 +190,7 @@ def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection)
         assert out.strip() == message
 
 
+@pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
     # test exisiting item submission without patchall update tags and check the return message
     test_insert = "./tests/data_files/Vendor_insert.xls"
@@ -198,6 +211,7 @@ def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connec
         assert out.strip() == message
 
 
+@pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocker, connection):
     # check if the separated exp set fields in experiments get combined.
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
@@ -211,6 +225,7 @@ def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocke
         assert args[0][0] == post_json
 
 
+@pytest.mark.file_operation
 def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker, connection):
     # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
@@ -234,6 +249,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
                 assert message1 == outlist[1]
 
 
+@pytest.mark.file_operation
 def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, connection):
     # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_HiC_insert.xls'

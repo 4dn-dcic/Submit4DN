@@ -119,3 +119,24 @@ you to update the release number, then tag the code with that version number
 and push it to github, which will trigger travis to build and test and if
 tests pass it will deploy to production version of pypi. Note that travis will
 automatically deploy the new version if you push a tag to git.
+
+# Pytest
+Every function is tested by pytest implementation. It can be run in terminal in submit4dn folder by:
+
+    py.test
+
+Some tests need internet access, and labeled with "webtest" mark.
+
+Some tests have file operations, and labeled with "file_operation" mark.
+
+To run the mark tests, or exclude them from the tests you can use the following commands:
+
+    # Run all tests
+    py.test
+
+    # Run only webtest
+    py.test -m webtest
+
+    # Run only tests with file_opration
+    py.test -m file_operation
+

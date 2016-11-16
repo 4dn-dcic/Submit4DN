@@ -1,5 +1,6 @@
 import wranglertools.fdnDCIC as fdnDCIC
 import json
+import pytest
 # test data is in conftest.py
 
 keypairs = {
@@ -23,6 +24,7 @@ def test_key():
     assert isinstance(key.authid, str)
 
 
+@pytest.mark.file_operation
 def test_key_file():
     key = fdnDCIC.FDN_Key('./tests/data_files/keypairs.json', "default")
     assert(key)
@@ -57,11 +59,13 @@ def test_FDN_url():
         assert t_url == expected_url[n]
 
 
+@pytest.mark.file_operation
 def test_md5():
     md5_keypairs = fdnDCIC.md5('./tests/data_files/keypairs.json')
     assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
 
 
+@pytest.mark.webtest
 def test_get_FDN(connection_public):
     # test the schema retrival with public connection
     award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
@@ -226,6 +230,7 @@ def xls_to_list(xls_file, sheet):
     return return_list
 
 
+@pytest.mark.file_operation
 def test_order_FDN_mock(connection, mocker, returned_vendor_items):
     vendor_file = './tests/data_files/Vendor.xls'
     ordered_file = './tests/data_files/Vendor_ordered.xls'
