@@ -1,5 +1,6 @@
 import wranglertools.fdnDCIC as fdnDCIC
 import json
+import pytest
 # test data is in conftest.py
 
 keypairs = {
@@ -23,6 +24,7 @@ def test_key():
     assert isinstance(key.authid, str)
 
 
+@pytest.mark.file_operation
 def test_key_file():
     key = fdnDCIC.FDN_Key('./tests/data_files/keypairs.json', "default")
     assert(key)
@@ -57,11 +59,13 @@ def test_FDN_url():
         assert t_url == expected_url[n]
 
 
+@pytest.mark.file_operation
 def test_md5():
     md5_keypairs = fdnDCIC.md5('./tests/data_files/keypairs.json')
     assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
 
 
+@pytest.mark.webtest
 def test_get_FDN(connection_public):
     # test the schema retrival with public connection
     award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
@@ -209,16 +213,41 @@ def test_fetch_all_items_mock(connection, mocker, returned_vendor_items):
             assert vendor[0].startswith("#")
 
 
+def xls_to_list(xls_file, sheet):
+    import xlrd
+    return_list = []
+    wb = xlrd.open_workbook(xls_file)
+    read_sheet = wb.sheet_by_name(sheet)
+    cols = read_sheet.ncols
+    rows = read_sheet.nrows
+    for row_idx in range(rows):
+        row_val = []
+        for col_idx in range(cols):
+            cell_value = str(read_sheet.cell(row_idx, col_idx))
+
+            row_val.append(cell_value)
+        return_list.append(row_val)
+    return return_list
+
+
+@pytest.mark.file_operation
 def test_order_FDN_mock(connection, mocker, returned_vendor_items):
+    vendor_file = './tests/data_files/Vendor.xls'
+    ordered_file = './tests/data_files/Vendor_ordered.xls'
+    ref_file = './tests/data_files/Vendor_ordered reference.xls'
     import os
     try:
-        os.remove("./tests/data_files/Vendor_ordered.xls")
-    except:
+        os.remove(ordered_file)
+    except OSError:
         pass
+
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
-        fdnDCIC.order_FDN('./tests/data_files/Vendor.xls', connection)
-        assert os.path.isfile('./tests/data_files/Vendor_ordered.xls')
+        fdnDCIC.order_FDN(vendor_file, connection)
+        assert os.path.isfile(ordered_file)
+    ord_list = xls_to_list(ordered_file, "Vendor")
+    ref_list = xls_to_list(ref_file, "Vendor")
+    assert ord_list == ref_list
     try:
-        os.remove("./tests/data_files/Vendor_ordered.xls")
-    except:
+        os.remove(ordered_file)
+    except OSError:
         pass

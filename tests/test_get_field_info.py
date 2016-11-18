@@ -1,4 +1,5 @@
 import wranglertools.get_field_info as gfi
+import pytest
 
 # test data is in conftest.py
 
@@ -93,11 +94,6 @@ def test_build_field_list_embeds_with_dots(embed_properties):
     assert field_list[1].name.startswith('experiment_relation')
 
 
-def test_get_uploadable_fields(connection_public):
-    field_dict = gfi.get_uploadable_fields(connection_public, ['Vendor'])
-    assert field_dict
-
-
 def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
@@ -109,8 +105,9 @@ def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
             assert field.enum is not None
 
 
+@pytest.mark.file_operation
 def test_create_xls(connection, mocker, returned_vendor_schema):
-    xls_file = "./tests/data_files/Vendor_ordered.xls"
+    xls_file = "./tests/data_files/Vendor_gfi_test.xls"
     import os
     try:
         os.remove(xls_file)

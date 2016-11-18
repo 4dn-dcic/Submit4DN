@@ -200,6 +200,7 @@ def data_formatter(value, val_type):
 def get_field_name(field_name):
     """handle type at end, plus embedded objets."""
     field = field_name.replace('*', '')
+    field = field.split(':')[0]
     return field.split(".")[0]
 
 
@@ -242,13 +243,11 @@ class FieldInfo(object):
 
 
 def build_field(field, field_data, field_type):
-    if field_data == '' or field == '':
+    if not field_data or not field:
         return None
-
     patch_field_name = get_field_name(field)
-    if field_type is None:
+    if not field_type:
         field_type = get_field_type(field)
-
     if is_embedded_field(field):
         sub_field = get_sub_field(field)
         return build_field(sub_field, field_data, 'string')
@@ -313,11 +312,13 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
     fields2types = None
     keys.pop(0)
     row2name = types.pop(0)
+
     if 'Type' in row2name:
         fields2types = dict(zip(keys, types))
         for field, ftype in fields2types.items():
             if 'array' in ftype:
                 fields2types[field] = 'array'
+
     # print(fields2types)
     # sys.exit()
     total = 0
@@ -344,7 +345,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
                     try:
                         comb_sets.extend(post_json.get(set_key))
-                    except:
+                    except:  # pragma: no cover
                         continue
                     post_json.pop(set_key, None)
                 post_json['experiment_sets'] = comb_sets
@@ -373,7 +374,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         if existing_data.get("uuid"):
             if not patchall:
                 not_patched += 1
-
             if patchall:
                 # add the md5
                 if file_to_upload and not post_json.get('md5sum'):
@@ -383,16 +383,11 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
                 if file_to_upload:
                     # get s3 credentials
-                    creds = get_upload_creds(
-                        e['@graph'][0]['accession'],
-                        connection,
-                        e['@graph'][0])
+                    creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
                     e['@graph'][0]['upload_credentials'] = creds
-
                     # upload
                     upload_file(e, filename_to_post)
-
-                if e["status"] == "error":
+                if e["status"] == "error":  # pragma: no cover
                     error += 1
                 elif e["status"] == "success":
                     success += 1
@@ -411,7 +406,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
-                if e["status"] == "error":
+                if e["status"] == "error":  # pragma: no cover
                     error += 1
                 elif e["status"] == "success":
                     success += 1
@@ -453,12 +448,12 @@ def upload_file(metadata_post_response, path):
     ####################
     # POST file to S3
 
-    env = os.environ.copy()
+    env = os.environ.copy()  # pragma: no cover
     env.update({
         'AWS_ACCESS_KEY_ID': creds['access_key'],
         'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
         'AWS_SECURITY_TOKEN': creds['session_token'],
-    })
+    })  # pragma: no cover
 
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
