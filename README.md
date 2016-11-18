@@ -15,6 +15,12 @@ The Submit4DN package is registered with Pypi so installation is as simple as:
 pip3 install submit4dn
 ```
 
+To upgrade to the lates version
+
+```
+pip3 install submit4dn --upgrade
+```
+
 ### Troubleshooting
 
 If you encounter an error containing something like:  
