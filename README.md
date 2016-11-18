@@ -140,3 +140,13 @@ To run the mark tests, or exclude them from the tests you can use the following 
     # Run only tests with file_opration
     py.test -m file_operation
 
+For a better testing experienece that also check to ensure sufficient coverage and runs linters use invoke:
+
+```
+   invoke test
+```
+
+This will first run linters, if linters pass, tests will be run and if tests achieve specified minimum coverage (89% as of time of writting) pass the tests.
+
+
+
