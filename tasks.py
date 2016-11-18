@@ -14,11 +14,12 @@ def loc(ctx):
     """
     Count lines-of-code.
     """
-    excludes = ['/tests/', '/Data_files', 'Submit4DN.egg-info', 'docs', 'htmlcov', 
-               'README.md', 'README.rst', '.eggs']
+    excludes = ['/tests/', '/Data_files', 'Submit4DN.egg-info', 'docs', 'htmlcov',
+                'README.md', 'README.rst', '.eggs']
 
     run('find . -iname "*py" | grep -v {} | xargs wc -l | sort -n'.format(
         ' '.join('-e ' + e for e in excludes)))
+
 
 @task
 def test(ctx, watch=False, last_failing=False, no_flake=False):
