@@ -165,7 +165,8 @@ def filter_and_sort(list_names):
     useful = sorted(useful)
     return useful
 
-move_frond = ['award', '*award', 'lab', '*lab', 'description',
+move_frond = ['experiment_set', '*tec_rep_no', '*bio_rep_no', '*replicate_set',
+              'award', '*award', 'lab', '*lab', 'description',
               'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
 
 

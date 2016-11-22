@@ -94,6 +94,13 @@ class FieldInfo(object):
     comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
 
+# additional fields for experiment sheets to capture experiment_set related information
+exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 'Grouping for replicate experiments'),
+                    FieldInfo('*bio_rep_no', 'number', 'Biological replicate number'),
+                    FieldInfo('*tec_rep_no', 'number', 'Technical replicate number'),
+                    FieldInfo('experiment_set', 'Item:ExperimentSet', 'Grouping for non-replicate experiments')
+                    ]
+
 
 def get_field_type(field):
     field_type = field.get('type', '')
@@ -176,6 +183,8 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         include_description,
                                         include_comments,
                                         include_enums)
+        if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
+            fields[name].extend(exp_set_addition)
     return fields
 
 
@@ -203,6 +212,8 @@ def create_xls(all_fields, filename):
                 add_info += str(field.comm)
             if field.enum:
                 add_info += "Choices:" + str(field.enum)
+            if not field.comm and not field.enum:
+                add_info = "-"
             ws.write(3, col+1, add_info)
     wb.save(filename)
 
