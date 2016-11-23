@@ -145,7 +145,8 @@ sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
-    "FileSet", "FileFastq", "FileFasta", "ExperimentSet", "ExperimentHiC", "ExperimentCaptureC"]
+    "FileSet", "FileFastq", "FileFasta", "ExperimentHiC", "ExperimentCaptureC",
+    "ExperimentSet", "ExperimentSetReplicate"]
 
 do_not_use = [
     "submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
@@ -211,11 +212,7 @@ reorder = [
     ['Experiment', 'files', 'documents'],
     ['Experiment', 'filesets', 'documents'],
     ['Experiment', 'experiment_relation.relationship_type', 'documents'],
-    ['Experiment', 'experiment_relation.experiment', 'documents'],
-    ['Experiment', 'experiment_sets|0', 'documents'],
-    ['Experiment', 'experiment_sets|1', 'documents'],
-    ['Experiment', 'experiment_sets|2', 'documents'],
-    ['Experiment', 'experiment_sets|3', 'documents'],
+    ['Experiment', 'experiment_relation.experiment', 'documents']
 ]
 
 
@@ -233,6 +230,7 @@ def switch_fields(list_names, sheet):
     return list_names
 
 # if object name is in the following list, fetch all current/released items and add to xls
+# if experiment is ever added to this list, experiment set related fields might cause some problems
 fetch_items = {
     "Document": "document", "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
     "Publication": "publication", "Vendor": "vendor"}
@@ -250,13 +248,8 @@ def fetch_all_items(sheet, field_list, connection):
             for field in field_list:
                 # required fields will have a star
                 field = field.strip('*')
-                # in case we ever want to have experiment sets in experiment
-                # this will put all exeperiment sets in the others category
-                field = field.replace("|3", "")
-                if field == "#Field Name:":
-                    item_info.append("#")
                 # the attachment field returns a dictionary
-                elif field == "attachment":
+                if field == "attachment":
                     try:
                         item_info.append(item.get(field)['download'])
                     except:

@@ -99,7 +99,7 @@ list_of_loadxl_fields = [
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
     ['ExperimentSet', ['experiments_in_set']],
-    ['Publication', ['experiment_sets_in_pub']]
+    ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
 
@@ -301,7 +301,7 @@ def get_existing(post_json, connection):
     return temp
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl):
+def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -338,7 +338,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
 
-        # Experiments sets are seperated to 4 columns in get_field_info.py and this combines them back
+        # Experiments set information is taken from experiments and submitted to experiment_set
+        if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
+            post_json['*replicate_set']
+
         if "Experiment" in sheet:
             if sheet != "ExperimentSet":
                 comb_sets = []
