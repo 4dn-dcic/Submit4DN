@@ -339,19 +339,26 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         post_json = build_patch_json(post_json, fields2types)
 
         # Experiments set information is taken from experiments and submitted to experiment_set
+        # There is a pseudo audit, if experiment does not have replicate information, error
+        replicate_info = []
+        exp_set_info = []
         if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
-            post_json['*replicate_set']
+            # Part I - Replicate Sets
+            try:
+                # store the values in a list and delete them from post_json
+                for replicate_field in ['replicate_set', 'bio_rep_no', 'tec_rep_no']:
+                    replicate_info.append(post_json[replicate_field])
+                    post_json.pop(replicate_field)
+            except KeyError:
+                print(post_json)
+                print('replicate set information incomplete')
+                error += 1
+                continue
+            # Part II - Experiment Sets
+            if post_json.get['*tec_rep_no']:
+                exp_set_info = post_json['tec_rep_no']
+                post_json.pop(post_json)
 
-        if "Experiment" in sheet:
-            if sheet != "ExperimentSet":
-                comb_sets = []
-                for set_key in ["experiment_sets|0", "experiment_sets|1", "experiment_sets|2", "experiment_sets|3"]:
-                    try:
-                        comb_sets.extend(post_json.get(set_key))
-                    except:  # pragma: no cover
-                        continue
-                    post_json.pop(set_key, None)
-                post_json['experiment_sets'] = comb_sets
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
@@ -518,12 +525,15 @@ def main():  # pragma: no cover
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     # we want to read through names in proper upload order
-    dict_loadxl = {}
     sorted_names = order_sorter(names)
+    # dictionaries that accumulate information during submission
     dict_loadxl = {}
+    dict_replicates = {}
+    dict_exp_sets = {}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
+                         dict_replicates, dict_exp_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
