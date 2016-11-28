@@ -382,6 +382,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         existing_data = get_existing(post_json, connection)
 
         # Run update or patch
+        e = {}
+        flow = ''
         if existing_data.get("uuid"):
             if not patchall:
                 not_patched += 1
@@ -398,6 +400,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                     e['@graph'][0]['upload_credentials'] = creds
                     # upload
                     upload_file(e, filename_to_post)
+                flow = 'patch'
         else:
             if update:
                 # add the md5
@@ -408,16 +411,18 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
+                flow = 'update'
             else:
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
 
-        if e["status"] == "error":  # pragma: no cover
+        if e.get("status") == "error":  # pragma: no cover
             error += 1
-        elif e["status"] == "success":
+        elif e.get("status") == "success":
             success += 1
-            patch += 1
+            if flow == 'patch':
+                patch += 1
             # uuid of the posted/patched item
             item_uuid = e['@graph'][0]['uuid']
             # if post/patch successful, append uuid to patch_loadxl_item if full

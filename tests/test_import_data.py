@@ -224,9 +224,8 @@ def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocke
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    post_json = {'experiment_sets': ['a', 'b', 'c', 'd'], 'aliases': ['dcic:test'], 'award': 'test-award',
-                 'experiment_type': 'in situ Hi-C', 'lab': 'test-lab', 'filename': 'example.fastq.gz',
-                 'biosample': 'test-biosample'}
+    post_json = {'filename': 'example.fastq.gz', 'experiment_type': 'in situ Hi-C', 'aliases': ['dcic:test'],
+                 'award': 'test-award', 'lab': 'test-lab', 'biosample': 'test-biosample'}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
