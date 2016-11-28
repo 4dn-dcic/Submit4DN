@@ -258,6 +258,11 @@ def build_field(field, field_data, field_type):
 
 def build_patch_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
+    # convert array types to array
+    for field, ftype in fields2types.items():
+        if 'array' in ftype:
+            fields2types[field] = 'array'
+
     patch_data = {}
     for field, field_data in fields.items():
         field_type = None
@@ -301,6 +306,35 @@ def get_existing(post_json, connection):
     return temp
 
 
+def filter_set_from_exps(post_json):
+    """Experiments set information is taken from experiments and submitted to experiment_set."""
+    rep_set_info = []
+    exp_set_info = []
+    # Part I - Replicate Sets
+    # store the values in a list and delete them from post_json
+    if post_json.get('replicate_set'):
+        for replicate_field in ['replicate_set', 'bio_rep_no', 'tec_rep_no']:
+            rep_set_info.append(post_json[replicate_field])
+            post_json.pop(replicate_field)
+    # Part II - Experiment Sets
+    if post_json.get('experiment_set'):
+        exp_set_info = post_json['experiment_set']
+        post_json.pop('experiment_set')
+    return post_json, rep_set_info, exp_set_info
+
+
+def filter_loadxl_fields(post_json, sheet):
+    """All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary."""
+    patch_loadxl_item = {}
+    for sheet_loadxl, fields_loadxl in list_of_loadxl_fields:
+        if sheet == sheet_loadxl:
+            for field_loadxl in fields_loadxl:
+                if post_json.get(field_loadxl):
+                    patch_loadxl_item[field_loadxl] = post_json[field_loadxl]
+                    del post_json[field_loadxl]
+    return post_json, patch_loadxl_item
+
+
 def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
@@ -309,26 +343,17 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
     # remove title column
-    fields2types = None
     keys.pop(0)
-    row2name = types.pop(0)
-
-    if 'Type' in row2name:
-        fields2types = dict(zip(keys, types))
-        for field, ftype in fields2types.items():
-            if 'array' in ftype:
-                fields2types[field] = 'array'
-
-    # print(fields2types)
-    # sys.exit()
+    types.pop(0)
+    fields2types = dict(zip(keys, types))
+    # set counters to 0
     total = 0
     error = 0
     success = 0
     patch = 0
     not_patched = 0
+    # iterate over the rows
     for values in row:
-        # dictionary to collect patch items
-        patch_loadxl_item = {}
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
@@ -337,40 +362,15 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-
-        # Experiments set information is taken from experiments and submitted to experiment_set
-        # There is a pseudo audit, if experiment does not have replicate information, error
-        rep_set_info = []
-        exp_set_info = []
+        # Filter experiment set related fields
         if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
-            # Part I - Replicate Sets
-            try:
-                # store the values in a list and delete them from post_json
-                for replicate_field in ['replicate_set', 'bio_rep_no', 'tec_rep_no']:
-                    rep_set_info.append(post_json[replicate_field])
-                    post_json.pop(replicate_field)
-            except KeyError:
-                print(post_json)
-                print('replicate set information incomplete')
-                error += 1
-                continue
-            # Part II - Experiment Sets
-            if post_json.get('experiment_set'):
-                exp_set_info = post_json['experiment_set']
-                post_json.pop('experiment_set')
-
+            post_json, rep_set_info, exp_set_info = filter_set_from_exps(post_json)
+        # Filter loadxl fields
+        post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
-
-        # All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary
-        for sheet_loadxl, fields_loadxl in list_of_loadxl_fields:
-            if sheet == sheet_loadxl:
-                for field_loadxl in fields_loadxl:
-                    if post_json.get(field_loadxl):
-                        patch_loadxl_item[field_loadxl] = post_json[field_loadxl]
-                        del post_json[field_loadxl]
         # should I upload files as well?
         file_to_upload = False
         filename_to_post = post_json.get('filename')
@@ -378,9 +378,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
             # remove full path from filename
             post_json['filename'] = filename_to_post.split('/')[-1]
             file_to_upload = True
-
+        # Get existing data if available
         existing_data = get_existing(post_json, connection)
 
+        # Run update or patch
         if existing_data.get("uuid"):
             if not patchall:
                 not_patched += 1
@@ -397,11 +398,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                     e['@graph'][0]['upload_credentials'] = creds
                     # upload
                     upload_file(e, filename_to_post)
-                if e["status"] == "error":  # pragma: no cover
-                    error += 1
-                elif e["status"] == "success":
-                    success += 1
-                    patch += 1
         else:
             if update:
                 # add the md5
@@ -412,24 +408,22 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
-                if e["status"] == "error":  # pragma: no cover
-                    error += 1
-                elif e["status"] == "success":
-                    success += 1
             else:
                 print("This looks like a new row but the update flag wasn't passed, use --update to"
                       " post new data")
                 return
 
-        if e.get("status") == "success":
+        if e["status"] == "error":  # pragma: no cover
+            error += 1
+        elif e["status"] == "success":
+            success += 1
+            patch += 1
             # uuid of the posted/patched item
             item_uuid = e['@graph'][0]['uuid']
-
             # if post/patch successful, append uuid to patch_loadxl_item if full
             if patch_loadxl_item != {}:
                 patch_loadxl_item['uuid'] = item_uuid
                 patch_loadxl.append(patch_loadxl_item)
-
             # if post/patch successful, add the replicate/set information to the accumulate lists
             if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
                 # Part-I Replicates

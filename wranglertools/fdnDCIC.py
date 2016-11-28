@@ -248,8 +248,11 @@ def fetch_all_items(sheet, field_list, connection):
             for field in field_list:
                 # required fields will have a star
                 field = field.strip('*')
+                # add # to skip existing items during submission
+                if field == "#Field Name:":
+                    item_info.append("#")
                 # the attachment field returns a dictionary
-                if field == "attachment":
+                elif field == "attachment":
                     try:
                         item_info.append(item.get(field)['download'])
                     except:

@@ -191,15 +191,14 @@ def test_switch_fields():
             [['cell_line_tier', 'cell_line', 'SOP_cell_line'], 'Biosource'],
             [['start_coordinate', 'start_location', 'location_description',
               'end_location', 'end_coordinate'], "GenomicRegion"],
-            [['experiment_relation.relationship_type', 'experiment_sets|3', 'files', 'average_fragment_size',
-              'experiment_sets|1', 'fragment_size_range', 'documents', 'experiment_relation.experiment',
-              'experiment_sets|2', 'filesets', 'experiment_sets|0'], "Experiment"]
+            [['experiment_relation.relationship_type', 'files', 'average_fragment_size',
+              'fragment_size_range', 'documents', 'experiment_relation.experiment',
+              'filesets'], "Experiment"]
             ]
     result_list = [['cell_line', 'cell_line_tier', 'SOP_cell_line'],
                    ['location_description', 'start_location', 'end_location', 'start_coordinate', 'end_coordinate'],
                    ['average_fragment_size', 'fragment_size_range', 'files', 'filesets',
-                    'experiment_relation.relationship_type', 'experiment_relation.experiment', 'experiment_sets|0',
-                    'experiment_sets|1', 'experiment_sets|2', 'experiment_sets|3', 'documents']]
+                    'experiment_relation.relationship_type', 'experiment_relation.experiment', 'documents']]
     for n, (a, b) in enumerate(cases):
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
 
@@ -210,6 +209,7 @@ def test_fetch_all_items_mock(connection, mocker, returned_vendor_items):
         all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection)
         for vendor in all_vendor_items:
             assert len(vendor) == len(fields)
+            print(vendor)
             assert vendor[0].startswith("#")
 
 
