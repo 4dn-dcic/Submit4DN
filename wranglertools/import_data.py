@@ -98,7 +98,6 @@ list_of_loadxl_fields = [
     ['FileSet', ['files_in_set']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
-    ['ExperimentSet', ['experiments_in_set']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
@@ -365,7 +364,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
                     existing_sets = [i for i in existing_sets if i['replicate_exp'] not in new_exps]
                     post_json['replicate_exps'] = add_to_post + existing_sets
                 else:
-                    post_json['experiments_in_set'] = add_to_post
+                    post_json['replicate_exps'] = add_to_post
             # remove found item from the accumulate_dict
             accumulate_dict.pop(identifier)
             break
