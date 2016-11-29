@@ -358,6 +358,52 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     assert message1 == outlist[1]
 
 
+@pytest.mark.file_operation
+def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
+    # check if the separated exp set fields in experiments get combined
+    test_insert = './tests/data_files/Exp_Set_Replicate_insert.xls'
+    dict_load = {}
+    dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
+    dict_set = {}
+    message = "EXPERIMENTSETREPLICATE: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_repset'}]}
+    final_post = {'aliases': ['sample_repset'],
+                  'experiments_in_set': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}]}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False,
+                             dict_load, dict_rep, dict_set)
+            args = imp.fdnDCIC.new_FDN.call_args
+            out, err = capsys.readouterr()
+            assert message == out.strip()
+            assert args[0][2] == final_post
+
+
+@pytest.mark.file_operation
+def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection):
+    # check if the separated exp set fields in experiments get combined
+    test_insert = './tests/data_files/Exp_Set_insert.xls'
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {'sample_expset': ['awesome_uuid']}
+    message = "EXPERIMENTSET: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_expset'}]}
+    final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid']}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False,
+                             dict_load, dict_rep, dict_set)
+            args = imp.fdnDCIC.new_FDN.call_args
+            out, err = capsys.readouterr()
+            assert message == out.strip()
+            print(args[0][2])
+            assert args[0][2] == final_post
+
+
 def test_order_sorter(capsys):
     test_list = ["ExperimentHiC", "BiosampleCellCulture", "Biosource", "Document", "Modification",
                  "IndividualMouse", "Biosample", "Lab", "User", "Trouble"]
