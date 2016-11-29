@@ -72,9 +72,9 @@ def get_FDN(obj_id, connection, frame="object"):
         if response.json():
             logging.debug('GET RESPONSE JSON: %s' %
                           (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    except:
+    except:  # pragma: no cover
         logging.debug('GET RESPONSE text %s' % (response.text))
-    if not response.status_code == 200:
+    if not response.status_code == 200:  # pragma: no cover
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
@@ -90,14 +90,14 @@ def patch_FDN(obj_id, connection, patch_input):
         json_payload = json.dumps(patch_input)
     elif isinstance(patch_input, str):
         json_payload = patch_input
-    else:
+    else:  # pragma: no cover
         print('Datatype to PATCH is not string or dict.')
     url = connection.server + obj_id
     logging.debug('PATCH URL : %s' % (url))
     logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    if not response.status_code == 200:
+    if not response.status_code == 200:  # pragma: no cover
         logging.warning('PATCH failure.  Response = %s' % (response.text))
     return response.json()
 
@@ -109,7 +109,7 @@ def new_FDN(connection, collection_name, post_input):
         json_payload = json.dumps(post_input)
     elif isinstance(post_input, str):
         json_payload = post_input
-    else:
+    else:  # pragma: no cover
         print('Datatype to POST is not string or dict.')
     url = connection.server + collection_name
     logging.debug("POST URL : %s" % (url))
@@ -117,7 +117,7 @@ def new_FDN(connection, collection_name, post_input):
                                      separators=(',', ': '))))
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    if not response.status_code == 201:
+    if not response.status_code == 201:  # pragma: no cover
         logging.warning('POST failure. Response = %s' % (response.text))
     logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
                                          separators=(',', ': '))))
@@ -265,7 +265,7 @@ def fetch_all_items(sheet, field_list, connection):
                     item_info.append(write_value)
             all_items.append(item_info)
         return all_items
-    else:
+    else:  # pragma: no cover
         return
 
 
@@ -285,7 +285,7 @@ def order_FDN(input_xls, connection):
         if sh in Sheets_read:
             Sheets.append(sh)
             Sheets_read.remove(sh)
-    if Sheets_read:
+    if Sheets_read:  # pragma: no cover
         print(Sheets_read, "not in sheet_order list, please update")
         Sheets.extend(Sheets_read)
     for sheet in Sheets:
