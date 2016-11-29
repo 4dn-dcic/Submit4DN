@@ -165,8 +165,8 @@ def test_combine_set_replicates():
                                          {'replicate_exp': 'awesome_uuid3', 'bio_rep_no': 1.0, 'tec_rep_no': 2.0}]}
     post_json2, dict_replicates2 = imp.combine_set(post_json, existing_data, "ExperimentSetReplicate", dict_replicates)
 
-    response = {'experiments_in_set': [{'replicate_exp': 'awesome_uuid1', 'tec_rep_no': 1.0, 'bio_rep_no': 1.0},
-                                       {'replicate_exp': 'awesome_uuid3', 'tec_rep_no': 2.0, 'bio_rep_no': 1.0}],
+    response = {'replicate_exps': [{'replicate_exp': 'awesome_uuid1', 'tec_rep_no': 1.0, 'bio_rep_no': 1.0},
+                                   {'replicate_exp': 'awesome_uuid3', 'tec_rep_no': 2.0, 'bio_rep_no': 1.0}],
                 'description': 'sample description',
                 'aliases': 'sample_repset'}
     assert post_json2 == response
@@ -365,7 +365,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     message = "EXPERIMENTSETREPLICATE: 1 out of 1 posted, 0 errors, 0 patched."
     e = {'status': 'success', '@graph': [{'uuid': 'sample_repset'}]}
     final_post = {'aliases': ['sample_repset'],
-                  'experiments_in_set': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}]}
+                  'replicate_exps': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}]}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
