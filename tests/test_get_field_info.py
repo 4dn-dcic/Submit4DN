@@ -38,9 +38,8 @@ def test_dotted_field_name_no_parent():
 def test_build_field_list(item_properties):
     field_list = gfi.build_field_list(item_properties, required_fields=["title", "pi"])
     assert field_list
-    assert len(field_list) == 16
+    assert len(field_list) == 13
     names = [i.name for i in field_list]
-    assert 'experiment_sets|0' in names
     assert '*title' in names
 
 
