@@ -423,5 +423,3 @@ def test_loadxl_cycle(capsys, mocker, connection):
         imp.loadxl_cycle(patch_list, connection)
         out, err = capsys.readouterr()
         assert message == out.strip()
-
-
