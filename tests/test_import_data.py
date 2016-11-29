@@ -158,13 +158,76 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
             assert response == returned_vendor_existing_item.json()
 
 
+def test_combine_set_replicates():
+    post_json = {"aliases": "sample_repset", "description": "sample description"}
+    existing_data = {}
+    dict_replicates = {'sample_repset': [{'replicate_exp': 'awesome_uuid1', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0},
+                                         {'replicate_exp': 'awesome_uuid3', 'bio_rep_no': 1.0, 'tec_rep_no': 2.0}]}
+    post_json2, dict_replicates2 = imp.combine_set(post_json, existing_data, "ExperimentSetReplicate", dict_replicates)
+
+    response = {'replicate_exps': [{'replicate_exp': 'awesome_uuid1', 'tec_rep_no': 1.0, 'bio_rep_no': 1.0},
+                                   {'replicate_exp': 'awesome_uuid3', 'tec_rep_no': 2.0, 'bio_rep_no': 1.0}],
+                'description': 'sample description',
+                'aliases': 'sample_repset'}
+    assert post_json2 == response
+    assert dict_replicates2 == {}
+
+
+def test_combine_set_expsets():
+    post_json = {"aliases": "sample_expset", "description": "sample description"}
+    existing_data = {}
+    dict_expsets = {'sample_expset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
+    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "ExperimentSet", dict_expsets)
+
+    response = {'experiments_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid1'],
+                'description': 'sample description',
+                'aliases': 'sample_expset'}
+    assert sorted(post_json2) == sorted(response)
+    assert dict_expsets2 == {}
+
+
+def test_combine_set_replicates_with_existing():
+    post_json = {"aliases": "sample_repset", "description": "sample description"}
+    existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
+                     'replicate_exps': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 6.0},
+                                        {'replicate_exp': 'awesome_uuid2', 'bio_rep_no': 2.0, 'tec_rep_no': 1.0}]}
+    dict_replicates = {'sample_repset': [{'replicate_exp': 'awesome_uuid1', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0},
+                                         {'replicate_exp': 'awesome_uuid3', 'bio_rep_no': 1.0, 'tec_rep_no': 2.0}]}
+    post_json2, dict_replicates2 = imp.combine_set(post_json, existing_data, "ExperimentSetReplicate", dict_replicates)
+
+    response = {'replicate_exps': [{'replicate_exp': 'awesome_uuid1', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0},
+                                   {'replicate_exp': 'awesome_uuid3', 'bio_rep_no': 1.0, 'tec_rep_no': 2.0},
+                                   {'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 6.0},
+                                   {'replicate_exp': 'awesome_uuid2', 'bio_rep_no': 2.0, 'tec_rep_no': 1.0}],
+                'description': 'sample description',
+                'aliases': 'sample_repset'}
+    assert post_json2 == response
+    assert dict_replicates2 == {}
+
+
+def test_combine_set_expsets_with_existing():
+    post_json = {"aliases": "sample_expset", "description": "sample description"}
+    existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
+                     "experiments_in_set": ['awesome_uuid1', 'awesome_uuid2']}
+    dict_expsets = {'sample_expset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
+    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "ExperimentSet", dict_expsets)
+
+    response = {'experiments_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid2', 'awesome_uuid1'],
+                'description': 'sample description',
+                'aliases': 'sample_expset'}
+    assert sorted(post_json2) == sorted(response)
+    assert dict_expsets2 == {}
+
+
 @pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection):
     # test new item submission without patchall update tags and check the return message
     test_insert = './tests/data_files/Document_insert.xls'
     dict_load = {}
+    dict_rep = {}
+    dict_set = {}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        imp.excel_reader(test_insert, 'Document', False, connection, False, dict_load)
+        imp.excel_reader(test_insert, 'Document', False, connection, False, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
         attach = args[0][0]['attachment']
         assert attach['href'].startswith('data:image/jpeg;base64')
@@ -175,6 +238,8 @@ def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection)
     # test new item submission without patchall update tags and check the return message
     test_insert = './tests/data_files/Vendor_insert.xls'
     dict_load = {}
+    dict_rep = {}
+    dict_set = {}
     message = "This looks like a new row but the update flag wasn't passed, use --update to post new data"
     post_json = {'lab': 'sample-lab',
                  'description': 'Sample description',
@@ -183,7 +248,7 @@ def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection)
                  'url': 'https://www.sample_vendor.com/',
                  'aliases': ['dcic:sample_vendor']}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load)
+        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
         assert args[0][0] == post_json
         out, err = capsys.readouterr()
@@ -195,6 +260,8 @@ def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connec
     # test exisiting item submission without patchall update tags and check the return message
     test_insert = "./tests/data_files/Vendor_insert.xls"
     dict_load = {}
+    dict_rep = {}
+    dict_set = {}
     message = "VENDOR: 0 out of 1 posted, 0 errors, 0 patched, 1 not patched (use --patchall to patch)."
     post_json = {'lab': 'sample-lab',
                  'description': 'Sample description',
@@ -204,7 +271,7 @@ def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connec
                  'aliases': ['dcic:sample_vendor']}
     existing_vendor = {'uuid': 'sample_uuid'}
     with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
-        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load)
+        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
         assert args[0][0] == post_json
         out, err = capsys.readouterr()
@@ -216,20 +283,22 @@ def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocke
     # check if the separated exp set fields in experiments get combined.
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
     dict_load = {}
-    post_json = {'experiment_sets': ['a', 'b', 'c', 'd'], 'aliases': ['dcic:test'], 'award': 'test-award',
-                 'experiment_type': 'in situ Hi-C', 'lab': 'test-lab', 'filename': 'example.fastq.gz',
-                 'biosample': 'test-biosample'}
+    dict_rep = {}
+    dict_set = {}
+    post_json = {'filename': 'example.fastq.gz', 'experiment_type': 'in situ Hi-C', 'aliases': ['dcic:test'],
+                 'award': 'test-award', 'lab': 'test-lab', 'biosample': 'test-biosample'}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False, dict_load)
+        imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
         assert args[0][0] == post_json
 
 
 @pytest.mark.file_operation
 def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker, connection):
-    # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
     dict_load = {}
+    dict_rep = {}
+    dict_set = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC: 1 out of 1 posted, 0 errors, 0 patched."
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
@@ -239,7 +308,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
         with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
             # mock posting new items
             with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
-                imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, dict_load)
+                imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, dict_load, dict_rep, dict_set)
                 args = imp.fdnDCIC.new_FDN.call_args
                 out, err = capsys.readouterr()
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
@@ -251,9 +320,10 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
 
 @pytest.mark.file_operation
 def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, connection):
-    # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
     dict_load = {}
+    dict_rep = {}
+    dict_set = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC: 1 out of 1 posted, 0 errors, 1 patched."
     existing_exp = {'uuid': 'sample_uuid'}
@@ -269,7 +339,8 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
             with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
-                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, dict_load)
+                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True,
+                                     dict_load, dict_rep, dict_set)
                     # check for md5sum
                     args = imp.fdnDCIC.patch_FDN.call_args
                     post_json_arg = args[0][2]
@@ -285,6 +356,50 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     assert message1 == outlist[1]
 
 
+@pytest.mark.file_operation
+def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
+    test_insert = './tests/data_files/Exp_Set_Replicate_insert.xls'
+    dict_load = {}
+    dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
+    dict_set = {}
+    message = "EXPERIMENTSETREPLICATE: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_repset'}]}
+    final_post = {'aliases': ['sample_repset'],
+                  'replicate_exps': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}]}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False,
+                             dict_load, dict_rep, dict_set)
+            args = imp.fdnDCIC.new_FDN.call_args
+            out, err = capsys.readouterr()
+            assert message == out.strip()
+            assert args[0][2] == final_post
+
+
+@pytest.mark.file_operation
+def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection):
+    test_insert = './tests/data_files/Exp_Set_insert.xls'
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {'sample_expset': ['awesome_uuid']}
+    message = "EXPERIMENTSET: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_expset'}]}
+    final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid']}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False,
+                             dict_load, dict_rep, dict_set)
+            args = imp.fdnDCIC.new_FDN.call_args
+            out, err = capsys.readouterr()
+            assert message == out.strip()
+            print(args[0][2])
+            assert args[0][2] == final_post
+
+
 def test_order_sorter(capsys):
     test_list = ["ExperimentHiC", "BiosampleCellCulture", "Biosource", "Document", "Modification",
                  "IndividualMouse", "Biosample", "Lab", "User", "Trouble"]
@@ -297,3 +412,14 @@ def test_order_sorter(capsys):
     outlist = [i.strip() for i in out.split('\n') if i is not ""]
     assert message0 == outlist[0]
     assert message1 == outlist[1]
+
+
+@pytest.mark.file_operation
+def test_loadxl_cycle(capsys, mocker, connection):
+    patch_list = {'Experiment': [{"uuid": "some_uuid"}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
+    message = "EXPERIMENT(phase2): 1 items patched."
+    with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
+        imp.loadxl_cycle(patch_list, connection)
+        out, err = capsys.readouterr()
+        assert message == out.strip()

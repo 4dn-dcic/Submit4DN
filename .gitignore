@@ -15,3 +15,7 @@ dist/
 Submit4DN.egg-info/*
 coverage.xml
 
+
+fields_ordered.xls
+
+fields.xls
