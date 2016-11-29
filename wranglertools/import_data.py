@@ -322,6 +322,16 @@ def filter_set_from_exps(post_json):
     return post_json, rep_set_info, exp_set_info
 
 
+def filter_set_from_files(post_json):
+    """File set information is taken from files."""
+    file_set_info = []
+    # store the values in a list and delete them from post_json
+    if post_json.get('filesets'):
+        file_set_info = post_json['filesets']
+        post_json.pop('filesets')
+    return post_json, file_set_info
+
+
 def filter_loadxl_fields(post_json, sheet):
     """All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary."""
     patch_loadxl_item = {}
@@ -371,7 +381,8 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl, dict_replicates, dict_exp_sets):
+def excel_reader(datafile, sheet, update, connection, patchall,
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -413,14 +424,19 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         existing_data = get_existing(post_json, connection)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
-        # Filter experiment set related fields
+        # Filter experiment set related fields from experiment
         if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
             post_json, rep_set_info, exp_set_info = filter_set_from_exps(post_json)
-        # Combine experimentset items with stored dictionaries
+        # Filter file set related fields from file
+        if sheet.startswith('File') and not sheet.startswith('FileSet'):
+            post_json, file_set_info = filter_set_from_files(post_json)
+        # Combine set items with stored dictionaries
         if sheet == 'ExperimentSet':
             post_json, dict_exp_sets = combine_set(post_json, existing_data, sheet, dict_exp_sets)
         if sheet == 'ExperimentSetReplicate':
             post_json, dict_replicates = combine_set(post_json, existing_data, sheet, dict_replicates)
+        if sheet == 'FileSet':
+            post_json, dict_file_sets = combine_set(post_json, existing_data, sheet, dict_file_sets)
 
         # Run update or patch
         e = {}
@@ -486,6 +502,14 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                             dict_exp_sets[exp_set].append(item_uuid)
                         else:
                             dict_exp_sets[exp_set] = [item_uuid, ]
+            # if post/patch successful, add the fileset information to the accumulate lists
+            if sheet.startswith('File') and not sheet.startswith('FileSet'):
+                if file_set_info:
+                    for file_set in file_set_info:
+                        if dict_file_sets.get(file_set):
+                            dict_file_sets[file_set].append(item_uuid)
+                        else:
+                            dict_file_sets[file_set] = [item_uuid, ]
 
     # add all object loadxl patches to dictionary
     dict_patch_loadxl[sheet] = patch_loadxl
@@ -588,13 +612,25 @@ def main():  # pragma: no cover
     dict_loadxl = {}
     dict_replicates = {}
     dict_exp_sets = {}
+    dict_file_sets = {}
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
-                         dict_replicates, dict_exp_sets)
+                         dict_replicates, dict_exp_sets, dict_file_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
+    # if any item left in the following dictionaries
+    # it means that this items are not posted/patched
+    # because they are not on the exp_set file_set sheets
+    for dict_store, dict_sheet in [[dict_replicates, "ExperimentSetReplicate"],
+                                   [dict_exp_sets, "ExperimentSet"],
+                                   [dict_file_sets, "FileSet"]]:
+        if dict_store:
+            remains = ', '.join(dict_store.keys())
+            print('Following items are not posted')
+            print('make sure they are on {} sheet'.format(dict_sheet))
+            print(remains)
 
 
 if __name__ == '__main__':
