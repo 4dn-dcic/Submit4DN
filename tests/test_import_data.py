@@ -295,7 +295,6 @@ def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocke
 
 @pytest.mark.file_operation
 def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker, connection):
-    # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
     dict_load = {}
     dict_rep = {}
@@ -321,7 +320,6 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
 
 @pytest.mark.file_operation
 def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, connection):
-    # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
     dict_load = {}
     dict_rep = {}
@@ -360,7 +358,6 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
 
 @pytest.mark.file_operation
 def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
-    # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_Set_Replicate_insert.xls'
     dict_load = {}
     dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
@@ -383,7 +380,6 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
 
 @pytest.mark.file_operation
 def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection):
-    # check if the separated exp set fields in experiments get combined
     test_insert = './tests/data_files/Exp_Set_insert.xls'
     dict_load = {}
     dict_rep = {}
@@ -416,3 +412,16 @@ def test_order_sorter(capsys):
     outlist = [i.strip() for i in out.split('\n') if i is not ""]
     assert message0 == outlist[0]
     assert message1 == outlist[1]
+
+
+@pytest.mark.file_operation
+def test_loadxl_cycle(capsys, mocker, connection):
+    patch_list = {'Experiment': [{"uuid": "some_uuid"}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
+    message = "EXPERIMENT(phase2): 1 items patched."
+    with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
+        imp.loadxl_cycle(patch_list, connection)
+        out, err = capsys.readouterr()
+        assert message == out.strip()
+
+
