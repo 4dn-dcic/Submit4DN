@@ -160,6 +160,34 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
 
 def test_combine_set_replicates():
     post_json = {"aliases": "sample_repset", "description": "sample description"}
+    existing_data = {}
+    dict_replicates = {'sample_repset': [{'replicate_exp': 'awesome_uuid1', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0},
+                                         {'replicate_exp': 'awesome_uuid3', 'bio_rep_no': 1.0, 'tec_rep_no': 2.0}]}
+    post_json2, dict_replicates2 = imp.combine_set(post_json, existing_data, "ExperimentSetReplicate", dict_replicates)
+
+    response = {'experiments_in_set': [{'replicate_exp': 'awesome_uuid1', 'tec_rep_no': 1.0, 'bio_rep_no': 1.0},
+                                       {'replicate_exp': 'awesome_uuid3', 'tec_rep_no': 2.0, 'bio_rep_no': 1.0}],
+                'description': 'sample description',
+                'aliases': 'sample_repset'}
+    assert post_json2 == response
+    assert dict_replicates2 == {}
+
+
+def test_combine_set_expsets():
+    post_json = {"aliases": "sample_expset", "description": "sample description"}
+    existing_data = {}
+    dict_expsets = {'sample_expset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
+    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "ExperimentSet", dict_expsets)
+
+    response = {'experiments_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid1'],
+                'description': 'sample description',
+                'aliases': 'sample_expset'}
+    assert sorted(post_json2) == sorted(response)
+    assert dict_expsets2 == {}
+
+
+def test_combine_set_replicates_with_existing():
+    post_json = {"aliases": "sample_repset", "description": "sample description"}
     existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
                      'replicate_exps': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 6.0},
                                         {'replicate_exp': 'awesome_uuid2', 'bio_rep_no': 2.0, 'tec_rep_no': 1.0}]}
@@ -177,7 +205,7 @@ def test_combine_set_replicates():
     assert dict_replicates2 == {}
 
 
-def test_combine_set_expsets():
+def test_combine_set_expsets_with_existing():
     post_json = {"aliases": "sample_expset", "description": "sample description"}
     existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
                      "experiments_in_set": ['awesome_uuid1', 'awesome_uuid2']}

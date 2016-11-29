@@ -502,7 +502,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
     #     if dict_replicates
 
 
-def get_upload_creds(file_id, connection, file_info):
+def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
     url = "%s%s/upload/" % (connection.server, file_id)
     req = requests.post(url,
                         auth=connection.auth,
@@ -511,24 +511,21 @@ def get_upload_creds(file_id, connection, file_info):
     return req.json()['@graph'][0]['upload_credentials']
 
 
-def upload_file(metadata_post_response, path):
+def upload_file(metadata_post_response, path):  # pragma: no cover
     try:
         item = metadata_post_response['@graph'][0]
         creds = item['upload_credentials']
     except Exception as e:
         print(e)
         return
-
     ####################
     # POST file to S3
-
     env = os.environ.copy()  # pragma: no cover
     env.update({
         'AWS_ACCESS_KEY_ID': creds['access_key'],
         'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
         'AWS_SECURITY_TOKEN': creds['session_token'],
-    })  # pragma: no cover
-
+    })
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
@@ -547,8 +544,6 @@ def upload_file(metadata_post_response, path):
 
 # the order to try to upload / update the items
 # used to avoid dependencies... i.e. biosample needs the biosource to exist
-
-
 def order_sorter(list_of_names):
     ret_list = []
     for i in sheet_order:
