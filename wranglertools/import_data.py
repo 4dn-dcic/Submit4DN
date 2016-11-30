@@ -93,9 +93,6 @@ def getArgs():  # pragma: no cover
 # should be in sync with loadxl.py in fourfront
 list_of_loadxl_fields = [
     ['User', ['lab', 'submits_for']],
-    ['FileFastq', ['experiments']],
-    ['FileFasta', ['experiments']],
-    ['FileSet', ['files_in_set']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
