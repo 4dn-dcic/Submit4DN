@@ -190,13 +190,13 @@ def test_combine_set_filesets():
     post_json = {"aliases": "sample_fileset", "description": "sample description"}
     existing_data = {}
     dict_filesets = {'sample_fileset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
-    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "FileSet", dict_filesets)
+    post_json2, dict_filesets2 = imp.combine_set(post_json, existing_data, "FileSet", dict_filesets)
 
     response = {'files_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid1'],
                 'description': 'sample description',
                 'aliases': 'sample_fileset'}
     assert sorted(post_json2) == sorted(response)
-    assert dict_expsets2 == {}
+    assert dict_filesets2 == {}
 
 
 def test_combine_set_replicates_with_existing():
@@ -235,15 +235,15 @@ def test_combine_set_expsets_with_existing():
 def test_combine_set_filesets_with_existing():
     post_json = {"aliases": "sample_fileset", "description": "sample description"}
     existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
-                     "filess_in_set": ['awesome_uuid1', 'awesome_uuid2']}
+                     "files_in_set": ['awesome_uuid1', 'awesome_uuid2']}
     dict_filesets = {'sample_fileset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
-    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "FileSet", dict_filesets)
+    post_json2, dict_filesets2 = imp.combine_set(post_json, existing_data, "FileSet", dict_filesets)
 
     response = {'files_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid2', 'awesome_uuid1'],
                 'description': 'sample description',
                 'aliases': 'sample_fileset'}
     assert sorted(post_json2) == sorted(response)
-    assert dict_expsets2 == {}
+    assert dict_filesets2 == {}
 
 
 @pytest.mark.file_operation
@@ -306,23 +306,6 @@ def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connec
         assert args[0][0] == post_json
         out, err = capsys.readouterr()
         assert out.strip() == message
-
-
-@pytest.mark.file_operation
-def test_excel_reader_no_update_no_patchall_new_experiment_expset_combined(mocker, connection):
-    # check if the separated exp set fields in experiments get combined.
-    test_insert = './tests/data_files/Exp_HiC_insert.xls'
-    dict_load = {}
-    dict_rep = {}
-    dict_set = {}
-    dict_file = {}
-    post_json = {'filename': 'example.fastq.gz', 'experiment_type': 'in situ Hi-C', 'aliases': ['dcic:test'],
-                 'award': 'test-award', 'lab': 'test-lab', 'biosample': 'test-biosample'}
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, False,
-                         dict_load, dict_rep, dict_set, dict_file)
-        args = imp.get_existing.call_args
-        assert args[0][0] == post_json
 
 
 @pytest.mark.file_operation
@@ -389,6 +372,32 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     outlist = [i.strip() for i in out.split('\n') if i is not ""]
                     assert message0 == outlist[0]
                     assert message1 == outlist[1]
+
+
+@pytest.mark.file_operation
+def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
+    test_insert = './tests/data_files/File_fastq_insert.xls'
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {}
+    dict_file = {}
+    message = "FILEFASTQ: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
+    final_post = {'aliases': ['dcic:test_alias'],
+                  'lab': 'test-lab',
+                  'award': 'test-award',
+                  'file_format': 'fastq'}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock posting new items
+        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            imp.excel_reader(test_insert, 'FileFastq', True, connection, False,
+                             dict_load, dict_rep, dict_set, dict_file)
+            args = imp.fdnDCIC.new_FDN.call_args
+            out, err = capsys.readouterr()
+            print([i for i in args])
+            assert message == out.strip()
+            assert args[0][2] == final_post
 
 
 @pytest.mark.file_operation

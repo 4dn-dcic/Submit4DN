@@ -379,8 +379,8 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
             # Combination for filesets
             if sheet == "FileSet":
                 if existing_data.get('files_in_set'):
-                    existing_exps = existing_data.get('files_in_set')
-                    post_json['files_in_set'] = list(set(add_to_post + existing_exps))
+                    existing_files = existing_data.get('files_in_set')
+                    post_json['files_in_set'] = list(set(add_to_post + existing_files))
                 else:
                     post_json['files_in_set'] = add_to_post
             # remove found item from the accumulate_dict
