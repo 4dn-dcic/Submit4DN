@@ -136,10 +136,10 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
-    # try:
-    #     os.remove(xls_file)
-    # except OSError:
-    #     pass
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
 
 
 @pytest.mark.file_operation
@@ -156,7 +156,7 @@ def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_s
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
-    # try:
-    #     os.remove(xls_file)
-    # except OSError:
-    #     pass
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
