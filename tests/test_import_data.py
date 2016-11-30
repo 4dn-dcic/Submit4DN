@@ -186,6 +186,19 @@ def test_combine_set_expsets():
     assert dict_expsets2 == {}
 
 
+def test_combine_set_filesets():
+    post_json = {"aliases": "sample_fileset", "description": "sample description"}
+    existing_data = {}
+    dict_filesets = {'sample_fileset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
+    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "FileSet", dict_filesets)
+
+    response = {'files_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid1'],
+                'description': 'sample description',
+                'aliases': 'sample_fileset'}
+    assert sorted(post_json2) == sorted(response)
+    assert dict_expsets2 == {}
+
+
 def test_combine_set_replicates_with_existing():
     post_json = {"aliases": "sample_repset", "description": "sample description"}
     existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
@@ -215,6 +228,20 @@ def test_combine_set_expsets_with_existing():
     response = {'experiments_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid2', 'awesome_uuid1'],
                 'description': 'sample description',
                 'aliases': 'sample_expset'}
+    assert sorted(post_json2) == sorted(response)
+    assert dict_expsets2 == {}
+
+
+def test_combine_set_filesets_with_existing():
+    post_json = {"aliases": "sample_fileset", "description": "sample description"}
+    existing_data = {"uuid": "sampleuuid", "accession": "sample_accession",
+                     "filess_in_set": ['awesome_uuid1', 'awesome_uuid2']}
+    dict_filesets = {'sample_fileset': ['awesome_uuid1', 'awesome_uuid4', 'awesome_uuid5']}
+    post_json2, dict_expsets2 = imp.combine_set(post_json, existing_data, "FileSet", dict_filesets)
+
+    response = {'files_in_set': ['awesome_uuid4', 'awesome_uuid5', 'awesome_uuid2', 'awesome_uuid1'],
+                'description': 'sample description',
+                'aliases': 'sample_fileset'}
     assert sorted(post_json2) == sorted(response)
     assert dict_expsets2 == {}
 
@@ -402,6 +429,29 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
         # mock upload file and skip
         with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False,
+                             dict_load, dict_rep, dict_set, dict_file)
+            args = imp.fdnDCIC.new_FDN.call_args
+            out, err = capsys.readouterr()
+            assert message == out.strip()
+            print(args[0][2])
+            assert args[0][2] == final_post
+
+
+@pytest.mark.file_operation
+def test_excel_reader_update_new_file_set_post(capsys, mocker, connection):
+    test_insert = './tests/data_files/File_Set_insert.xls'
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {}
+    dict_file = {'sample_fileset': ['awesome_uuid']}
+    message = "FILESET: 1 out of 1 posted, 0 errors, 0 patched."
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_fileset'}]}
+    final_post = {'aliases': ['sample_fileset'], 'files_in_set': ['awesome_uuid']}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            imp.excel_reader(test_insert, 'FileSet', True, connection, False,
                              dict_load, dict_rep, dict_set, dict_file)
             args = imp.fdnDCIC.new_FDN.call_args
             out, err = capsys.readouterr()

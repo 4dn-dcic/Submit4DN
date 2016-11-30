@@ -105,6 +105,7 @@ def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
 
 
 def xls_to_list(xls_file, sheet):
+    """To compare xls files to reference ones, return a sorted list of content."""
     from operator import itemgetter
     import xlrd
     return_list = []
