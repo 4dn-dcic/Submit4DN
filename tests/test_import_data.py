@@ -317,7 +317,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     dict_file = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC: 1 out of 1 posted, 0 errors, 0 patched."
-    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
@@ -347,6 +347,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     existing_exp = {'uuid': 'sample_uuid'}
     e = {'status': 'success',
          '@graph': [{'uuid': 'some_uuid',
+                     '@id': 'some_uuid',
                      'upload_credentials': 'old_creds',
                      'accession': 'some_accession'}]}
     # mock fetching existing info, return None
@@ -382,7 +383,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
     dict_set = {}
     dict_file = {}
     message = "FILEFASTQ: 1 out of 1 posted, 0 errors, 0 patched."
-    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     final_post = {'aliases': ['dcic:test_alias'],
                   'lab': 'test-lab',
                   'award': 'test-award',
@@ -408,7 +409,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     dict_set = {}
     dict_file = {}
     message = "EXPERIMENTSETREPLICATE: 1 out of 1 posted, 0 errors, 0 patched."
-    e = {'status': 'success', '@graph': [{'uuid': 'sample_repset'}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_repset', '@id': 'sample_repset'}]}
     final_post = {'aliases': ['sample_repset'],
                   'replicate_exps': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}]}
     # mock fetching existing info, return None
@@ -431,7 +432,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     dict_set = {'sample_expset': ['awesome_uuid']}
     dict_file = {}
     message = "EXPERIMENTSET: 1 out of 1 posted, 0 errors, 0 patched."
-    e = {'status': 'success', '@graph': [{'uuid': 'sample_expset'}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_expset', '@id': 'sample_expset'}]}
     final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid']}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
@@ -454,7 +455,7 @@ def test_excel_reader_update_new_file_set_post(capsys, mocker, connection):
     dict_set = {}
     dict_file = {'sample_fileset': ['awesome_uuid']}
     message = "FILESET: 1 out of 1 posted, 0 errors, 0 patched."
-    e = {'status': 'success', '@graph': [{'uuid': 'sample_fileset'}]}
+    e = {'status': 'success', '@graph': [{'uuid': 'sample_fileset', '@id': 'sample_fileset'}]}
     final_post = {'aliases': ['sample_fileset'], 'files_in_set': ['awesome_uuid']}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
