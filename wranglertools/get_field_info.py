@@ -100,6 +100,7 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', '
                     FieldInfo('*tec_rep_no', 'number', 'Technical replicate number'),
                     FieldInfo('experiment_set', 'array of Item:ExperimentSet', 'Grouping for non-replicate experiments')
                     ]
+file_set_addition = [FieldInfo('filesets', 'array of Item:FileSets', 'File Set to which this file belongs to')]
 
 
 def get_field_type(field):
@@ -180,6 +181,8 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         include_enums)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
+        if name.startswith('File') and not name.startswith('FileSet'):
+            fields[name].extend(file_set_addition)
     return fields
 
 

@@ -145,7 +145,7 @@ sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
-    "FileSet", "FileFastq", "FileFasta", "ExperimentHiC", "ExperimentCaptureC",
+    "FileFastq", "FileFasta", "FileSet", "ExperimentHiC", "ExperimentCaptureC",
     "ExperimentSet", "ExperimentSetReplicate"]
 
 do_not_use = [
