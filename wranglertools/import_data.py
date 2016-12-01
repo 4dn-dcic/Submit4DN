@@ -487,6 +487,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 patch += 1
             # uuid of the posted/patched item
             item_uuid = e['@graph'][0]['uuid']
+            item_id = e['@graph'][0]['@id']
             # if post/patch successful, append uuid to patch_loadxl_item if full
             if patch_loadxl_item != {}:
                 patch_loadxl_item['uuid'] = item_uuid
@@ -495,7 +496,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
             if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
                 # Part-I Replicates
                 rep_id = rep_set_info[0]
-                saveitem = {'replicate_exp': item_uuid, 'bio_rep_no': rep_set_info[1], 'tec_rep_no': rep_set_info[2]}
+                saveitem = {'replicate_exp': item_id, 'bio_rep_no': rep_set_info[1], 'tec_rep_no': rep_set_info[2]}
                 if dict_replicates.get(rep_id):
                     dict_replicates[rep_id].append(saveitem)
                 else:
@@ -504,20 +505,21 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 if exp_set_info:
                     for exp_set in exp_set_info:
                         if dict_exp_sets.get(exp_set):
-                            dict_exp_sets[exp_set].append(item_uuid)
+                            dict_exp_sets[exp_set].append(item_id)
                         else:
-                            dict_exp_sets[exp_set] = [item_uuid, ]
+                            dict_exp_sets[exp_set] = [item_id, ]
             # if post/patch successful, add the fileset information to the accumulate lists
             if sheet.startswith('File') and not sheet.startswith('FileSet'):
                 if file_set_info:
                     for file_set in file_set_info:
                         if dict_file_sets.get(file_set):
-                            dict_file_sets[file_set].append(item_uuid)
+                            dict_file_sets[file_set].append(item_id)
                         else:
-                            dict_file_sets[file_set] = [item_uuid, ]
+                            dict_file_sets[file_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
-    dict_patch_loadxl[sheet] = patch_loadxl
+    if patch_loadxl:
+        dict_patch_loadxl[sheet] = patch_loadxl
     # print final report, and if there are not patched entries, add to report
     not_patched_note = '.'
     if not_patched > 0:
