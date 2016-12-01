@@ -495,19 +495,20 @@ def excel_reader(datafile, sheet, update, connection, patchall,
             # if post/patch successful, add the replicate/set information to the accumulate lists
             if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
                 # Part-I Replicates
-                rep_id = rep_set_info[0]
-                saveitem = {'replicate_exp': item_id, 'bio_rep_no': rep_set_info[1], 'tec_rep_no': rep_set_info[2]}
-                if dict_replicates.get(rep_id):
-                    dict_replicates[rep_id].append(saveitem)
-                else:
-                    dict_replicates[rep_id] = [saveitem, ]
-                # Part-II Experiment Sets
-                if exp_set_info:
-                    for exp_set in exp_set_info:
-                        if dict_exp_sets.get(exp_set):
-                            dict_exp_sets[exp_set].append(item_id)
-                        else:
-                            dict_exp_sets[exp_set] = [item_id, ]
+                if rep_set_info:
+                    rep_id = rep_set_info[0]
+                    saveitem = {'replicate_exp': item_id, 'bio_rep_no': rep_set_info[1], 'tec_rep_no': rep_set_info[2]}
+                    if dict_replicates.get(rep_id):
+                        dict_replicates[rep_id].append(saveitem)
+                    else:
+                        dict_replicates[rep_id] = [saveitem, ]
+                    # Part-II Experiment Sets
+                    if exp_set_info:
+                        for exp_set in exp_set_info:
+                            if dict_exp_sets.get(exp_set):
+                                dict_exp_sets[exp_set].append(item_id)
+                            else:
+                                dict_exp_sets[exp_set] = [item_id, ]
             # if post/patch successful, add the fileset information to the accumulate lists
             if sheet.startswith('File') and not sheet.startswith('FileSet'):
                 if file_set_info:
