@@ -18,6 +18,7 @@ requires = [
     'xlrd==1.0.0',
     'xlwt==1.1.2',
     'awscli==1.10.62',
+    'six',
 ]
 
 tests_require = [

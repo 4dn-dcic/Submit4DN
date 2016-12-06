@@ -480,8 +480,10 @@ def test_order_sorter(capsys):
     assert ordered_list == imp.order_sorter(test_list)
     out, err = capsys.readouterr()
     outlist = [i.strip() for i in out.split('\n') if i is not ""]
-    assert message0 == outlist[0]
-    assert message1 == outlist[1]
+    import sys
+    if (sys.version_info > (3, 0)):
+        assert message0 in outlist[0]
+        assert message1 in outlist[1]
 
 
 @pytest.mark.file_operation
