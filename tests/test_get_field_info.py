@@ -104,9 +104,29 @@ def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
             assert field.enum is not None
 
 
+def xls_to_list(xls_file, sheet):
+    """To compare xls files to reference ones, return a sorted list of content."""
+    from operator import itemgetter
+    import xlrd
+    return_list = []
+    wb = xlrd.open_workbook(xls_file)
+    read_sheet = wb.sheet_by_name(sheet)
+    cols = read_sheet.ncols
+    rows = read_sheet.nrows
+    for row_idx in range(rows):
+        row_val = []
+        for col_idx in range(cols):
+            cell_value = str(read_sheet.cell(row_idx, col_idx))
+
+            row_val.append(cell_value)
+        return_list.append(row_val)
+    return return_list.sort(key=itemgetter(1))
+
+
 @pytest.mark.file_operation
-def test_create_xls(connection, mocker, returned_vendor_schema):
-    xls_file = "./tests/data_files/Vendor_gfi_test.xls"
+def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
+    xls_file = "./tests/data_files/GFI_test_vendor.xls"
+    xls_ref_file = "./tests/data_files/GFI_test_vendor_reference.xls"
     import os
     try:
         os.remove(xls_file)
@@ -116,6 +136,27 @@ def test_create_xls(connection, mocker, returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
+        assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
+
+
+@pytest.mark.file_operation
+def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_schema):
+    xls_file = "./tests/data_files/GFI_test_Experiment_Set.xls"
+    xls_ref_file = "./tests/data_files/GFI_test_Experiment_Set_reference.xls"
+    import os
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_experiment_set_schema):
+        field_dict = gfi.get_uploadable_fields(connection, ['ExperimentSet'], True, True, True)
+        gfi.create_xls(field_dict, xls_file)
+        assert os.path.isfile(xls_file)
+        assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
     try:
         os.remove(xls_file)
     except OSError:

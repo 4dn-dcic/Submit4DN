@@ -93,9 +93,6 @@ def getArgs():  # pragma: no cover
 # should be in sync with loadxl.py in fourfront
 list_of_loadxl_fields = [
     ['User', ['lab', 'submits_for']],
-    ['FileFastq', ['experiments']],
-    ['FileFasta', ['experiments']],
-    ['FileSet', ['files_in_set']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
@@ -322,6 +319,16 @@ def filter_set_from_exps(post_json):
     return post_json, rep_set_info, exp_set_info
 
 
+def filter_set_from_files(post_json):
+    """File set information is taken from files."""
+    file_set_info = []
+    # store the values in a list and delete them from post_json
+    if post_json.get('filesets'):
+        file_set_info = post_json['filesets']
+        post_json.pop('filesets')
+    return post_json, file_set_info
+
+
 def filter_loadxl_fields(post_json, sheet):
     """All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary."""
     patch_loadxl_item = {}
@@ -341,6 +348,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     for identifier in ['accession', 'uuid', 'aliases', '@id']:
         ex_item_id = existing_data.get(identifier, '')
         item_id = post_json.get(identifier, ex_item_id)
+        # to extract alias from list
         if isinstance(item_id, list):
             item_id = item_id[0]
         if item_id:
@@ -365,13 +373,21 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
                     post_json['replicate_exps'] = add_to_post + existing_sets
                 else:
                     post_json['replicate_exps'] = add_to_post
+            # Combination for filesets
+            if sheet == "FileSet":
+                if existing_data.get('files_in_set'):
+                    existing_files = existing_data.get('files_in_set')
+                    post_json['files_in_set'] = list(set(add_to_post + existing_files))
+                else:
+                    post_json['files_in_set'] = add_to_post
             # remove found item from the accumulate_dict
             accumulate_dict.pop(identifier)
             break
     return post_json, accumulate_dict
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadxl, dict_replicates, dict_exp_sets):
+def excel_reader(datafile, sheet, update, connection, patchall,
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -413,14 +429,19 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
         existing_data = get_existing(post_json, connection)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
-        # Filter experiment set related fields
+        # Filter experiment set related fields from experiment
         if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
             post_json, rep_set_info, exp_set_info = filter_set_from_exps(post_json)
-        # Combine experimentset items with stored dictionaries
+        # Filter file set related fields from file
+        if sheet.startswith('File') and not sheet.startswith('FileSet'):
+            post_json, file_set_info = filter_set_from_files(post_json)
+        # Combine set items with stored dictionaries
         if sheet == 'ExperimentSet':
             post_json, dict_exp_sets = combine_set(post_json, existing_data, sheet, dict_exp_sets)
         if sheet == 'ExperimentSetReplicate':
             post_json, dict_replicates = combine_set(post_json, existing_data, sheet, dict_replicates)
+        if sheet == 'FileSet':
+            post_json, dict_file_sets = combine_set(post_json, existing_data, sheet, dict_file_sets)
 
         # Run update or patch
         e = {}
@@ -466,6 +487,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
                 patch += 1
             # uuid of the posted/patched item
             item_uuid = e['@graph'][0]['uuid']
+            item_id = e['@graph'][0]['@id']
             # if post/patch successful, append uuid to patch_loadxl_item if full
             if patch_loadxl_item != {}:
                 patch_loadxl_item['uuid'] = item_uuid
@@ -473,22 +495,32 @@ def excel_reader(datafile, sheet, update, connection, patchall, dict_patch_loadx
             # if post/patch successful, add the replicate/set information to the accumulate lists
             if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
                 # Part-I Replicates
-                rep_id = rep_set_info[0]
-                saveitem = {'replicate_exp': item_uuid, 'bio_rep_no': rep_set_info[1], 'tec_rep_no': rep_set_info[2]}
-                if dict_replicates.get(rep_id):
-                    dict_replicates[rep_id].append(saveitem)
-                else:
-                    dict_replicates[rep_id] = [saveitem, ]
-                # Part-II Experiment Sets
-                if exp_set_info:
-                    for exp_set in exp_set_info:
-                        if dict_exp_sets.get(exp_set):
-                            dict_exp_sets[exp_set].append(item_uuid)
+                if rep_set_info:
+                    rep_id = rep_set_info[0]
+                    saveitem = {'replicate_exp': item_id, 'bio_rep_no': rep_set_info[1], 'tec_rep_no': rep_set_info[2]}
+                    if dict_replicates.get(rep_id):
+                        dict_replicates[rep_id].append(saveitem)
+                    else:
+                        dict_replicates[rep_id] = [saveitem, ]
+                    # Part-II Experiment Sets
+                    if exp_set_info:
+                        for exp_set in exp_set_info:
+                            if dict_exp_sets.get(exp_set):
+                                dict_exp_sets[exp_set].append(item_id)
+                            else:
+                                dict_exp_sets[exp_set] = [item_id, ]
+            # if post/patch successful, add the fileset information to the accumulate lists
+            if sheet.startswith('File') and not sheet.startswith('FileSet'):
+                if file_set_info:
+                    for file_set in file_set_info:
+                        if dict_file_sets.get(file_set):
+                            dict_file_sets[file_set].append(item_id)
                         else:
-                            dict_exp_sets[exp_set] = [item_uuid, ]
+                            dict_file_sets[file_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
-    dict_patch_loadxl[sheet] = patch_loadxl
+    if patch_loadxl:
+        dict_patch_loadxl[sheet] = patch_loadxl
     # print final report, and if there are not patched entries, add to report
     not_patched_note = '.'
     if not_patched > 0:
@@ -588,13 +620,25 @@ def main():  # pragma: no cover
     dict_loadxl = {}
     dict_replicates = {}
     dict_exp_sets = {}
+    dict_file_sets = {}
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
-                         dict_replicates, dict_exp_sets)
+                         dict_replicates, dict_exp_sets, dict_file_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
+    # if any item left in the following dictionaries
+    # it means that this items are not posted/patched
+    # because they are not on the exp_set file_set sheets
+    for dict_store, dict_sheet in [[dict_replicates, "ExperimentSetReplicate"],
+                                   [dict_exp_sets, "ExperimentSet"],
+                                   [dict_file_sets, "FileSet"]]:
+        if dict_store:
+            remains = ', '.join(dict_store.keys())
+            print('Following items are not posted')
+            print('make sure they are on {} sheet'.format(dict_sheet))
+            print(remains)
 
 
 if __name__ == '__main__':

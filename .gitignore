@@ -14,8 +14,8 @@ dist/
 4DNWranglerTools.egg-info/*
 Submit4DN.egg-info/*
 coverage.xml
-
-
 fields_ordered.xls
-
 fields.xls
+AllItems_ordered.xls
+AllItems.xls
+Koray_scripts/
