@@ -8,7 +8,12 @@ keypairs = {
             {"server": "https://test.FDN.org",
              "key": "keystring",
              "secret": "secretstring"
-             }
+             },
+            "wrong_key":
+            {"server": "https://data.4dnucleome.org/",
+             "key": "keystring",
+             "secret": "secretstring"
+             },
             }
 
 
@@ -39,6 +44,12 @@ def test_connection():
     assert(connection)
     assert(connection.auth)
     assert(connection.server)
+
+
+def test_test_connection_fail():
+    key = fdnDCIC.FDN_Key(keypairs, "wrong_key")
+    connection = fdnDCIC.FDN_Connection(key)
+    assert fdnDCIC.test_Connection_fail(connection) is True
 
 
 def test_FDN_url():

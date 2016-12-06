@@ -37,6 +37,12 @@ class FDN_Connection(object):
             self.auth = (key.authid, key.authpw)
 
 
+def test_Connection_fail(connection):
+    r = requests.get(connection.server, auth=connection.auth)
+    if r.status_code != 200:
+        return True
+
+
 class FDN_Schema(object):
     def __init__(self, connection, uri):
         self.uri = uri
