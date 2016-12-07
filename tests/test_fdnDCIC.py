@@ -1,6 +1,7 @@
 import wranglertools.fdnDCIC as fdnDCIC
 import json
 import pytest
+from six import string_types
 # test data is in conftest.py
 
 keypairs = {
@@ -19,18 +20,18 @@ def test_nothing():
 def test_key():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     assert(key)
-    assert isinstance(key.server, str)
-    assert isinstance(key.authpw, str)
-    assert isinstance(key.authid, str)
+    assert isinstance(key.server, string_types)
+    assert isinstance(key.authpw, string_types)
+    assert isinstance(key.authid, string_types)
 
 
 @pytest.mark.file_operation
 def test_key_file():
     key = fdnDCIC.FDN_Key('./tests/data_files/keypairs.json', "default")
     assert(key)
-    assert isinstance(key.server, str)
-    assert isinstance(key.authpw, str)
-    assert isinstance(key.authid, str)
+    assert isinstance(key.server, string_types)
+    assert isinstance(key.authpw, string_types)
+    assert isinstance(key.authid, string_types)
 
 
 def test_connection():
