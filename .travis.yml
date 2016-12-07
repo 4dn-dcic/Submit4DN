@@ -5,7 +5,7 @@ cache:
 python:
 - '3.5'
 - '3.4'
-- '3.3'
+- '2.7'
 deploy:
   provider: pypi
   user:
@@ -19,8 +19,9 @@ install:
 - pip install -U -r requirements.txt
 - pip install coveralls
 - pip install codacy-coverage
+- pip install tox
 script:
-- invoke test
+- tox 
 - echo "finished running tests on repo"
 - echo " now install packaged and run tests again, on installed package"
 - python setup.py test
