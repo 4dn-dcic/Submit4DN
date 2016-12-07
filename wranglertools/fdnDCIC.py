@@ -41,6 +41,14 @@ class FDN_Connection(object):
         self.check = False
         if r.status_code == 307:
             self.check = True
+            res = r.json()
+            self.user = res['@id']
+            self.lab = res['lab']
+            lab_url = self.server + self.lab
+            r_lab = requests.get(lab_url, auth=self.auth)
+            res_lab = r_lab.json()
+            print(res_lab)
+            self.award = res_lab['awards'][0]['@id']
 
 
 class FDN_Schema(object):
