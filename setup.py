@@ -3,7 +3,10 @@ from setuptools import setup
 
 # variables used in buildout
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.md')).read()
+try:
+    README = open(os.path.join(here, 'README.md')).read()
+except:
+    pass  # don't know why this fails with tox
 
 requires = [
     'attrs==16.0.0',
@@ -15,12 +18,14 @@ requires = [
     'xlrd==1.0.0',
     'xlwt==1.1.2',
     'awscli==1.10.62',
+    'six',
 ]
 
 tests_require = [
     'pytest>=3.0.1',
     'pytest-mock',
     'pytest-cov',
+    'tox>=2.5.0',
 ]
 
 setup(
