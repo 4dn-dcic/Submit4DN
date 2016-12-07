@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .cache/
+.tox/
 *.DS_Store
 Data_Files/LabAwardUserPwd/*
 my_untracked_work
