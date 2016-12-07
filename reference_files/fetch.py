@@ -24,7 +24,8 @@ def run(keypairs_file):
 
   try:
     #response = fdnDCIC.get_FDN("/profiles/file_reference.json", connection, frame="object")
-    response = fdnDCIC.get_FDN("/files_reference", connection, frame=None)
+    response = fdnDCIC.get_FDN("/file_reference", connection, frame=None)
+    #response = fdnDCIC.get_FDN("/search/?type=FileReference", connection, frame=None)
   except Exception as e:
     print(e)
     print("post error")
