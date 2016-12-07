@@ -6,7 +6,6 @@ def run(keypairs_file):
 
   assert os.path.isfile(str(keypairs_file))
 
-  post_json_file = "file_reference.json"
 
   try:
     key = fdnDCIC.FDN_Key(keypairs_file, "default")
