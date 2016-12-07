@@ -603,7 +603,7 @@ def main():  # pragma: no cover
     connection = fdnDCIC.FDN_Connection(key)
     print("Running on {server}".format(server=connection.server))
     # test connection
-    if fdnDCIC.test_Connection_fail(connection):
+    if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
         return
     # check input file (xls)

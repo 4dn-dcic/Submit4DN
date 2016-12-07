@@ -35,12 +35,12 @@ class FDN_Connection(object):
             self.auth = ()
         else:
             self.auth = (key.authid, key.authpw)
-
-
-def test_Connection_fail(connection):
-    r = requests.get(connection.server, auth=connection.auth)
-    if r.status_code != 200:
-        return True
+        # check connection and find user uuid
+        me_page = self.server + 'me'
+        r = requests.get(me_page, auth=self.auth)
+        self.check = False
+        if r.status_code == 200:
+            self.check = True
 
 
 class FDN_Schema(object):

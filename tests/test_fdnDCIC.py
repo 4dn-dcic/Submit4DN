@@ -5,15 +5,10 @@ import pytest
 
 keypairs = {
             "default":
-            {"server": "https://test.FDN.org",
-             "key": "keystring",
-             "secret": "secretstring"
-             },
-            "wrong_key":
             {"server": "https://data.4dnucleome.org/",
              "key": "keystring",
              "secret": "secretstring"
-             },
+             }
             }
 
 
@@ -47,9 +42,9 @@ def test_connection():
 
 
 def test_test_connection_fail():
-    key = fdnDCIC.FDN_Key(keypairs, "wrong_key")
+    key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
-    assert fdnDCIC.test_Connection_fail(connection) is True
+    assert connection.check is False
 
 
 def test_FDN_url():
@@ -60,10 +55,10 @@ def test_FDN_url():
                         ["trial", "object"],
                         ["trial?some", "object"]
                         ]
-    expected_url = ["https://test.FDN.org/trial?limit=all",
-                    "https://test.FDN.org/trial?some&limit=all",
-                    "https://test.FDN.org/trial?limit=all&frame=object",
-                    "https://test.FDN.org/trial?some&limit=all&frame=object"
+    expected_url = ["https://data.4dnucleome.org/trial?limit=all",
+                    "https://data.4dnucleome.org/trial?some&limit=all",
+                    "https://data.4dnucleome.org/trial?limit=all&frame=object",
+                    "https://data.4dnucleome.org/trial?some&limit=all&frame=object"
                     ]
     for n, case in enumerate(test_objid_frame):
         t_url = fdnDCIC.FDN_url(case[0], connection, case[1])

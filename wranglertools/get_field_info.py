@@ -221,7 +221,7 @@ def main():  # pragma: no cover
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
     connection = fdnDCIC.FDN_Connection(key)
     # test connection
-    if fdnDCIC.test_Connection_fail(connection):
+    if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
         return
     fields = get_uploadable_fields(connection, args.type,
