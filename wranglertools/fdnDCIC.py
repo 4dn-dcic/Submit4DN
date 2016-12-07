@@ -39,7 +39,7 @@ class FDN_Connection(object):
         me_page = self.server + 'me'
         r = requests.get(me_page, auth=self.auth)
         self.check = False
-        if r.status_code == 200:
+        if r.status_code == 307:
             self.check = True
 
 
