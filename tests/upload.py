@@ -2,10 +2,9 @@ import wranglertools.fdnDCIC as fdnDCIC
 import os
 import json
 
-def run(keypairs_file):
+def run(keypairs_file,post_json_file, schema_name):
 
-  assert os.path.isfile(str(keypairs_file))
-
+  assert os.path.isfile(keypairs_file)
 
   try:
     key = fdnDCIC.FDN_Key(keypairs_file, "default")
@@ -22,15 +21,15 @@ def run(keypairs_file):
     raise e
 
   try:
-    #response = fdnDCIC.get_FDN("/profiles/file_reference.json", connection, frame="object")
-    response = fdnDCIC.get_FDN("/file_reference", connection, frame=None)
-    #response = fdnDCIC.get_FDN("/search/?type=FileReference", connection, frame=None)
+    with open(post_json_file,'r') as f:
+      post_item = json.load(f)
+    response = fdnDCIC.new_FDN(connection, schema_name, post_item)
   except Exception as e:
     print(e)
     print("post error")
     raise e
 
-  print(response)
+  print(json.dumps(response))
 
 
 if __name__ == "__main__":
@@ -38,7 +37,9 @@ if __name__ == "__main__":
 
   parser = argparse.ArgumentParser(description="file_reference_upload")
   parser.add_argument('-k','--keypairs_file',help='key-pairs file')
+  parser.add_argument('-p','--post_json_file',help='key-pairs file')
+  parser.add_argument('-s','--schema',help='schema name (e.g. file_reference, workflow)')
   args = parser.parse_args()
 
-  run(args.keypairs_file)
+  run(args.keypairs_file, args.post_json_file, args.schema)
 
