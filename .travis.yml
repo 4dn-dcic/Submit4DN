@@ -4,7 +4,6 @@ cache:
   pip: true
 python:
 - '3.5'
-- '3.4'
 - '2.7'
 deploy:
   provider: pypi
@@ -21,7 +20,7 @@ install:
 - pip install codacy-coverage
 - pip install tox
 script:
-- tox 
+- invoke test 
 - echo "finished running tests on repo"
 - echo " now install packaged and run tests again, on installed package"
 - python setup.py test
