@@ -47,7 +47,6 @@ class FDN_Connection(object):
             lab_url = self.server + self.lab
             r_lab = requests.get(lab_url, auth=self.auth)
             res_lab = r_lab.json()
-            print(res_lab)
             self.award = res_lab['awards'][0]['@id']
 
 
@@ -250,13 +249,26 @@ fetch_items = {
     "Publication": "publication", "Vendor": "vendor"}
 
 
+def sort_item_list(item_list, item_id, field):
+    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginnging."""
+
+
 def fetch_all_items(sheet, field_list, connection):
     """For a given sheet, get all released items"""
     all_items = []
     if sheet in fetch_items.keys():
+        # Search all items, get uuids, get them one by one
         obj_id = "search/?type=" + fetch_items[sheet]
         resp = get_FDN(obj_id, connection)
-        items_list = resp['@graph']
+        items_uuids = [i["uuid"] for i in resp['@graph']]
+        items_list = []
+        for item_uuid in items_uuids:
+            items_list.append(get_FDN(item_uuid, connection))
+        # order items with lab and user (Lab (1-user_lab 2-dcic_lab), User
+        # the date ordering is already in place through search result (resp)
+        items_list = sort_item_list(items_list, connection.lab, 'lab')
+        items_list = sort_item_list(items_list, connection.user, 'submitted_by')
+        # filter for fields that exist on the excel sheet
         for item in items_list:
             item_info = []
             for field in field_list:
