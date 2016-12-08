@@ -26,7 +26,8 @@ def run(keypairs_file, accession, filename_to_post):
 
     try:
         resp = fdnDCIC.get_FDN("/" + accession, connection)
-        item_uuid = resp.get('@graph')[0].get('uuid')
+        print(resp)
+        item_uuid = resp.get('uuid')
     except Exception as e:
         print(e)
         print("get error")
@@ -35,13 +36,14 @@ def run(keypairs_file, accession, filename_to_post):
     try:
         # add the md5
         print("calculating md5 sum for file %s " % (filename_to_post))
-        patch_item['md5sum'] = md5(filename_to_post)
+        patch_item = {'md5sum': md5(filename_to_post)}
         e = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
+        print(e)
         import_data.upload_file(e, filename_to_post)
 
     except Exception as e:
         print(e)
-        print("get error")
+        print("file upload error")
         raise e
 
 
