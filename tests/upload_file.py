@@ -2,7 +2,8 @@ import wranglertools.fdnDCIC as fdnDCIC
 import wranglertools.import_data as import_data
 from wranglertools.fdnDCIC import md5
 import os
-
+import requests ## temporary
+import json ## temporary
 
 def run(keypairs_file, accession, filename_to_post):
 
@@ -35,10 +36,33 @@ def run(keypairs_file, accession, filename_to_post):
     try:
         # add the md5
         print("calculating md5 sum for file %s " % (filename_to_post))
+        #patch_item = {'status': 'uploading'}
+        #resp = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
+        #patch_item = {'md5sum': md5(filename_to_post)}
         patch_item = {'md5sum': md5(filename_to_post), 'status': 'uploading'}
-        e = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
-        print(e)
-        import_data.upload_file(e, filename_to_post)
+        resp = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
+        graph = resp.get('@graph')
+        print(graph)
+        accession = graph[0].get('accession')
+        print(accession)
+        # get s3 credentials
+        #creds = import_data.get_upload_creds(accession, connection, graph[0])
+
+        url = "%s%s/upload/" % (connection.server, item_uuid)
+        print(url)
+        print(connection.auth)
+        print(connection.headers)
+        req = requests.post(url,
+                        auth=connection.auth,
+                        headers=connection.headers,
+                        data=json.dumps({}))
+        print(req.json())
+        creds = import_data.get_upload_creds(accession, connection, 0)
+        print("haha")
+        print(creds)
+        graph[0]['upload_credentials'] = creds
+        print(graph)
+        import_data.upload_file(resp, filename_to_post)
 
     except Exception as e:
         print(e)
