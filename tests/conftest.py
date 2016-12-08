@@ -23,6 +23,9 @@ def connection():
                 }
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
+    connection.lab = 'test_lab'
+    connection.user = 'test_user'
+    connection.award = 'test_award'
     return connection
 
 
@@ -37,20 +40,9 @@ def connection_public():
                 }
     key2 = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key2)
-    return connection
-
-
-@pytest.fixture
-def connection_koray():
-    keypairs = {
-                "default": {
-                  "key": "E2IG34B5",
-                  "secret": "x24acskzaavaqgva",
-                  "server": "http://4dn-web-dev.us-east-1.elasticbeanstalk.com/"
-                }
-                }
-    key = fdnDCIC.FDN_Key(keypairs, "default")
-    connection = fdnDCIC.FDN_Connection(key)
+    connection.lab = 'test_lab'
+    connection.user = 'test_user'
+    connection.award = 'test_award'
     return connection
 
 
