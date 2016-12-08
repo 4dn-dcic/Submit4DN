@@ -170,26 +170,26 @@ def test_filter_and_sort():
                  "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set",
                  'dbxrefs', 'references', 'url', 'documents', 'award', '*award', 'lab', '*lab', 'description',
                  'title', '*title', 'name', '*name', 'aliases', '#Field Name:', 'extra_field', 'extra_field_2']
-    result_list = ['#Field Name:', '*award', '*lab', '*name', '*title', 'aliases', 'award', 'dbxrefs',
-                   'description', 'documents', 'extra_field', 'extra_field_2', 'lab', 'name', 'references',
-                   'title', 'url']
+    result_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents',
+                   'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
+    print(result_list)
+    print(fdnDCIC.filter_and_sort(test_list))
     assert result_list == fdnDCIC.filter_and_sort(test_list)
 
 
 def test_move_to_front():
-    test_list = ['#Field Name:', '*award', '*lab', '*name', '*title', 'aliases', 'award', 'dbxrefs',
-                 'description', 'documents', 'extra_field', 'extra_field_2', 'lab', 'name', 'references',
-                 'title', 'url']
-    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description', '*lab', 'lab',
-                   '*award', 'award', 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
+    test_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents', 'extra_field',
+                 'extra_field_2', 'name', 'references', 'title', 'url']
+    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
+                   'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
     assert result_list == fdnDCIC.move_to_front(test_list)
 
 
 def test_move_to_end():
-    test_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description', '*lab', 'lab',
-                 '*award', 'award', 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
-    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description', '*lab', 'lab',
-                   '*award', 'award', 'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
+    test_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
+                 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
+    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
+                   'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
     assert result_list == fdnDCIC.move_to_end(test_list)
 
 

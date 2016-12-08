@@ -164,7 +164,8 @@ sheet_order = [
 do_not_use = [
     "submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
     "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
-    "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set"]
+    "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set",
+    "award", "*award", "lab", "*lab"]
 
 
 def filter_and_sort(list_names):
@@ -180,8 +181,7 @@ def filter_and_sort(list_names):
     return useful
 
 move_front = ['experiment_set', '*tec_rep_no', '*bio_rep_no', '*replicate_set',
-              'award', '*award', 'lab', '*lab', 'description',
-              'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
+              'description', 'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
 
 
 def move_to_front(list_names):
