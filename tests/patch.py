@@ -41,7 +41,6 @@ def run(keypairs_file, post_json_file, schema_class_name):
         raise e
 
 
-
 if __name__ == "__main__":
     import argparse
 

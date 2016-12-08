@@ -32,7 +32,6 @@ def run(keypairs_file, schema_name, schema_class_name):
         raise e
 
 
-
 if __name__ == "__main__":
     import argparse
 
