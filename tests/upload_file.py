@@ -2,7 +2,6 @@ import wranglertools.fdnDCIC as fdnDCIC
 import wranglertools.import_data as import_data
 from wranglertools.fdnDCIC import md5
 import os
-import json
 
 
 def run(keypairs_file, accession, filename_to_post):
@@ -36,7 +35,7 @@ def run(keypairs_file, accession, filename_to_post):
     try:
         # add the md5
         print("calculating md5 sum for file %s " % (filename_to_post))
-        patch_item = {'md5sum': md5(filename_to_post), 'status':'uploading'}
+        patch_item = {'md5sum': md5(filename_to_post), 'status': 'uploading'}
         e = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
         print(e)
         import_data.upload_file(e, filename_to_post)
