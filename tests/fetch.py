@@ -35,7 +35,7 @@ def run(keypairs_file, schema_name, schema_class_name):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="file_reference_upload")
+    parser = argparse.ArgumentParser(description="get all the objects in a schema")
     parser.add_argument('-k', '--keypairs_file', help='key-pairs file')
     parser.add_argument('-s', '--schema', help='schema name (e.g. file_reference, workflow)')
     parser.add_argument('-c', '--schema_class', help='schema class name (e.g. FileReference, Workflow)')

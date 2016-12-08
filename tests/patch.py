@@ -44,7 +44,7 @@ def run(keypairs_file, post_json_file, schema_class_name):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="file_reference_upload")
+    parser = argparse.ArgumentParser(description="Patch for all objects in a schema")
     parser.add_argument('-k', '--keypairs_file', help='key-pairs file')
     parser.add_argument('-p', '--post_json_file', help='key-pairs file')
     parser.add_argument('-c', '--schema_class', help='schema class name (e.g. FileReference, Workflow)')
