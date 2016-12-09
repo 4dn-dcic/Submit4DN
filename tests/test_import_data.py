@@ -246,6 +246,13 @@ def test_combine_set_filesets_with_existing():
     assert dict_filesets2 == {}
 
 
+def test_fix_attribution(connection):
+    post_json = {'field': 'value', 'field2': 'value2'}
+    result_json = imp.fix_attribution(post_json, connection)
+    assert result_json['lab'] == 'test_lab'
+    assert result_json['award'] == 'test_award'
+
+
 @pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection):
     # test new item submission without patchall update tags and check the return message
@@ -411,7 +418,8 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     message = "EXPERIMENTSETREPLICATE: 1 out of 1 posted, 0 errors, 0 patched."
     e = {'status': 'success', '@graph': [{'uuid': 'sample_repset', '@id': 'sample_repset'}]}
     final_post = {'aliases': ['sample_repset'],
-                  'replicate_exps': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}]}
+                  'replicate_exps': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}],
+                  'award': 'test_award', 'lab': 'test_lab'}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
@@ -433,7 +441,8 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     dict_file = {}
     message = "EXPERIMENTSET: 1 out of 1 posted, 0 errors, 0 patched."
     e = {'status': 'success', '@graph': [{'uuid': 'sample_expset', '@id': 'sample_expset'}]}
-    final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid']}
+    final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid'],
+                  'award': 'test_award', 'lab': 'test_lab'}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
@@ -456,7 +465,8 @@ def test_excel_reader_update_new_file_set_post(capsys, mocker, connection):
     dict_file = {'sample_fileset': ['awesome_uuid']}
     message = "FILESET: 1 out of 1 posted, 0 errors, 0 patched."
     e = {'status': 'success', '@graph': [{'uuid': 'sample_fileset', '@id': 'sample_fileset'}]}
-    final_post = {'aliases': ['sample_fileset'], 'files_in_set': ['awesome_uuid']}
+    final_post = {'aliases': ['sample_fileset'], 'files_in_set': ['awesome_uuid'],
+                  'award': 'test_award', 'lab': 'test_lab'}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
