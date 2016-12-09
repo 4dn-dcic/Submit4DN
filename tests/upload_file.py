@@ -47,8 +47,8 @@ def run(keypairs_file, accession, filename_to_post):
         accession = graph[0].get('accession')
         print(accession)
         # get s3 credentials
-        # creds = import_data.get_upload_creds(accession, connection, graph[0])
-
+	import pdb; pdb.set_trace()
+        creds = import_data.get_upload_creds(accession, connection, graph[0])
         url = "%s%s/upload/" % (connection.server, item_uuid)
         print(url)
         print(connection.auth)
@@ -57,6 +57,7 @@ def run(keypairs_file, accession, filename_to_post):
                             auth=connection.auth,
                             headers=connection.headers,
                             data=json.dumps({}))
+        print(req)
         print(req.json())
         creds = import_data.get_upload_creds(accession, connection, 0)
         print("haha")
