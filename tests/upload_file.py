@@ -2,8 +2,9 @@ import wranglertools.fdnDCIC as fdnDCIC
 import wranglertools.import_data as import_data
 from wranglertools.fdnDCIC import md5
 import os
-import requests  ## temporary
-import json  ## temporary
+import requests  # temporary
+import json  # temporary
+
 
 def run(keypairs_file, accession, filename_to_post):
 
