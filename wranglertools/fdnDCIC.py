@@ -245,12 +245,12 @@ def switch_fields(list_names, sheet):
 # if object name is in the following list, fetch all current/released items and add to xls
 # if experiment is ever added to this list, experiment set related fields might cause some problems
 fetch_items = {
-    "Document": "document", "Protocol": "protocol", "Enzymes": "enzyme", "Biosource": "biosource",
+    "Document": "document", "Protocol": "protocol", "Enzyme": "enzyme", "Biosource": "biosource",
     "Publication": "publication", "Vendor": "vendor"}
 
 
 def sort_item_list(item_list, item_id, field):
-    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginnging."""
+    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginning."""
     # sort all items based on the key
     from operator import itemgetter
     sorted_list = sorted(item_list, key=itemgetter(field))
