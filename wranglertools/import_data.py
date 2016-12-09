@@ -610,11 +610,14 @@ def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
     connection = fdnDCIC.FDN_Connection(key)
-    print("Running on {server}".format(server=connection.server))
+    print("Running on:       {server}".format(server=connection.server))
     # test connection
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
         return
+    print("Submitting User:  {server}".format(server=connection.user))
+    print("Submitting Lab:   {server}".format(server=connection.lab))
+    print("Submitting Award: {server}".format(server=connection.award))
     # check input file (xls)
     if not os.path.isfile(args.infile):
         print("File {filename} not found!".format(filename=args.infile))
