@@ -6,7 +6,7 @@ from six import string_types
 
 keypairs = {
             "default":
-            {"server": "https://test.FDN.org",
+            {"server": "https://data.4dnucleome.org/",
              "key": "keystring",
              "secret": "secretstring"
              }
@@ -42,6 +42,12 @@ def test_connection():
     assert(connection.server)
 
 
+def test_test_connection_fail():
+    key = fdnDCIC.FDN_Key(keypairs, "default")
+    connection = fdnDCIC.FDN_Connection(key)
+    assert connection.check is False
+
+
 def test_FDN_url():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
@@ -50,10 +56,10 @@ def test_FDN_url():
                         ["trial", "object"],
                         ["trial?some", "object"]
                         ]
-    expected_url = ["https://test.FDN.org/trial?limit=all",
-                    "https://test.FDN.org/trial?some&limit=all",
-                    "https://test.FDN.org/trial?limit=all&frame=object",
-                    "https://test.FDN.org/trial?some&limit=all&frame=object"
+    expected_url = ["https://data.4dnucleome.org/trial?limit=all",
+                    "https://data.4dnucleome.org/trial?some&limit=all",
+                    "https://data.4dnucleome.org/trial?limit=all&frame=object",
+                    "https://data.4dnucleome.org/trial?some&limit=all&frame=object"
                     ]
     for n, case in enumerate(test_objid_frame):
         t_url = fdnDCIC.FDN_url(case[0], connection, case[1])
@@ -164,26 +170,26 @@ def test_filter_and_sort():
                  "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set",
                  'dbxrefs', 'references', 'url', 'documents', 'award', '*award', 'lab', '*lab', 'description',
                  'title', '*title', 'name', '*name', 'aliases', '#Field Name:', 'extra_field', 'extra_field_2']
-    result_list = ['#Field Name:', '*award', '*lab', '*name', '*title', 'aliases', 'award', 'dbxrefs',
-                   'description', 'documents', 'extra_field', 'extra_field_2', 'lab', 'name', 'references',
-                   'title', 'url']
+    result_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents',
+                   'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
+    print(result_list)
+    print(fdnDCIC.filter_and_sort(test_list))
     assert result_list == fdnDCIC.filter_and_sort(test_list)
 
 
-def test_move_to_frond():
-    test_list = ['#Field Name:', '*award', '*lab', '*name', '*title', 'aliases', 'award', 'dbxrefs',
-                 'description', 'documents', 'extra_field', 'extra_field_2', 'lab', 'name', 'references',
-                 'title', 'url']
-    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description', '*lab', 'lab',
-                   '*award', 'award', 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
-    assert result_list == fdnDCIC.move_to_frond(test_list)
+def test_move_to_front():
+    test_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents', 'extra_field',
+                 'extra_field_2', 'name', 'references', 'title', 'url']
+    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
+                   'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
+    assert result_list == fdnDCIC.move_to_front(test_list)
 
 
 def test_move_to_end():
-    test_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description', '*lab', 'lab',
-                 '*award', 'award', 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
-    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description', '*lab', 'lab',
-                   '*award', 'award', 'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
+    test_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
+                 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
+    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
+                   'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
     assert result_list == fdnDCIC.move_to_end(test_list)
 
 
@@ -204,9 +210,41 @@ def test_switch_fields():
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
 
 
-def test_fetch_all_items_mock(connection, mocker, returned_vendor_items):
+def test_sort_item_list():
+    test_list = [{"lab": "dcic", "submitted_by": "koray", "no": 1},
+                 {"lab": "mlab", "submitted_by": "us1", "no": 2},
+                 {"lab": "dcic", "submitted_by": "andy", "no": 3},
+                 {"lab": "mlab", "submitted_by": "us4", "no": 4},
+                 {"lab": "dcic", "submitted_by": "koray", "no": 5},
+                 {"lab": "mlab", "submitted_by": "us2", "no": 6},
+                 {"lab": "dcic", "submitted_by": "andy", "no": 7},
+                 {"lab": "mlab", "submitted_by": "us3", "no": 8},
+                 {"lab": "dcic", "submitted_by": "jeremy", "no": 9}
+                 ]
+    test_list = fdnDCIC.sort_item_list(test_list, "mlab", "lab")
+    test_list = fdnDCIC.sort_item_list(test_list, "koray", "submitted_by")
+
+    result_list = [{'submitted_by': 'koray', 'lab': 'dcic', 'no': 1},
+                   {'submitted_by': 'koray', 'lab': 'dcic', 'no': 5},
+                   {'submitted_by': 'andy', 'lab': 'dcic', 'no': 3},
+                   {'submitted_by': 'andy', 'lab': 'dcic', 'no': 7},
+                   {'submitted_by': 'jeremy', 'lab': 'dcic', 'no': 9},
+                   {'submitted_by': 'us1', 'lab': 'mlab', 'no': 2},
+                   {'submitted_by': 'us2', 'lab': 'mlab', 'no': 6},
+                   {'submitted_by': 'us3', 'lab': 'mlab', 'no': 8},
+                   {'submitted_by': 'us4', 'lab': 'mlab', 'no': 4}]
+    assert test_list == result_list
+
+
+def test_fetch_all_items_mock(connection, mocker, returned_vendor_items,
+                              returned_vendor_item1, returned_vendor_item2, returned_vendor_item3):
     fields = ['#Field Name:', 'aliases', 'name', '*title', 'description', 'lab', 'award', 'url']
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', side_effect=[returned_vendor_items,
+                                                                         returned_vendor_item1,
+                                                                         returned_vendor_item2,
+                                                                         returned_vendor_item3]):
+        connection.lab = 'test'
+        connection.user = 'test'
         all_vendor_items = fdnDCIC.fetch_all_items('Vendor', fields, connection)
         for vendor in all_vendor_items:
             assert len(vendor) == len(fields)
@@ -232,7 +270,8 @@ def xls_to_list(xls_file, sheet):
 
 
 @pytest.mark.file_operation
-def test_order_FDN_mock(connection, mocker, returned_vendor_items):
+def test_order_FDN_mock(connection, mocker, returned_vendor_items,
+                        returned_vendor_item1, returned_vendor_item2, returned_vendor_item3):
     vendor_file = './tests/data_files/Vendor.xls'
     ordered_file = './tests/data_files/Vendor_ordered.xls'
     ref_file = './tests/data_files/Vendor_ordered reference.xls'
@@ -242,7 +281,12 @@ def test_order_FDN_mock(connection, mocker, returned_vendor_items):
     except OSError:
         pass
 
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_items):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', side_effect=[returned_vendor_items,
+                                                                         returned_vendor_item1,
+                                                                         returned_vendor_item2,
+                                                                         returned_vendor_item3]):
+        connection.lab = 'test'
+        connection.user = 'test'
         fdnDCIC.order_FDN(vendor_file, connection)
         assert os.path.isfile(ordered_file)
     ord_list = xls_to_list(ordered_file, "Vendor")

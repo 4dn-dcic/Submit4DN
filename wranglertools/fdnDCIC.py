@@ -35,6 +35,19 @@ class FDN_Connection(object):
             self.auth = ()
         else:
             self.auth = (key.authid, key.authpw)
+        # check connection and find user uuid
+        me_page = self.server + 'me'
+        r = requests.get(me_page, auth=self.auth)
+        self.check = False
+        if r.status_code == 307:  # pragma: no cover
+            self.check = True
+            res = r.json()
+            self.user = res['@id']
+            self.lab = res['lab']
+            lab_url = self.server + self.lab
+            r_lab = requests.get(lab_url, auth=self.auth)
+            res_lab = r_lab.json()
+            self.award = res_lab['awards'][0]['@id']
 
 
 class FDN_Schema(object):
@@ -145,13 +158,14 @@ sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
-    "FileFastq", "FileFasta", "FileSet", "ExperimentHiC", "ExperimentCaptureC",
+    "FileFastq", "FileFasta", "FileSet", "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq",
     "ExperimentSet", "ExperimentSetReplicate"]
 
 do_not_use = [
     "submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
     "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
-    "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set"]
+    "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set",
+    "award", "*award", "lab", "*lab"]
 
 
 def filter_and_sort(list_names):
@@ -166,17 +180,16 @@ def filter_and_sort(list_names):
     useful = sorted(useful)
     return useful
 
-move_frond = ['experiment_set', '*tec_rep_no', '*bio_rep_no', '*replicate_set',
-              'award', '*award', 'lab', '*lab', 'description',
-              'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
+move_front = ['experiment_set', '*tec_rep_no', '*bio_rep_no', '*replicate_set',
+              'description', 'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
 
 
-def move_to_frond(list_names):
-    """Move names frond"""
-    for frond in move_frond:
+def move_to_front(list_names):
+    """Move names front"""
+    for front in move_front:
         try:
-            list_names.remove(frond)
-            list_names.insert(0, frond)
+            list_names.remove(front)
+            list_names.insert(0, front)
         except:  # pragma: no cover
             pass
     return list_names
@@ -236,13 +249,40 @@ fetch_items = {
     "Publication": "publication", "Vendor": "vendor"}
 
 
+def sort_item_list(item_list, item_id, field):
+    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginnging."""
+    # sort all items based on the key
+    from operator import itemgetter
+    sorted_list = sorted(item_list, key=itemgetter(field))
+    # move the item_id ones to the front
+    move_list = [i for i in sorted_list if i[field] == item_id]
+    move_list.reverse()
+    for move_item in move_list:
+        try:
+            sorted_list.remove(move_item)
+            sorted_list.insert(0, move_item)
+        except:
+            pass
+    return sorted_list
+
+
 def fetch_all_items(sheet, field_list, connection):
     """For a given sheet, get all released items"""
     all_items = []
     if sheet in fetch_items.keys():
+        # Search all items, get uuids, get them one by one
         obj_id = "search/?type=" + fetch_items[sheet]
         resp = get_FDN(obj_id, connection)
-        items_list = resp['@graph']
+        items_uuids = [i["uuid"] for i in resp['@graph']]
+        items_list = []
+        for item_uuid in items_uuids:
+            items_list.append(get_FDN(item_uuid, connection))
+        # order items with lab and user (Lab (1-user_lab 2-dcic_lab), User
+        # the date ordering is already in place through search result (resp)
+        items_list = sort_item_list(items_list, '/lab/dcic-lab/', 'lab')
+        items_list = sort_item_list(items_list, connection.lab, 'lab')
+        items_list = sort_item_list(items_list, connection.user, 'submitted_by')
+        # filter for fields that exist on the excel sheet
         for item in items_list:
             item_info = []
             for field in field_list:
@@ -295,7 +335,7 @@ def order_FDN(input_xls, connection):
         # remove items from fields in xls
         useful = filter_and_sort(first_row_values)
         # move selected to front
-        useful = move_to_frond(useful)
+        useful = move_to_front(useful)
         # move selected to end
         useful = move_to_end(useful)
         # reorder some items based on reorder list
