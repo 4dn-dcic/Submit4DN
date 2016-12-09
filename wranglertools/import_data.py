@@ -602,6 +602,11 @@ def main():  # pragma: no cover
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
     connection = fdnDCIC.FDN_Connection(key)
     print("Running on {server}".format(server=connection.server))
+    # test connection
+    if not connection.check:
+        print("CONNECTION ERROR: Please check your keys.")
+        return
+    # check input file (xls)
     if not os.path.isfile(args.infile):
         print("File {filename} not found!".format(filename=args.infile))
         sys.exit(1)
