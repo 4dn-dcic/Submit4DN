@@ -1,0 +1,7 @@
+{
+    "title": "Hi-C processing part A",
+    "name": "hi-c-processing-parta",
+    "workflow_type": "Hi-C data analysis", 
+    "workflow_diagram": "", 
+    "description": "Creating a bam and pairs files from a pair of fastq files"
+}

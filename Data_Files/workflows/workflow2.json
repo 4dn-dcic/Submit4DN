@@ -1,0 +1,7 @@
+{
+    "title": "ValidateFiles", 
+    "name": "validate",
+    "workflow_type": "Data QC", 
+    "workflow_diagram": "", 
+    "description": "ValidateFiles quality control step for fastq files"
+}
