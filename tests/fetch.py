@@ -21,10 +21,10 @@ def run(keypairs_file, schema_name, schema_class_name):
     try:
         # response = fdnDCIC.get_FDN("/profiles/file_reference.json", connection, frame="object")
         if schema_name is not None:
-            response = fdnDCIC.get_FDN("/" + schema_name, connection)
+            response = fdnDCIC.get_FDN(schema_name, connection)
             print(response)
         if schema_class_name is not None:
-            response = fdnDCIC.get_FDN("/search/?type=" + schema_class_name, connection)
+            response = fdnDCIC.get_FDN("search/?type=" + schema_class_name, connection)
             print(response)
     except Exception as e:
         print(e)

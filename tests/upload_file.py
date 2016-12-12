@@ -40,15 +40,14 @@ def run(keypairs_file, accession, filename_to_post):
         # patch_item = {'status': 'uploading'}
         # resp = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
         # patch_item = {'md5sum': md5(filename_to_post)}
-        patch_item = {'md5sum': md5(filename_to_post), 'status': 'uploading'}
+        # patch_item = {'md5sum': md5(filename_to_post), 'status': 'uploading'}
+        patch_item = {'md5sum': "405943b1656b58d622f7b004a7857fd4"md5, 'status': 'uploading'}  # temporary
         resp = fdnDCIC.patch_FDN(item_uuid, connection, patch_item)
-        graph = resp.get('@graph')
-        print(graph)
-        accession = graph[0].get('accession')
-        print(accession)
+	# import pdb; pdb.set_trace()
+        # accession = resp.get('@graph').get('accession')
         # get s3 credentials
-	import pdb; pdb.set_trace()
-        creds = import_data.get_upload_creds(accession, connection, graph[0])
+	# import pdb; pdb.set_trace()
+        creds = import_data.get_upload_creds(item_uuid, connection, resp.get('graph')[0])
         url = "%s%s/upload/" % (connection.server, item_uuid)
         print(url)
         print(connection.auth)
@@ -59,10 +58,9 @@ def run(keypairs_file, accession, filename_to_post):
                             data=json.dumps({}))
         print(req)
         print(req.json())
-        creds = import_data.get_upload_creds(accession, connection, 0)
-        print("haha")
+        #creds = import_data.get_upload_creds(item_uuid, connection, 0)
         print(creds)
-        graph[0]['upload_credentials'] = creds
+        resp.get('@graph')[0]['upload_credentials'] = creds
         print(graph)
         import_data.upload_file(resp, filename_to_post)
 
