@@ -158,12 +158,12 @@ sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
-    "FileFastq", "FileFasta", "FileSet", "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq",
+    "FileFastq", "FileFasta", "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq",
     "ExperimentSet", "ExperimentSetReplicate"]
 
-# There are no fields that are not covered by "exclude_from:submit4dn" tag
+# Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out
-do_not_use = []
+do_not_use = ["filesets", "status"]
 
 
 def filter_and_sort(list_names):

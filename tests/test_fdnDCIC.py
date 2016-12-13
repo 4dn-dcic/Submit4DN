@@ -269,7 +269,7 @@ def test_order_FDN_mock(connection, mocker, returned_vendor_items,
                         returned_vendor_item1, returned_vendor_item2, returned_vendor_item3):
     vendor_file = './tests/data_files/Vendor.xls'
     ordered_file = './tests/data_files/Vendor_ordered.xls'
-    ref_file = './tests/data_files/Vendor_ordered reference.xls'
+    ref_file = './tests/data_files/Vendor_ordered_reference.xls'
     import os
     try:
         os.remove(ordered_file)
