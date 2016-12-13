@@ -43,6 +43,7 @@ class FDN_Connection(object):
             self.check = True
             res = r.json()
             self.user = res['@id']
+            self.email = res['email']
             self.lab = res['lab']
             lab_url = self.server + self.lab
             r_lab = requests.get(lab_url, auth=self.auth)

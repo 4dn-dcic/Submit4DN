@@ -615,12 +615,16 @@ def main():  # pragma: no cover
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
         return
-    print("Submitting User:  {server}".format(server=connection.user))
+    print("Submitting User:  {server}".format(server=connection.email))
     print("Submitting Lab:   {server}".format(server=connection.lab))
     print("Submitting Award: {server}".format(server=connection.award))
+
     # check input file (xls)
     if not os.path.isfile(args.infile):
         print("File {filename} not found!".format(filename=args.infile))
+        sys.exit(1)
+    response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+    if response.lower() not in ["y", "yes"]:
         sys.exit(1)
     if args.type:
         names = [args.type]
