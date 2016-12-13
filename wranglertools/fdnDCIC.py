@@ -161,11 +161,9 @@ sheet_order = [
     "FileFastq", "FileFasta", "FileSet", "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq",
     "ExperimentSet", "ExperimentSetReplicate"]
 
-do_not_use = [
-    "submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
-    "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
-    "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set",
-    "award", "*award", "lab", "*lab"]
+# There are no fields that are not covered by "exclude_from:submit4dn" tag
+# do_not_use list can be populated if there are additional fields that nneds to be taken out
+do_not_use = []
 
 
 def filter_and_sort(list_names):
@@ -252,10 +250,9 @@ fetch_items = {
 def sort_item_list(item_list, item_id, field):
     """Sort all items in list alphabetically based on values in the given field and bring item_id to beginning."""
     # sort all items based on the key
-    from operator import itemgetter
-    sorted_list = sorted(item_list, key=itemgetter(field))
+    sorted_list = sorted(item_list, key=lambda k: ("" if k.get(field) is None else k.get(field)))
     # move the item_id ones to the front
-    move_list = [i for i in sorted_list if i[field] == item_id]
+    move_list = [i for i in sorted_list if i.get(field) == item_id]
     move_list.reverse()
     for move_item in move_list:
         try:
