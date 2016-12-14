@@ -165,15 +165,10 @@ def test_patch_FDN_mock_post_item_str(connection, mocker, returned__patch_vendor
 
 
 def test_filter_and_sort():
-    test_list = ["submitted_by", "date_created", "organism", "schema_version", "accession", "uuid", "status",
-                 "quality_metric_flags", "notes", "restricted", "file_size", "filename", "alternate_accessions",
-                 "content_md5sum", "md5sum", "quality_metric", "files_in_set", "experiments", "experiments_in_set",
-                 'dbxrefs', 'references', 'url', 'documents', 'award', '*award', 'lab', '*lab', 'description',
-                 'title', '*title', 'name', '*name', 'aliases', '#Field Name:', 'extra_field', 'extra_field_2']
+    test_list = ['dbxrefs', 'name', '#Field Name:', '*name', 'extra_field_2', 'aliases', 'description', 'documents',
+                 'extra_field', 'references', 'title', 'url', '*title']
     result_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents',
                    'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
-    print(result_list)
-    print(fdnDCIC.filter_and_sort(test_list))
     assert result_list == fdnDCIC.filter_and_sort(test_list)
 
 
