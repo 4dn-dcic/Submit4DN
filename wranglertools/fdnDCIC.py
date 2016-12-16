@@ -44,11 +44,16 @@ class FDN_Connection(object):
             res = r.json()
             self.user = res['@id']
             self.email = res['email']
-            self.lab = res['lab']
-            lab_url = self.server + self.lab
-            r_lab = requests.get(lab_url, auth=self.auth)
-            res_lab = r_lab.json()
-            self.award = res_lab['awards'][0]['@id']
+            try:
+                self.lab = res['lab']
+                lab_url = self.server + self.lab
+                r_lab = requests.get(lab_url, auth=self.auth)
+                res_lab = r_lab.json()
+                self.award = res_lab['awards'][0]['@id']
+            except:
+                # to catch possible gaps in the code
+                self.lab = None
+                self.award = None
 
 
 class FDN_Schema(object):

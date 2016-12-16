@@ -386,11 +386,12 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def fix_attribution(post_json, connection):
-    if not post_json.get('lab'):
-        post_json['lab'] = connection.lab
-    if not post_json.get('award'):
-        post_json['award'] = connection.award
+def fix_attribution(sheet, post_json, connection):
+    if sheet.lower() not in ['lab', 'award', 'user', 'organism']:
+        if not post_json.get('lab'):
+            post_json['lab'] = connection.lab
+        if not post_json.get('award'):
+            post_json['award'] = connection.award
     return post_json
 
 
@@ -422,7 +423,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        post_json = fix_attribution(post_json, connection)
+        post_json = fix_attribution(sheet, post_json, connection)
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
