@@ -248,7 +248,7 @@ def test_combine_set_filesets_with_existing():
 
 def test_fix_attribution(connection):
     post_json = {'field': 'value', 'field2': 'value2'}
-    result_json = imp.fix_attribution(post_json, connection)
+    result_json = imp.fix_attribution('some_sheet', post_json, connection)
     assert result_json['lab'] == 'test_lab'
     assert result_json['award'] == 'test_award'
 
