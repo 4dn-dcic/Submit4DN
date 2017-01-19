@@ -37,7 +37,6 @@ class FDN_Connection(object):
             self.auth = (key.authid, key.authpw)
         # check connection and find user uuid
         me_page = self.server + 'me' + '?frame=embedded'
-        print(me_page)
         r = requests.get(me_page, auth=self.auth)
         self.check = False
         if r.status_code == 307:  # pragma: no cover
@@ -50,7 +49,6 @@ class FDN_Connection(object):
                 lab_url = self.server + self.lab + '?frame=embedded'
                 r_lab = requests.get(lab_url, auth=self.auth)
                 res_lab = r_lab.json()
-                print(res_lab)
                 self.award = res_lab['awards'][0]['@id']
             except:
                 # to catch possible gaps in the code
