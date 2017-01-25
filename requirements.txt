@@ -1,3 +1,6 @@
+#Python 2.7 compatibilty
+six
+
 attrs==16.0.0
 Pillow==3.3.0
 py==1.4.31
@@ -9,9 +12,6 @@ requests==2.11.0
 xlrd==1.0.0
 xlwt==1.1.2
 awscli==1.10.62
-
-#Python 2.7 compatibilty
-six
 
 # Build tasks
 invoke
