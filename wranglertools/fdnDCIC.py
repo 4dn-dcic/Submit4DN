@@ -8,6 +8,7 @@ import os.path
 import hashlib
 import xlrd
 import xlwt
+import re
 
 
 class FDN_Key:
@@ -68,22 +69,34 @@ class FDN_Schema(object):
             self.required = response['required']
 
 
-def FDN_url(obj_id, connection, frame):
-    if frame is None:
-        if '?' in obj_id:
-            url = connection.server + obj_id+'&limit=all'
+def FDN_url(obj_id, connection, frame, url_addon=None):
+    '''Generate a URL from connection info for a specific item by using an
+        object id (accession, uuid or unique_key) or for a collection of items
+        using the collection name (eg. biosamples or experiments-hi-c) or a
+        search by providing a search suffix addon
+    '''
+    if obj_id is not None:
+        if frame is None:
+            if '?' in obj_id:
+                url = connection.server + obj_id + '&limit=all'
+            else:
+                url = connection.server + obj_id + '?limit=all'
+        elif '?' in obj_id:
+            url = connection.server + obj_id + '&limit=all&frame=' + frame
         else:
-            url = connection.server + obj_id+'?limit=all'
-    elif '?' in obj_id:
-        url = connection.server + obj_id+'&limit=all&frame='+frame
-    else:
-        url = connection.server + obj_id+'?limit=all&frame='+frame
-    return url
+            url = connection.server + obj_id + '?limit=all&frame=' + frame
+        return url
+    elif url_addon is not None:
+        return connection.server + '/' + url_addon
 
 
-def get_FDN(obj_id, connection, frame="object"):
-    '''GET an FDN object as JSON and return as dict'''
-    url = FDN_url(obj_id, connection, frame)
+def get_FDN(obj_id, connection, frame="object", url_addon=None):
+    '''GET an FDN object or collection as JSON and return as dict
+        or list of dicts, respectively'''
+    if obj_id is not None:
+        url = FDN_url(obj_id, connection, frame)
+    elif url_addon is not None:
+        url = FDN_url(None, connection, None, url_addon)
     logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
     logging.debug('GET RESPONSE code %s' % (response.status_code))
