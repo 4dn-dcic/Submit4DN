@@ -108,9 +108,15 @@ def get_field_type(field):
     if field_type == 'string':
         if field.get('linkTo', ''):
             return "Item:" + field.get('linkTo')
+        # if multiple objects are linked by "anyOf"
+        if field.get('anyOf', ''):
+            links = filter(None, [d.get('linkTo', '') for d in field.get('anyOf')])
+            if links:
+                return "Item:" + ' or '.join(links)
+        # if not object return string
         return 'string'
     elif field_type == 'array':
-        return 'array of ' + get_field_type(field.get('items')) + 's'
+        return 'array of ' + get_field_type(field.get('items'))
     return field_type
 
 
