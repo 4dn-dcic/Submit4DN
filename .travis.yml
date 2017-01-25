@@ -15,6 +15,7 @@ deploy:
     tags: true
   distributions: "sdist bdist_wheel"
 install:
+- pip install six
 - pip install -U -r requirements.txt
 - pip install coveralls
 - pip install codacy-coverage
