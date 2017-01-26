@@ -87,7 +87,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
             url = connection.server + obj_id + '?limit=all&frame=' + frame
         return url
     elif url_addon is not None:
-        return connection.server + '/' + url_addon
+        return connection.server + url_addon
 
 
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
