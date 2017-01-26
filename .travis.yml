@@ -15,12 +15,13 @@ deploy:
     tags: true
   distributions: "sdist bdist_wheel"
 install:
+- pip install six
 - pip install -U -r requirements.txt
 - pip install coveralls
 - pip install codacy-coverage
 - pip install tox
 script:
-- invoke test 
+- invoke test
 - echo "finished running tests on repo"
 - echo " now install packaged and run tests again, on installed package"
 - python setup.py test

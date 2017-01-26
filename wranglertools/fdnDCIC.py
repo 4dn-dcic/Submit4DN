@@ -8,7 +8,6 @@ import os.path
 import hashlib
 import xlrd
 import xlwt
-import re
 
 
 class FDN_Key:
