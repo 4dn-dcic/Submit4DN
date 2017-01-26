@@ -73,7 +73,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
     '''Generate a URL from connection info for a specific item by using an
         object id (accession, uuid or unique_key) or for a collection of items
         using the collection name (eg. biosamples or experiments-hi-c) or a
-        search by providing a search suffix addon
+        search by providing a search suffix addon.
     '''
     if obj_id is not None:
         if frame is None:
@@ -92,7 +92,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
 
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object or collection as JSON and return as dict
-        or list of dicts, respectively'''
+        or list of dicts, respectively.'''
     if obj_id is not None:
         url = FDN_url(obj_id, connection, frame)
     elif url_addon is not None:
