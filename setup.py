@@ -9,14 +9,14 @@ except:
     pass  # don't know why this fails with tox
 
 requires = [
-    'attrs==16.0.0',
-    'Pillow==3.3.0',
+    'attrs',
+    'Pillow',
     'py==1.4.31',
     'python-magic==0.4.12',
-    'requests==2.11.0',
+    'requests',
     'wheel==0.24.0',
-    'xlrd==1.0.0',
-    'xlwt==1.1.2',
+    'xlrd',
+    'xlwt>=1.1.2',
     'awscli',
     'six',
 ]

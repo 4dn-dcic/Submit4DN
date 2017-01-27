@@ -35,7 +35,9 @@ def test(ctx, watch=False, last_failing=False, no_flake=False):
     if last_failing:
         args.append('--lf')
     retcode = pytest.main(args)
-    return(retcode)
+    if retcode != 0:
+        print("test failed exiting")
+        sys.exit(retcode)
 
 
 @task
@@ -67,6 +69,7 @@ def deploy(ctx, version=None):
     git_tag(ctx, version, "new production release %s" % (version))
     print("Build is now triggered for production deployment of %s "
           "check travis for build status" % (version))
+    print("Also be sure to update fourfront/buildout.cfg to use the new version of Submit4DN")
 
 
 @task
@@ -74,8 +77,11 @@ def update_version(ctx, version=None):
     from wranglertools._version import __version__
     print("Current version is ", __version__)
     if version is None:
-        version = input("What version would you like to set for new release (please use x.x.x / "
-                        " semantic versioning): ")
+        msg = "What version would you like to set for new release (please use x.x.x / semantic versioning): "
+        if sys.version_info < (3, 0):
+            version = raw_input(msg)
+        else:
+            version = input(msg)
 
     # read the versions file
     lines = []
