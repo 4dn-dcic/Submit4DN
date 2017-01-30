@@ -92,9 +92,12 @@ def getArgs():  # pragma: no cover
 # list of [sheet, [fields]] that need to be patched as a second step
 # should be in sync with loadxl.py in fourfront
 list_of_loadxl_fields = [
+    ['Document', ['references']],
     ['User', ['lab', 'submits_for']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
+    ['FileFastq', ['related_files']],
+    ['FileFasta', ['related_files']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
