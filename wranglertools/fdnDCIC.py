@@ -92,7 +92,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
-        or search, respecitively.
+        or search, respectively.
     '''
     if obj_id is not None:
         url = FDN_url(obj_id, connection, frame)
@@ -113,6 +113,8 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
         else:
             # logging.warning('GET failure.  Response code = %s' % (response.text))
             pass
+    if url_addon is not None and response.json().get('@graph'):
+        return response.json()['@graph']
     return response.json()
 
 
