@@ -440,7 +440,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # Get existing data if available
         existing_data = get_existing(post_json, connection)
         # if no existing data (new item), add missing award/lab information from submitter
-        if not existing_data.get("uuid"):
+        if not existing_data.get("award"):
             post_json = fix_attribution(sheet, post_json, connection)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
