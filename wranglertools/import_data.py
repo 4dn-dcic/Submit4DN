@@ -426,7 +426,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        post_json = fix_attribution(sheet, post_json, connection)
         # add attchments here
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
@@ -440,6 +439,9 @@ def excel_reader(datafile, sheet, update, connection, patchall,
             file_to_upload = True
         # Get existing data if available
         existing_data = get_existing(post_json, connection)
+        # if no existing data (new item), add missing award/lab information from submitter
+        if not existing_data.get("award"):
+            post_json = fix_attribution(sheet, post_json, connection)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
