@@ -45,7 +45,7 @@ class FDN_Connection(object):
             self.user = res['@id']
             self.email = res['email']
             try:
-                self.lab = res['submits_for']
+                self.lab = res['submits_for'][0]
                 lab_url = self.server + self.lab + '?frame=embedded'
                 r_lab = requests.get(lab_url, auth=self.auth)
                 res_lab = r_lab.json()
