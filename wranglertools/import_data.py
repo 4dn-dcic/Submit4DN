@@ -85,7 +85,12 @@ def getArgs():  # pragma: no cover
                         default=False,
                         action='store_true',
                         help="PATCH existing objects.  Default is False \
-                        and will only PATCH with user override")
+                        and will only PATCH with user override"),
+    parser.add_argument('--remote',
+                        default=False,
+                        action='store_true',
+                        help="will skip attribution prompt \
+                        needed for automated submissions")
     args = parser.parse_args()
     return args
 
@@ -629,9 +634,10 @@ def main():  # pragma: no cover
     if not os.path.isfile(args.infile):
         print("File {filename} not found!".format(filename=args.infile))
         sys.exit(1)
-    response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
-    if response.lower() not in ["y", "yes"]:
-        sys.exit(1)
+    if not args.remote:
+        response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+        if response.lower() not in ["y", "yes"]:
+            sys.exit(1)
     if args.type:
         names = [args.type]
     else:
