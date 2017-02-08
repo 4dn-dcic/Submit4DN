@@ -342,6 +342,8 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
                 assert message1 == outlist[1]
 
 
+# a weird test that has filename in an experiment
+# needs to change
 @pytest.mark.file_operation
 def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, connection):
     test_insert = './tests/data_files/Exp_HiC_insert.xls'
@@ -351,7 +353,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     dict_file = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC: 1 out of 1 posted, 0 errors, 1 patched."
-    existing_exp = {'uuid': 'sample_uuid'}
+    existing_exp = {'uuid': 'sample_uuid', 'status': "uploading"}
     e = {'status': 'success',
          '@graph': [{'uuid': 'some_uuid',
                      '@id': 'some_uuid',

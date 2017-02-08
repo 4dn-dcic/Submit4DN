@@ -435,15 +435,25 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         if post_json.get("attachment"):
             attach = attachment(post_json["attachment"])
             post_json["attachment"] = attach
+
+        # Get existing data if available
+        existing_data = get_existing(post_json, connection)
+
         # should I upload files as well?
         file_to_upload = False
         filename_to_post = post_json.get('filename')
         if filename_to_post:
             # remove full path from filename
-            post_json['filename'] = filename_to_post.split('/')[-1]
-            file_to_upload = True
-        # Get existing data if available
-        existing_data = get_existing(post_json, connection)
+            just_filename = filename_to_post.split('/')[-1]
+            # if new file
+            if not existing_data:
+                post_json['filename'] = just_filename
+                file_to_upload = True
+            # if there is an existing file metadata, the status should be uploading
+            if existing_data.get('status') == 'uploading':
+                post_json['filename'] = just_filename
+                file_to_upload = True
+
         # if no existing data (new item), add missing award/lab information from submitter
         if not existing_data.get("award"):
             post_json = fix_attribution(sheet, post_json, connection)
