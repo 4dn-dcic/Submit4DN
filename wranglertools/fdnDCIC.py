@@ -182,8 +182,6 @@ def new_FDN_check(connection, collection_name, post_input):
     return response.json()
 
 
-
-
 def md5(path):
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
