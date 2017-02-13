@@ -159,6 +159,31 @@ def new_FDN(connection, collection_name, post_input):
     return response.json()
 
 
+def new_FDN_check(connection, collection_name, post_input):
+    '''POST an FDN object as JSON and return the response JSON
+    '''
+    collection_name = collection_name + "/?check_only=True"
+    if isinstance(post_input, dict):
+        json_payload = json.dumps(post_input)
+    elif isinstance(post_input, str):
+        json_payload = post_input
+    else:  # pragma: no cover
+        print('Datatype to POST is not string or dict.')
+    url = connection.server + collection_name
+    logging.debug("POST URL : %s" % (url))
+    logging.debug("POST data: %s" % (json.dumps(post_input, sort_keys=True, indent=4,
+                                     separators=(',', ': '))))
+    response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
+    logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+    # if not response.status_code == 201:  # pragma: no cover
+    #     logging.warning('POST failure. Response = %s' % (response.text))
+    logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
+                                         separators=(',', ': '))))
+    return response.json()
+
+
+
+
 def md5(path):
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:

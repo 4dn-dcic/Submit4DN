@@ -512,13 +512,24 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # dryrun option
         if not patchall and not update:
             # simulate patch
-            if existing_data:
+            if existing_data.get("uuid"):
+                # e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                # if e['status'] == 'success':
+                #     pass
+                # else:
+                #     error += 1
+                #     print(e)
                 pass
             # simulate post
             else:
-                pass
-
-            continue
+                e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
+                if e['status'] == 'success':
+                    pass
+                else:
+                    error += 1
+                    print(e)
+            # continue
+            break
             # try test patch if the item exists
 
         # check status and if success fill transient storage dictionaries
@@ -572,7 +583,8 @@ def excel_reader(datafile, sheet, update, connection, patchall,
     {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
               .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
                       error=error, patch=patch, not_patched=not_patched))
-    else
+    # submission report
+    else:
         # print final report, and if there are not patched entries, add to report
         print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
     {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
