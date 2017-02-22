@@ -101,8 +101,11 @@ list_of_loadxl_fields = [
     ['User', ['lab', 'submits_for']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
+    ['ExperimentRepliseq', ['experiment_relation']],
     ['FileFastq', ['related_files']],
     ['FileFasta', ['related_files']],
+    ['FileReference', ['related_files']],
+    ['FileProcessed', ['related_files']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
@@ -190,7 +193,10 @@ def cell_value(cell, datemode):
 def data_formatter(value, val_type):
     """Return formatted data."""
     if val_type in ["int", "integer"]:
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+            print('Change this value to an interger: ' + str(value))
     elif val_type in ["num", "number"]:
         return float(value)
     elif val_type in ["list", "array"]:
@@ -455,6 +461,8 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 post_json['filename'] = just_filename
                 file_to_upload = True
 
+        # print(post_json)
+
         # if no existing data (new item), add missing award/lab information from submitter
         if not existing_data.get("award"):
             post_json = fix_attribution(sheet, post_json, connection)
@@ -476,6 +484,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
 
         # Run update or patch
         e = {}
+        # print(post_json)
 
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
@@ -528,8 +537,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 else:
                     error += 1
                     print(e)
-            # continue
-            break
+            continue
             # try test patch if the item exists
 
         # check status and if success fill transient storage dictionaries
@@ -650,6 +658,7 @@ def loadxl_cycle(patch_list, connection):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
+            print(entry)
             if entry != {}:
                 total = total + 1
                 fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
