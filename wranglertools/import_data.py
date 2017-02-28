@@ -197,18 +197,21 @@ def cell_value(cell, datemode):
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
-def data_formatter(value, val_type):
-    """Return formatted data."""
-    if val_type in ["int", "integer"]:
-        return int(value)
-    elif val_type in ["num", "number"]:
-        return float(value)
-    elif val_type in ["list", "array"]:
-        data_list = value.strip("[\']").split(",")
-        return [data.strip() for data in data_list]
-    else:
-        # default assumed to be string
-        return str(value)
+def data_formatter(value, val_type, field):
+    try:
+        """Return formatted data."""
+        if val_type in ["int", "integer"]:
+            return int(value)
+        elif val_type in ["num", "number"]:
+            return float(value)
+        elif val_type in ["list", "array"]:
+            data_list = value.strip("[\']").split(",")
+            return [data.strip() for data in data_list]
+        else:
+            # default assumed to be string
+            return str(value)
+    except ValueError:
+        print("Field '{}' contains value '{}' which is not of type {}".format(field, value, val_type.upper()))
 
 
 def get_field_name(field_name):
@@ -266,7 +269,7 @@ def build_field(field, field_data, field_type):
         sub_field = get_sub_field(field)
         return build_field(sub_field, field_data, 'string')
     else:
-        patch_field_data = data_formatter(field_data, field_type)
+        patch_field_data = data_formatter(field_data, field_type, field)
     return {patch_field_name: patch_field_data}
 
 
