@@ -110,7 +110,17 @@ list_of_loadxl_fields = [
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url."""
     if not os.path.isfile(path):
-        r = requests.get(path)
+        # if the path does not exist, check if it works as a URL
+        try:
+            r = requests.get(path)
+        except requests.exceptions.MissingSchema:
+            print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
+            sys.exit(1)
+        # if it works as a URL, but does not return 200
+        if r.status_code is not 200:
+            print("\nERROR : The URL status code is not 200\n"
+                  .format(path))
+            sys.exit(1)
         path = path.split("/")[-1]
         with open(path, "wb") as outfile:
             outfile.write(r.content)
@@ -630,6 +640,8 @@ def loadxl_cycle(patch_list, connection):
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    if key.error:
+        sys.exit(1)
     connection = fdnDCIC.FDN_Connection(key)
     print("Running on:       {server}".format(server=connection.server))
     # test connection
