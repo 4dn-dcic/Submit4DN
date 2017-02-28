@@ -118,9 +118,9 @@ def attachment(path):
             sys.exit(1)
         # if it works as a URL, but does not return 200
         if r.status_code is not 200:
-            print("\nERROR : The URL status code is not 200\n"
-                  .format(path))
+            print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
             sys.exit(1)
+        # parse response
         path = path.split("/")[-1]
         with open(path, "wb") as outfile:
             outfile.write(r.content)
