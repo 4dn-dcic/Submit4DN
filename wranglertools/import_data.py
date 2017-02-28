@@ -212,6 +212,7 @@ def data_formatter(value, val_type, field):
             return str(value)
     except ValueError:
         print("Field '{}' contains value '{}' which is not of type {}".format(field, value, val_type.upper()))
+        return
 
 
 def get_field_name(field_name):
