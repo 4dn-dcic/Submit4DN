@@ -665,6 +665,11 @@ def loadxl_cycle(patch_list, connection):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
+def extract_all_ids(excel):
+    """get all aliases from the excel workbook, and keep in a list."""
+    return
+
+
 def cabin_cross_check(connection, patchall, update, infile, remote):
     print("Running on:       {server}".format(server=connection.server))
     # test connection
