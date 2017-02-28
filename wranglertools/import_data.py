@@ -113,7 +113,17 @@ list_of_loadxl_fields = [
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url."""
     if not os.path.isfile(path):
-        r = requests.get(path)
+        # if the path does not exist, check if it works as a URL
+        try:
+            r = requests.get(path)
+        except requests.exceptions.MissingSchema:
+            print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
+            sys.exit(1)
+        # if it works as a URL, but does not return 200
+        if r.status_code is not 200:
+            print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
+            sys.exit(1)
+        # parse response
         path = path.split("/")[-1]
         with open(path, "wb") as outfile:
             outfile.write(r.content)
@@ -190,21 +200,22 @@ def cell_value(cell, datemode):
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
-def data_formatter(value, val_type):
-    """Return formatted data."""
-    if val_type in ["int", "integer"]:
-        try:
+def data_formatter(value, val_type, field):
+    try:
+        """Return formatted data."""
+        if val_type in ["int", "integer"]:
             return int(value)
-        except ValueError:
-            print('Change this value to an interger: ' + str(value))
-    elif val_type in ["num", "number"]:
-        return float(value)
-    elif val_type in ["list", "array"]:
-        data_list = value.strip("[\']").split(",")
-        return [data.strip() for data in data_list]
-    else:
-        # default assumed to be string
-        return str(value)
+        elif val_type in ["num", "number"]:
+            return float(value)
+        elif val_type in ["list", "array"]:
+            data_list = value.strip("[\']").split(",")
+            return [data.strip() for data in data_list]
+        else:
+            # default assumed to be string
+            return str(value)
+    except ValueError:
+        print("Field '{}' contains value '{}' which is not of type {}".format(field, value, val_type.upper()))
+        return
 
 
 def get_field_name(field_name):
@@ -262,7 +273,7 @@ def build_field(field, field_data, field_type):
         sub_field = get_sub_field(field)
         return build_field(sub_field, field_data, 'string')
     else:
-        patch_field_data = data_formatter(field_data, field_type)
+        patch_field_data = data_formatter(field_data, field_type, field)
     return {patch_field_name: patch_field_data}
 
 
@@ -699,6 +710,8 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    if key.error:
+        sys.exit(1)
     connection = fdnDCIC.FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
     if args.type:

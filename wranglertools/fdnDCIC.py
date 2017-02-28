@@ -12,13 +12,21 @@ import xlwt
 
 class FDN_Key:
     def __init__(self, keyfile, keyname):
-        if os.path.isfile(str(keyfile)):
+        self.error = False
+        # is the keyfile a dictionary
+        if isinstance(keyfile, dict):
+            keys = keyfile
+        # is the keyfile a file (the expected case)
+        elif os.path.isfile(str(keyfile)):
             keys_f = open(keyfile, 'r')
             keys_json_string = keys_f.read()
             keys_f.close()
             keys = json.loads(keys_json_string)
+        # if both fail, the file does not exist
         else:
-            keys = keyfile
+            print("\nThe keyfile does not exist, make sure 'keypairs.json' is in your home folder\n")
+            self.error = True
+            return
         key_dict = keys[keyname]
         self.authid = key_dict['key']
         self.authpw = key_dict['secret']
