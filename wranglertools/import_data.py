@@ -197,7 +197,7 @@ def cell_value(cell, datemode):
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
-def data_formatter(value, val_type, field):
+def data_formatter(value, val_type, field=None):
     try:
         """Return formatted data."""
         if val_type in ["int", "integer"]:
