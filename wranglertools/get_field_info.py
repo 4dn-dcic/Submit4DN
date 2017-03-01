@@ -5,6 +5,7 @@ import argparse
 from wranglertools import fdnDCIC
 import attr
 import xlwt
+import sys
 
 
 EPILOG = '''
@@ -225,6 +226,9 @@ def create_xls(all_fields, filename):
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    if key.error:
+        sys.exit(1)
+    connection = fdnDCIC.FDN_Connection(key)
     connection = fdnDCIC.FDN_Connection(key)
     # test connection
     if not connection.check:
