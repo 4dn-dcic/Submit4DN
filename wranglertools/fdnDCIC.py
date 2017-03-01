@@ -24,7 +24,7 @@ class FDN_Key:
             keys = json.loads(keys_json_string)
         # if both fail, the file does not exist
         else:
-            print("\nThe keyfile does not exist, make sure 'keypairs.json' is in your home folder\n")
+            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
             self.error = True
             return
         key_dict = keys[keyname]
