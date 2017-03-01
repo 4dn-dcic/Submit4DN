@@ -495,8 +495,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
 
         # Run update or patch
         e = {}
-        # print(post_json)
-
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
@@ -514,7 +512,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     upload_file(e, filename_to_post)
             else:
                 not_patched += 1
-
         # if there is no existing item try posting
         else:
             if update:
@@ -533,12 +530,12 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         if not patchall and not update:
             # simulate patch
             if existing_data.get("uuid"):
-                # e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
-                # if e['status'] == 'success':
-                #     pass
-                # else:
-                #     error += 1
-                #     print(e)
+                e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                if e['status'] == 'success':
+                    pass
+                else:
+                    error += 1
+                    print(e)
                 pass
             # simulate post
             else:
@@ -549,7 +546,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     error += 1
                     print(e)
             continue
-            # try test patch if the item exists
 
         # check status and if success fill transient storage dictionaries
         if e.get("status") == "error":  # pragma: no cover

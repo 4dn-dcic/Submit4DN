@@ -116,6 +116,8 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     except:  # pragma: no cover
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:  # pragma: no cover
+        # import pdb
+        # pdb.set_trace()
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
@@ -187,6 +189,25 @@ def new_FDN_check(connection, collection_name, post_input):
     #     logging.warning('POST failure. Response = %s' % (response.text))
     logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
                                          separators=(',', ': '))))
+    return response.json()
+
+
+def patch_FDN_check(obj_id, connection, patch_input):
+    '''PATCH an existing FDN object and return the response JSON
+    '''
+    if isinstance(patch_input, dict):
+        json_payload = json.dumps(patch_input)
+    elif isinstance(patch_input, str):
+        json_payload = patch_input
+    else:  # pragma: no cover
+        print('Datatype to PATCH is not string or dict.')
+    url = connection.server + obj_id + "/?check_only=True"
+    logging.debug('PATCH URL : %s' % (url))
+    logging.debug('PATCH data: %s' % (json_payload))
+    response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
+    logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+    # if not response.status_code == 200:  # pragma: no cover
+    #     logging.warning('PATCH failure.  Response = %s' % (response.text))
     return response.json()
 
 
