@@ -214,8 +214,7 @@ def data_formatter(value, val_type, field=None):
             # default assumed to be string
             return str(value)
     except ValueError:
-        print("Field '{}' contains value '{}' which is not of type {}".format(field, value, val_type.upper()))
-        return
+        return str(value)
 
 
 def get_field_name(field_name):
@@ -420,6 +419,24 @@ def fix_attribution(sheet, post_json, connection):
     return post_json
 
 
+def error_report(error_dic):
+    """From the validation error report, forms a readable statement."""
+    # This dictionary is the common elements in the error dictionary I see so far
+    # I want to catch anything that does not follow this to catch different cases
+    error_header = {'@type': ['ValidationFailure', 'Error'], 'code': 422, 'status': 'error',
+                    'title': 'Unprocessable Entity', 'description': 'Failed validation'}
+    report = []
+    if all(item in error_dic.items() for item in error_header.items()):
+        for err in error_dic['errors']:
+            error_field = err['name'][0]
+            error_description = err['description']
+            report.append("Error: Field '{}': {}".format(error_field, error_description))
+        report_print = '\n'.join(report)
+        return report_print
+    else:
+        return error_dic
+
+
 def excel_reader(datafile, sheet, update, connection, patchall,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
     """takes an excel sheet and post or patched the data in."""
@@ -535,7 +552,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     pass
                 else:
                     error += 1
-                    print(e)
+                    print(error_report(e))
                 pass
             # simulate post
             else:
@@ -544,7 +561,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     pass
                 else:
                     error += 1
-                    print(e)
+                    print(error_report(e))
             continue
 
         # check status and if success fill transient storage dictionaries
@@ -605,7 +622,8 @@ def excel_reader(datafile, sheet, update, connection, patchall,
     {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
               .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
                       error=error, patch=patch, not_patched=not_patched))
-
+    if sheet == 'IndividualMouse':
+        sys.exit(1)
 
 def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
     url = "%s%s/upload/" % (connection.server, file_id)
