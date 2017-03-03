@@ -253,6 +253,8 @@ def test_fix_attribution(connection):
     assert result_json['award'] == 'test_award'
 
 
+# these tests will be replaced with dryrun tests
+
 @pytest.mark.file_operation
 def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection):
     # test new item submission without patchall update tags and check the return message
@@ -266,8 +268,6 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
         args = imp.get_existing.call_args
         attach = args[0][0]['attachment']
         assert attach['href'].startswith('data:image/jpeg;base64')
-
-# this test will be replaced with dryrun tests
 
 # @pytest.mark.file_operation
 # def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
@@ -292,28 +292,28 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #         assert out.strip() == message
 
 
-@pytest.mark.file_operation
-def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
-    # test exisiting item submission without patchall update tags and check the return message
-    test_insert = "./tests/data_files/Vendor_insert.xls"
-    dict_load = {}
-    dict_rep = {}
-    dict_set = {}
-    dict_file = {}
-    message = "VENDOR(1)                  :  0 posted / 0 not posted       0 patched / 1 not patched, 0 errors"
-    post_json = {'lab': 'sample-lab',
-                 'description': 'Sample description',
-                 'award': 'SampleAward',
-                 'title': 'Sample Vendor',
-                 'url': 'https://www.sample_vendor.com/',
-                 'aliases': ['dcic:sample_vendor']}
-    existing_vendor = {'uuid': 'sample_uuid'}
-    with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
-        imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, dict_file)
-        args = imp.get_existing.call_args
-        assert args[0][0] == post_json
-        out, err = capsys.readouterr()
-        assert out.strip() == message
+# @pytest.mark.file_operation
+# def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
+#     # test exisiting item submission without patchall update tags and check the return message
+#     test_insert = "./tests/data_files/Vendor_insert.xls"
+#     dict_load = {}
+#     dict_rep = {}
+#     dict_set = {}
+#     dict_file = {}
+#     message = "VENDOR(1)                  :  0 posted / 0 not posted       0 patched / 1 not patched, 0 errors"
+#     post_json = {'lab': 'sample-lab',
+#                  'description': 'Sample description',
+#                  'award': 'SampleAward',
+#                  'title': 'Sample Vendor',
+#                  'url': 'https://www.sample_vendor.com/',
+#                  'aliases': ['dcic:sample_vendor']}
+#     existing_vendor = {'uuid': 'sample_uuid'}
+#     with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
+#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, dict_file)
+#         args = imp.get_existing.call_args
+#         assert args[0][0] == post_json
+#         out, err = capsys.readouterr()
+#         assert out.strip() == message
 
 
 @pytest.mark.file_operation
