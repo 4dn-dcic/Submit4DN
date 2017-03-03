@@ -201,8 +201,8 @@ def cell_value(cell, datemode):
 
 
 def data_formatter(value, val_type, field=None):
+    """Return formatted data."""
     try:
-        """Return formatted data."""
         if val_type in ["int", "integer"]:
             return int(value)
         elif val_type in ["num", "number"]:
