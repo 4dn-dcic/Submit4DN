@@ -419,7 +419,7 @@ def fix_attribution(sheet, post_json, connection):
     return post_json
 
 
-def error_report(error_dic):
+def error_report(error_dic, sheet):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
@@ -430,9 +430,16 @@ def error_report(error_dic):
         for err in error_dic['errors']:
             error_field = err['name'][0]
             error_description = err['description']
-            report.append("Error: Field '{}': {}".format(error_field, error_description))
-        report_print = '\n'.join(report)
-        return report_print
+            # not checking for object connections at the moment, skip the error
+            if error_description[-9:] == 'not found':
+                continue
+            report.append("{sheet:<27}Error: Field '{er}': {des}"
+                          .format(er=error_field, des=error_description, sheet=sheet.lower()))
+        if report:
+            report_print = '\n'.join(report)
+            return report_print
+        else:
+            return
     else:
         return error_dic
 
@@ -489,8 +496,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 post_json['filename'] = just_filename
                 file_to_upload = True
 
-        # print(post_json)
-
         # if no existing data (new item), add missing award/lab information from submitter
         if not existing_data.get("award"):
             post_json = fix_attribution(sheet, post_json, connection)
@@ -527,6 +532,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     e['@graph'][0]['upload_credentials'] = creds
                     # upload
                     upload_file(e, filename_to_post)
+                if e.get("status") == "error":  # pragma: no cover
+                    error += 1
+                elif e.get("status") == "success":
+                    patch += 1
             else:
                 not_patched += 1
         # if there is no existing item try posting
@@ -540,6 +549,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
+                if e.get("status") == "error":  # pragma: no cover
+                    error += 1
+                elif e.get("status") == "success":
+                    post += 1
             else:
                 not_posted += 1
 
@@ -552,7 +565,9 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     pass
                 else:
                     error += 1
-                    print(error_report(e))
+                    # to skip object connections
+                    if error_report(e, sheet):
+                        print(error_report(e, sheet))
                 pass
             # simulate post
             else:
@@ -561,17 +576,13 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     pass
                 else:
                     error += 1
-                    print(error_report(e))
+                    # to skip object connections
+                    if error_report(e, sheet):
+                        print(error_report(e, sheet))
             continue
 
         # check status and if success fill transient storage dictionaries
-        if e.get("status") == "error":  # pragma: no cover
-            error += 1
-        elif e.get("status") == "success":
-            if update:
-                post += 1
-            if patchall:
-                patch += 1
+        if e.get("status") == "success":
             # uuid of the posted/patched item
             item_uuid = e['@graph'][0]['uuid']
             item_id = e['@graph'][0]['@id']
@@ -622,8 +633,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
     {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
               .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
                       error=error, patch=patch, not_patched=not_patched))
-    if sheet == 'IndividualMouse':
-        sys.exit(1)
+
 
 def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
     url = "%s%s/upload/" % (connection.server, file_id)
@@ -683,16 +693,10 @@ def loadxl_cycle(patch_list, connection):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
-            print(entry)
             if entry != {}:
                 total = total + 1
                 fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
-
-
-def extract_all_ids(excel):
-    """get all aliases from the excel workbook, and keep in a list."""
-    return
 
 
 def cabin_cross_check(connection, patchall, update, infile, remote):
