@@ -53,11 +53,11 @@ class FDN_Connection(object):
             self.user = res['@id']
             self.email = res['email']
             try:
-                self.lab = res['submits_for'][0]
+                self.lab = res['submits_for'][0]['link_id'].replace("~", "/")
                 lab_url = self.server + self.lab + '?frame=embedded'
                 r_lab = requests.get(lab_url, auth=self.auth)
                 res_lab = r_lab.json()
-                self.award = res_lab['awards'][0]['@id']
+                self.award = res_lab['awards'][0]['link_id'].replace("~", "/")
             except:
                 # to catch possible gaps in the code
                 self.lab = None
