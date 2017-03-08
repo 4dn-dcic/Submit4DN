@@ -371,7 +371,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
         ex_item_id = existing_data.get(identifier, '')
         item_id = post_json.get(identifier, ex_item_id)
         # to extract alias from list
-        if isinstance(item_id, list):
+        if isinstance(item_id, list) and item_id:
             item_id = item_id[0]
         if item_id:
             identifiers.append(item_id)
