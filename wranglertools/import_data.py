@@ -137,7 +137,7 @@ def attachment(path):
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/pdf', 'text/plain', 'text/tab-separated-values', 'text/html'):
+        if mime_type in ('application/pdf', 'text/plain', 'text/tab-separated-values', 'text/html', 'application/zip'):
             # XXX Should use chardet to detect charset for text files here.
             return attach
         if major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
