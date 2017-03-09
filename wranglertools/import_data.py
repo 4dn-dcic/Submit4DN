@@ -101,8 +101,11 @@ list_of_loadxl_fields = [
     ['User', ['lab', 'submits_for']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
+    ['ExperimentRepliseq', ['experiment_relation']],
     ['FileFastq', ['related_files']],
     ['FileFasta', ['related_files']],
+    ['FileReference', ['related_files']],
+    ['FileProcessed', ['related_files']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
@@ -211,8 +214,7 @@ def data_formatter(value, val_type, field=None):
             # default assumed to be string
             return str(value)
     except ValueError:
-        print("Field '{}' contains value '{}' which is not of type {}".format(field, value, val_type.upper()))
-        return
+        return str(value)
 
 
 def get_field_name(field_name):
@@ -417,6 +419,31 @@ def fix_attribution(sheet, post_json, connection):
     return post_json
 
 
+def error_report(error_dic, sheet):
+    """From the validation error report, forms a readable statement."""
+    # This dictionary is the common elements in the error dictionary I see so far
+    # I want to catch anything that does not follow this to catch different cases
+    error_header = {'@type': ['ValidationFailure', 'Error'], 'code': 422, 'status': 'error',
+                    'title': 'Unprocessable Entity', 'description': 'Failed validation'}
+    report = []
+    if all(item in error_dic.items() for item in error_header.items()):
+        for err in error_dic['errors']:
+            error_field = err['name'][0]
+            error_description = err['description']
+            # not checking for object connections at the moment, skip the error
+            if error_description[-9:] == 'not found':
+                continue
+            report.append("{sheet:<27}Error: Field '{er}': {des}"
+                          .format(er=error_field, des=error_description, sheet=sheet.lower()))
+        if report:
+            report_print = '\n'.join(report)
+            return report_print
+        else:
+            return
+    else:
+        return error_dic
+
+
 def excel_reader(datafile, sheet, update, connection, patchall,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
     """takes an excel sheet and post or patched the data in."""
@@ -432,9 +459,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
     # set counters to 0
     total = 0
     error = 0
-    success = 0
+    post = 0
     patch = 0
     not_patched = 0
+    not_posted = 0
     # iterate over the rows
     for values in row:
         # Rows that start with # are skipped
@@ -489,10 +517,8 @@ def excel_reader(datafile, sheet, update, connection, patchall,
 
         # Run update or patch
         e = {}
-        flow = ''
+        # if there is an existing item, try patching
         if existing_data.get("uuid"):
-            if not patchall:
-                not_patched += 1
             if patchall:
                 # add the md5
                 if file_to_upload and not post_json.get('md5sum'):
@@ -506,7 +532,13 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                     e['@graph'][0]['upload_credentials'] = creds
                     # upload
                     upload_file(e, filename_to_post)
-                flow = 'patch'
+                if e.get("status") == "error":  # pragma: no cover
+                    error += 1
+                elif e.get("status") == "success":
+                    patch += 1
+            else:
+                not_patched += 1
+        # if there is no existing item try posting
         else:
             if update:
                 # add the md5
@@ -517,18 +549,40 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 if file_to_upload:
                     # upload the file
                     upload_file(e, filename_to_post)
+                if e.get("status") == "error":  # pragma: no cover
+                    error += 1
+                elif e.get("status") == "success":
+                    post += 1
             else:
-                print("This looks like a new row but the update flag wasn't passed, use --update to"
-                      " post new data")
-                return
+                not_posted += 1
+
+        # dryrun option
+        if not patchall and not update:
+            # simulate patch
+            if existing_data.get("uuid"):
+                e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                if e['status'] == 'success':
+                    pass
+                else:
+                    error += 1
+                    # to skip object connections
+                    if error_report(e, sheet):
+                        print(error_report(e, sheet))
+                pass
+            # simulate post
+            else:
+                e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
+                if e['status'] == 'success':
+                    pass
+                else:
+                    error += 1
+                    # to skip object connections
+                    if error_report(e, sheet):
+                        print(error_report(e, sheet))
+            continue
 
         # check status and if success fill transient storage dictionaries
-        if e.get("status") == "error":  # pragma: no cover
-            error += 1
-        elif e.get("status") == "success":
-            success += 1
-            if flow == 'patch':
-                patch += 1
+        if e.get("status") == "success":
             # uuid of the posted/patched item
             item_uuid = e['@graph'][0]['uuid']
             item_id = e['@graph'][0]['@id']
@@ -565,16 +619,20 @@ def excel_reader(datafile, sheet, update, connection, patchall,
     # add all object loadxl patches to dictionary
     if patch_loadxl:
         dict_patch_loadxl[sheet] = patch_loadxl
-    # print final report, and if there are not patched entries, add to report
-    not_patched_note = '.'
-    if not_patched > 0:
-        not_patched_note = ", " + str(not_patched) + " not patched (use --patchall to patch)."
-    print("{sheet}: {success} out of {total} posted, {error} errors, {patch} patched{not_patch}".format(
-        sheet=sheet.upper(), success=success, total=total, error=error, patch=patch, not_patch=not_patched_note))
-    # if sheet == 'ExperimentSet':
-    #     if dict_exp_sets
-    # if sheet == 'ExperimentSetReplicate':
-    #     if dict_replicates
+
+    # dryrun report
+    if not patchall and not update:
+        print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
+    {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
+              .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
+                      error=error, patch=patch, not_patched=not_patched))
+    # submission report
+    else:
+        # print final report, and if there are not patched entries, add to report
+        print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
+    {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
+              .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
+                      error=error, patch=patch, not_patched=not_patched))
 
 
 def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
@@ -641,12 +699,7 @@ def loadxl_cycle(patch_list, connection):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def main():  # pragma: no cover
-    args = getArgs()
-    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
-    if key.error:
-        sys.exit(1)
-    connection = fdnDCIC.FDN_Connection(key)
+def cabin_cross_check(connection, patchall, update, infile, remote):
     print("Running on:       {server}".format(server=connection.server))
     # test connection
     if not connection.check:
@@ -655,20 +708,36 @@ def main():  # pragma: no cover
     print("Submitting User:  {server}".format(server=connection.email))
     print("Submitting Lab:   {server}".format(server=connection.lab))
     print("Submitting Award: {server}".format(server=connection.award))
-
     # check input file (xls)
-    if not os.path.isfile(args.infile):
-        print("File {filename} not found!".format(filename=args.infile))
+    if not os.path.isfile(infile):
+        print("File {filename} not found!".format(filename=infile))
         sys.exit(1)
-    if not args.remote:
-        response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
-        if response.lower() not in ["y", "yes"]:
-            sys.exit(1)
+    # if dry-run, message explaining the test, and skipping user input
+    if not patchall and not update:
+        print("\n##############   DRY-RUN MODE   ################")
+        print("Since there are no '--update' or '--patchall' arguments, you are running the DRY-RUN validation")
+        print("The validation will only check for schema rules, but not for object relations")
+        print("##############   DRY-RUN MODE   ################\n")
+    else:
+        if not remote:
+            response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+            if response.lower() not in ["y", "yes"]:
+                sys.exit(1)
+
+
+def main():  # pragma: no cover
+    args = getArgs()
+    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    if key.error:
+        sys.exit(1)
+    connection = fdnDCIC.FDN_Connection(key)
+    cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
     if args.type:
         names = [args.type]
     else:
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
+
     # get me a list of all the data_types in the system
     profiles = fdnDCIC.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
@@ -698,7 +767,6 @@ def main():  # pragma: no cover
             print('Following items are not posted')
             print('make sure they are on {} sheet'.format(dict_sheet))
             print(remains)
-
 
 if __name__ == '__main__':
         main()
