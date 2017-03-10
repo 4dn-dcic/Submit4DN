@@ -12,13 +12,21 @@ import xlwt
 
 class FDN_Key:
     def __init__(self, keyfile, keyname):
-        if os.path.isfile(str(keyfile)):
+        self.error = False
+        # is the keyfile a dictionary
+        if isinstance(keyfile, dict):
+            keys = keyfile
+        # is the keyfile a file (the expected case)
+        elif os.path.isfile(str(keyfile)):
             keys_f = open(keyfile, 'r')
             keys_json_string = keys_f.read()
             keys_f.close()
             keys = json.loads(keys_json_string)
+        # if both fail, the file does not exist
         else:
-            keys = keyfile
+            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
+            self.error = True
+            return
         key_dict = keys[keyname]
         self.authid = key_dict['key']
         self.authpw = key_dict['secret']
@@ -45,11 +53,11 @@ class FDN_Connection(object):
             self.user = res['@id']
             self.email = res['email']
             try:
-                self.lab = res['lab']
+                self.lab = res['submits_for'][0]['link_id'].replace("~", "/")
                 lab_url = self.server + self.lab + '?frame=embedded'
                 r_lab = requests.get(lab_url, auth=self.auth)
                 res_lab = r_lab.json()
-                self.award = res_lab['awards'][0]['@id']
+                self.award = res_lab['awards'][0]['link_id'].replace("~", "/")
             except:
                 # to catch possible gaps in the code
                 self.lab = None
@@ -92,7 +100,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
-        or search, respecitively.
+        or search, respectively.
     '''
     if obj_id is not None:
         url = FDN_url(obj_id, connection, frame)
@@ -108,11 +116,15 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     except:  # pragma: no cover
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:  # pragma: no cover
+        # import pdb
+        # pdb.set_trace()
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
             # logging.warning('GET failure.  Response code = %s' % (response.text))
             pass
+    if url_addon is not None and response.json().get('@graph'):
+        return response.json()['@graph']
     return response.json()
 
 
@@ -157,6 +169,48 @@ def new_FDN(connection, collection_name, post_input):
     return response.json()
 
 
+def new_FDN_check(connection, collection_name, post_input):
+    '''POST an FDN object as JSON and return the response JSON
+    '''
+    collection_name = collection_name + "/?check_only=True"
+    if isinstance(post_input, dict):
+        json_payload = json.dumps(post_input)
+    elif isinstance(post_input, str):
+        json_payload = post_input
+    else:  # pragma: no cover
+        print('Datatype to POST is not string or dict.')
+    url = connection.server + collection_name
+    logging.debug("POST URL : %s" % (url))
+    logging.debug("POST data: %s" % (json.dumps(post_input, sort_keys=True, indent=4,
+                                     separators=(',', ': '))))
+    response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
+    logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+    # if not response.status_code == 201:  # pragma: no cover
+    #     logging.warning('POST failure. Response = %s' % (response.text))
+    logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
+                                         separators=(',', ': '))))
+    return response.json()
+
+
+def patch_FDN_check(obj_id, connection, patch_input):
+    '''PATCH an existing FDN object and return the response JSON
+    '''
+    if isinstance(patch_input, dict):
+        json_payload = json.dumps(patch_input)
+    elif isinstance(patch_input, str):
+        json_payload = patch_input
+    else:  # pragma: no cover
+        print('Datatype to PATCH is not string or dict.')
+    url = connection.server + obj_id + "/?check_only=True"
+    logging.debug('PATCH URL : %s' % (url))
+    logging.debug('PATCH data: %s' % (json_payload))
+    response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
+    logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+    # if not response.status_code == 200:  # pragma: no cover
+    #     logging.warning('PATCH failure.  Response = %s' % (response.text))
+    return response.json()
+
+
 def md5(path):
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
@@ -178,8 +232,10 @@ sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
-    "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileSet", "ExperimentHiC", "ExperimentCaptureC",
-    "ExperimentRepliseq", "ExperimentSet", "ExperimentSetReplicate"]
+    "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
+    "FileSet", "FileSetCalibration",
+    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq",
+    "ExperimentSet", "ExperimentSetReplicate"]
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out

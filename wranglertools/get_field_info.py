@@ -5,6 +5,7 @@ import argparse
 from wranglertools import fdnDCIC
 import attr
 import xlwt
+import sys
 
 
 EPILOG = '''
@@ -108,9 +109,15 @@ def get_field_type(field):
     if field_type == 'string':
         if field.get('linkTo', ''):
             return "Item:" + field.get('linkTo')
+        # if multiple objects are linked by "anyOf"
+        if field.get('anyOf', ''):
+            links = filter(None, [d.get('linkTo', '') for d in field.get('anyOf')])
+            if links:
+                return "Item:" + ' or '.join(links)
+        # if not object return string
         return 'string'
     elif field_type == 'array':
-        return 'array of ' + get_field_type(field.get('items')) + 's'
+        return 'array of ' + get_field_type(field.get('items'))
     return field_type
 
 
@@ -219,6 +226,9 @@ def create_xls(all_fields, filename):
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    if key.error:
+        sys.exit(1)
+    connection = fdnDCIC.FDN_Connection(key)
     connection = fdnDCIC.FDN_Connection(key)
     # test connection
     if not connection.check:
