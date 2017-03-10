@@ -79,7 +79,7 @@ def update_version(ctx, version=None):
     if version is None:
         msg = "What version would you like to set for new release (please use x.x.x / semantic versioning): "
         if sys.version_info < (3, 0):
-            version = input(msg)
+            version = raw_input(msg)
         else:
             version = input(msg)
 
