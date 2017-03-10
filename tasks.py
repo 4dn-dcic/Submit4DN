@@ -76,6 +76,7 @@ def deploy(ctx, version=None):
 def update_version(ctx, version=None):
     from wranglertools._version import __version__
     print("Current version is ", __version__)
+    raw_input = ""
     if version is None:
         msg = "What version would you like to set for new release (please use x.x.x / semantic versioning): "
         if sys.version_info < (3, 0):
