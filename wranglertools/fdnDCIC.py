@@ -129,7 +129,7 @@ def patch_FDN(obj_id, connection, patch_input):
     logging.debug('PATCH URL : %s' % (url))
     logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
-    logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+    #logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
     if not response.status_code == 200:  # pragma: no cover
         logging.warning('PATCH failure.  Response = %s' % (response.text))
     return response.json()
