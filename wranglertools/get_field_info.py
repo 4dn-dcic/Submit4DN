@@ -141,7 +141,7 @@ def build_field_list(properties, required_fields=None, include_description=False
     for name, props in properties.items():
         is_member_of_array_of_objects = False
         if not props.get('calculatedProperty', False):
-            if not props.get('exclude_from', False) == 'submit4dn':
+            if 'submit4dn' not in props.get('exclude_from', False):
                 if is_subobject(props):
                     if get_field_type(props).startswith('array'):
                         is_member_of_array_of_objects = True
