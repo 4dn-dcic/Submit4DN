@@ -700,6 +700,7 @@ def loadxl_cycle(patch_list, connection):
 
 
 def cabin_cross_check(connection, patchall, update, infile, remote):
+    """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.server))
     # test connection
     if not connection.check:
@@ -725,23 +726,31 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
                 sys.exit(1)
 
 
+def get_collections(connection):
+    """Get a list of all the data_types in the system.""""
+    profiles = fdnDCIC.get_FDN("/profiles/", connection)
+    supported_collections = list(profiles.keys())
+    supported_collections = [s.lower() for s in list(profiles.keys())]
+    return supported_collections
+
+
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    # check if key has error
     if key.error:
         sys.exit(1)
+    # establish connection and run checks
     connection = fdnDCIC.FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
+    # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
         names = [args.type]
     else:
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
-
     # get me a list of all the data_types in the system
-    profiles = fdnDCIC.get_FDN("/profiles/", connection)
-    supported_collections = list(profiles.keys())
-    supported_collections = [s.lower() for s in list(profiles.keys())]
+    supported_collections = get_collections(connection)
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # dictionaries that accumulate information during submission
@@ -749,6 +758,8 @@ def main():  # pragma: no cover
     dict_replicates = {}
     dict_exp_sets = {}
     dict_file_sets = {}
+    # Todo combine accumulate dicts to one
+    # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}, dict_file_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
