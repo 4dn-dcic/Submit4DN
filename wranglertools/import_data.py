@@ -165,6 +165,7 @@ def reader(filename, sheetname=None):
         try:
             sheet = book.sheet_by_name(sheetname)
         except xlrd.XLRDError:
+            print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
             return
     datemode = sheet.book.datemode
     for index in range(sheet.nrows):
@@ -173,35 +174,34 @@ def reader(filename, sheetname=None):
 
 def cell_value(cell, datemode):
     """Get cell value from excel."""
+    # This should be always returning text format if the excel is generated
+    # by the get_field_info command
     ctype = cell.ctype
     value = cell.value
-
     if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
         raise ValueError(repr(cell), 'cell error')
-
     elif ctype == xlrd.XL_CELL_BOOLEAN:
         return str(value).upper()
-
     elif ctype == xlrd.XL_CELL_NUMBER:
         if value.is_integer():
             value = int(value)
         return str(value)
-
     elif ctype == xlrd.XL_CELL_DATE:
         value = xlrd.xldate_as_tuple(value, datemode)
         if value[3:] == (0, 0, 0):
             return datetime.date(*value[:3]).isoformat()
         else:  # pragma: no cover
             return datetime.datetime(*value).isoformat()
-
     elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
         return value
-
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
 def data_formatter(value, val_type, field=None):
     """Return formatted data."""
+    # If val_type is int/num, but the value is not
+    # this function will just return the string
+    # schema validation will report the error
     try:
         if val_type in ["int", "integer"]:
             return int(value)
@@ -308,8 +308,12 @@ def build_patch_json(fields, fields2types):
             else:
                 # normal case, just update the dictionary
                 patch_data.update(patch_field)
-
+    # add attachments
+    if patch_data.get("attachment"):
+        attach = attachment(post_json["attachment"])
+        patch_data["attachment"] = attach
     return patch_data
+
 
 
 def get_existing(post_json, connection):
@@ -473,11 +477,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         total += 1
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        # add attchments here
-        if post_json.get("attachment"):
-            attach = attachment(post_json["attachment"])
-            post_json["attachment"] = attach
-
         # Get existing data if available
         existing_data = get_existing(post_json, connection)
 
