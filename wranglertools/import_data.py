@@ -276,44 +276,13 @@ def build_field(field, field_data, field_type):
     return {patch_field_name: patch_field_data}
 
 
-def build_patch_json(fields, fields2types):
-    """Create the data entry dictionary from the fields."""
-    # convert array types to array
-    for field, ftype in fields2types.items():
-        if 'array' in ftype:
-            fields2types[field] = 'array'
-
-    patch_data = {}
-    for field, field_data in fields.items():
-        field_type = None
-        if fields2types is not None:
-            field_type = fields2types[field]
-
-        patch_field = build_field(field, field_data, field_type)
-        if patch_field is not None:
-            if is_embedded_field(field):
-                top_field = get_field_name(field)
-                if patch_data.get(top_field, None) is None:
-                    # initially create an empty list for embedded field
-                    patch_data[top_field] = []
-                # we can have multiple embedded objects (they are numbered in excel)
-                subobject_num = get_sub_field_number(field)
-
-                if subobject_num >= len(patch_data[top_field]):
-                    # add a new row to the list
-                    patch_data[top_field].append(patch_field)
-                else:
-                    # update existing object in the list
-                    patch_data[top_field][subobject_num].update(patch_field)
-            else:
-                # normal case, just update the dictionary
-                patch_data.update(patch_field)
-    # add attachments
-    if patch_data.get("attachment"):
-        attach = attachment(post_json["attachment"])
-        patch_data["attachment"] = attach
-    return patch_data
-
+def fix_attribution(sheet, post_json, connection):
+    if sheet.lower() not in ['lab', 'award', 'user', 'organism']:
+        if not post_json.get('lab'):
+            post_json['lab'] = connection.lab
+        if not post_json.get('award'):
+            post_json['award'] = connection.award
+    return post_json
 
 
 def get_existing(post_json, connection):
@@ -328,6 +297,67 @@ def get_existing(post_json, connection):
     elif post_json.get("@id"):
         temp = fdnDCIC.get_FDN(post_json["@id"], connection)
     return temp
+
+
+def build_patch_json(fields, fields2types, connection):
+    """Create the data entry dictionary from the fields."""
+    # convert array types to array
+    for field, ftype in fields2types.items():
+        if 'array' in ftype:
+            fields2types[field] = 'array'
+
+    patch_data = {}
+    for field, field_data in fields.items():
+        field_type = None
+        if fields2types is not None:
+            field_type = fields2types[field]
+        patch_field = build_field(field, field_data, field_type)
+        if patch_field is not None:
+            if is_embedded_field(field):
+                top_field = get_field_name(field)
+                if patch_data.get(top_field, None) is None:
+                    # initially create an empty list for embedded field
+                    patch_data[top_field] = []
+                # we can have multiple embedded objects (they are numbered in excel)
+                subobject_num = get_sub_field_number(field)
+                if subobject_num >= len(patch_data[top_field]):
+                    # add a new row to the list
+                    patch_data[top_field].append(patch_field)
+                else:
+                    # update existing object in the list
+                    patch_data[top_field][subobject_num].update(patch_field)
+            else:
+                # normal case, just update the dictionary
+                patch_data.update(patch_field)
+    return patch_data
+
+
+def populate_post_json(post_json, connection, sheet):
+    """Get existing, add attachment, check for file and fix attribution."""
+    # add attachments
+    if post_json.get("attachment"):
+        attach = attachment(post_json["attachment"])
+        post_json["attachment"] = attach
+    # Get existing data if available
+    existing_data = get_existing(post_json, connection)
+    # should I upload files as well?
+    file_to_upload = False
+    filename_to_post = post_json.get('filename')
+    if filename_to_post:
+        # remove full path from filename
+        just_filename = filename_to_post.split('/')[-1]
+        # if new file
+        if not existing_data:
+            post_json['filename'] = just_filename
+            file_to_upload = True
+        # if there is an existing file metadata, the status should be uploading to upload a new one
+        if existing_data.get('status') == 'uploading':
+            post_json['filename'] = just_filename
+            file_to_upload = True
+    # if no existing data (new item), add missing award/lab information from submitter
+    if not existing_data.get("award"):
+        post_json = fix_attribution(sheet, post_json, connection)
+    return post_json, existing_data, file_to_upload
 
 
 def filter_set_from_exps(post_json):
@@ -414,15 +444,6 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def fix_attribution(sheet, post_json, connection):
-    if sheet.lower() not in ['lab', 'award', 'user', 'organism']:
-        if not post_json.get('lab'):
-            post_json['lab'] = connection.lab
-        if not post_json.get('award'):
-            post_json['award'] = connection.award
-    return post_json
-
-
 def error_report(error_dic, sheet):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
@@ -475,29 +496,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # Get rid of the first empty cell
         values.pop(0)
         total += 1
+        # build post_json and get existing if available 
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        # Get existing data if available
-        existing_data = get_existing(post_json, connection)
-
-        # should I upload files as well?
-        file_to_upload = False
-        filename_to_post = post_json.get('filename')
-        if filename_to_post:
-            # remove full path from filename
-            just_filename = filename_to_post.split('/')[-1]
-            # if new file
-            if not existing_data:
-                post_json['filename'] = just_filename
-                file_to_upload = True
-            # if there is an existing file metadata, the status should be uploading
-            if existing_data.get('status') == 'uploading':
-                post_json['filename'] = just_filename
-                file_to_upload = True
-
-        # if no existing data (new item), add missing award/lab information from submitter
-        if not existing_data.get("award"):
-            post_json = fix_attribution(sheet, post_json, connection)
+        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
