@@ -469,6 +469,34 @@ def error_report(error_dic, sheet):
         return error_dic
 
 
+def patch_item(file_to_upload, post_json, filename_to_post, existing_data):
+    # add the md5
+    if file_to_upload and not post_json.get('md5sum'):
+        print("calculating md5 sum for file %s " % (filename_to_post))
+        post_json['md5sum'] = md5(filename_to_post)
+
+    e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
+    if file_to_upload:
+        # get s3 credentials
+        creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
+        e['@graph'][0]['upload_credentials'] = creds
+        # upload
+        upload_file(e, filename_to_post)
+    return e
+
+
+def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
+    # add the md5
+    if file_to_upload and not post_json.get('md5sum'):
+        print("calculating md5 sum for file %s " % (filename_to_post))
+        post_json['md5sum'] = md5(filename_to_post)
+    e = fdnDCIC.new_FDN(connection, sheet, post_json)
+    if file_to_upload:
+        # upload the file
+        upload_file(e, filename_to_post)
+    return e
+
+
 def excel_reader(datafile, sheet, update, connection, patchall,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
     """takes an excel sheet and post or patched the data in."""
@@ -496,9 +524,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # Get rid of the first empty cell
         values.pop(0)
         total += 1
-        # build post_json and get existing if available 
+        # build post_json and get existing if available
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
+        filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
@@ -509,6 +538,8 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         if sheet.startswith('File') and not sheet.startswith('FileSet'):
             post_json, file_set_info = filter_set_from_files(post_json)
         # Combine set items with stored dictionaries
+        # Adds things to the existing items, will be a problem at some point
+        # We need a way to delete some from the parent object
         if sheet == 'ExperimentSet':
             post_json, dict_exp_sets = combine_set(post_json, existing_data, sheet, dict_exp_sets)
         if sheet == 'ExperimentSetReplicate':
@@ -516,70 +547,44 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         if sheet == 'FileSet':
             post_json, dict_file_sets = combine_set(post_json, existing_data, sheet, dict_file_sets)
 
-        # Run update or patch
+        # Run update or patchall
         e = {}
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
-                # add the md5
-                if file_to_upload and not post_json.get('md5sum'):
-                    print("calculating md5 sum for file %s " % (filename_to_post))
-                    post_json['md5sum'] = md5(filename_to_post)
-
-                e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
-                if file_to_upload:
-                    # get s3 credentials
-                    creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
-                    e['@graph'][0]['upload_credentials'] = creds
-                    # upload
-                    upload_file(e, filename_to_post)
-                if e.get("status") == "error":  # pragma: no cover
-                    error += 1
-                elif e.get("status") == "success":
-                    patch += 1
+                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection, sheet)
             else:
                 not_patched += 1
         # if there is no existing item try posting
         else:
             if update:
-                # add the md5
-                if file_to_upload and not post_json.get('md5sum'):
-                    print("calculating md5 sum for file %s " % (filename_to_post))
-                    post_json['md5sum'] = md5(filename_to_post)
-                e = fdnDCIC.new_FDN(connection, sheet, post_json)
-                if file_to_upload:
-                    # upload the file
-                    upload_file(e, filename_to_post)
-                if e.get("status") == "error":  # pragma: no cover
-                    error += 1
-                elif e.get("status") == "success":
-                    post += 1
+                e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
             else:
                 not_posted += 1
+        # add to success/error counters
+        if e.get("status") == "error":
+            error += 1
+        elif e.get("status") == "success":
+            if existing_data.get("uuid"):
+                patch += 1
+            else:
+                post += 1
 
         # dryrun option
         if not patchall and not update:
-            # simulate patch
+            # simulate patch/post
             if existing_data.get("uuid"):
                 e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
-                if e['status'] == 'success':
-                    pass
-                else:
-                    error += 1
-                    # to skip object connections
-                    if error_report(e, sheet):
-                        print(error_report(e, sheet))
-                pass
-            # simulate post
             else:
                 e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
-                if e['status'] == 'success':
-                    pass
-                else:
+            # check simulation status
+            if e['status'] == 'success':
+                pass
+            else:
+                error_rep = error_report(e, sheet)
+                if error_rep:
                     error += 1
-                    # to skip object connections
-                    if error_report(e, sheet):
-                        print(error_report(e, sheet))
+                    print(error_report(e, sheet))
             continue
 
         # check status and if success fill transient storage dictionaries
