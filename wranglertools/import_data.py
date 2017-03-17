@@ -469,7 +469,7 @@ def error_report(error_dic, sheet):
         return error_dic
 
 
-def patch_item(file_to_upload, post_json, filename_to_post, existing_data):
+def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
@@ -552,7 +552,7 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
-                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection, sheet)
+                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
             else:
                 not_patched += 1
         # if there is no existing item try posting
@@ -733,7 +733,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 
 
 def get_collections(connection):
-    """Get a list of all the data_types in the system.""""
+    """Get a list of all the data_types in the system."""
     profiles = fdnDCIC.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
