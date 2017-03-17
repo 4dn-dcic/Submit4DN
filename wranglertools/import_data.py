@@ -377,16 +377,6 @@ def filter_set_from_exps(post_json):
     return post_json, rep_set_info, exp_set_info
 
 
-def filter_set_from_files(post_json):
-    """File set information is taken from files."""
-    file_set_info = []
-    # store the values in a list and delete them from post_json
-    if post_json.get('filesets'):
-        file_set_info = post_json['filesets']
-        post_json.pop('filesets')
-    return post_json, file_set_info
-
-
 def filter_loadxl_fields(post_json, sheet):
     """All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary."""
     patch_loadxl_item = {}
@@ -431,13 +421,6 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
                     post_json['replicate_exps'] = add_to_post + existing_sets
                 else:
                     post_json['replicate_exps'] = add_to_post
-            # Combination for filesets
-            if sheet == "FileSet":
-                if existing_data.get('files_in_set'):
-                    existing_files = existing_data.get('files_in_set')
-                    post_json['files_in_set'] = list(set(add_to_post + existing_files))
-                else:
-                    post_json['files_in_set'] = add_to_post
             # remove found item from the accumulate_dict
             accumulate_dict.pop(identifier)
             break
@@ -498,7 +481,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
 
 
 def excel_reader(datafile, sheet, update, connection, patchall,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -534,9 +517,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # Filter experiment set related fields from experiment
         if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
             post_json, rep_set_info, exp_set_info = filter_set_from_exps(post_json)
-        # Filter file set related fields from file
-        if sheet.startswith('File') and not sheet.startswith('FileSet'):
-            post_json, file_set_info = filter_set_from_files(post_json)
         # Combine set items with stored dictionaries
         # Adds things to the existing items, will be a problem at some point
         # We need a way to delete some from the parent object
@@ -544,8 +524,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
             post_json, dict_exp_sets = combine_set(post_json, existing_data, sheet, dict_exp_sets)
         if sheet == 'ExperimentSetReplicate':
             post_json, dict_replicates = combine_set(post_json, existing_data, sheet, dict_replicates)
-        if sheet == 'FileSet':
-            post_json, dict_file_sets = combine_set(post_json, existing_data, sheet, dict_file_sets)
 
         # Run update or patchall
         e = {}
@@ -613,14 +591,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                                 dict_exp_sets[exp_set].append(item_id)
                             else:
                                 dict_exp_sets[exp_set] = [item_id, ]
-            # if post/patch successful, add the fileset information to the accumulate lists
-            if sheet.startswith('File') and not sheet.startswith('FileSet'):
-                if file_set_info:
-                    for file_set in file_set_info:
-                        if dict_file_sets.get(file_set):
-                            dict_file_sets[file_set].append(item_id)
-                        else:
-                            dict_file_sets[file_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
     if patch_loadxl:
@@ -763,13 +733,12 @@ def main():  # pragma: no cover
     dict_loadxl = {}
     dict_replicates = {}
     dict_exp_sets = {}
-    dict_file_sets = {}
     # Todo combine accumulate dicts to one
-    # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}, dict_file_sets: {}}
+    # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
-                         dict_replicates, dict_exp_sets, dict_file_sets)
+                         dict_replicates, dict_exp_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
@@ -777,8 +746,7 @@ def main():  # pragma: no cover
     # it means that this items are not posted/patched
     # because they are not on the exp_set file_set sheets
     for dict_store, dict_sheet in [[dict_replicates, "ExperimentSetReplicate"],
-                                   [dict_exp_sets, "ExperimentSet"],
-                                   [dict_file_sets, "FileSet"]]:
+                                   [dict_exp_sets, "ExperimentSet"]]:
         if dict_store:
             remains = ', '.join(dict_store.keys())
             print('Following items are not posted')
