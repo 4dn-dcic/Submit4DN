@@ -80,12 +80,12 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--update',
                         default=False,
                         action='store_true',
-                        help="Let the script PATCH the data.  Default is False"),
+                        help="Let the script PATCH the data.  Default is False")
     parser.add_argument('--patchall',
                         default=False,
                         action='store_true',
                         help="PATCH existing objects.  Default is False \
-                        and will only PATCH with user override"),
+                        and will only PATCH with user override")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -128,7 +128,7 @@ def attachment(path):
         with open(path, "wb") as outfile:
             outfile.write(r.content)
     filename = os.path.basename(path)
-    mime_type, encoding = mimetypes.guess_type(path)
+    mime_type = mimetypes.guess_type(path)[0]
     major, minor = mime_type.split('/')
     detected_type = magic.from_file(path, mime=True)
     # XXX This validation logic should move server-side.
@@ -236,7 +236,7 @@ def get_field_type(field_name):
     """Grab old style (ENCODE) data field type."""
     try:
         return field_name.split(":")[1]
-    except:
+    except IndexError:
         return "string"
 
 
@@ -299,7 +299,7 @@ def get_existing(post_json, connection):
     return temp
 
 
-def build_patch_json(fields, fields2types, connection):
+def build_patch_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
     # convert array types to array
     for field, ftype in fields2types.items():

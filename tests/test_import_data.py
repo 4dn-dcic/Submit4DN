@@ -288,7 +288,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, dict_file)
 #         args = imp.get_existing.call_args
 #         assert args[0][0] == post_json
-#         out, err = capsys.readouterr()
+#         out = capsys.readouterr()[0]
 #         assert out.strip() == message
 
 
@@ -312,7 +312,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, dict_file)
 #         args = imp.get_existing.call_args
 #         assert args[0][0] == post_json
-#         out, err = capsys.readouterr()
+#         out = capsys.readouterr()[0]
 #         assert out.strip() == message
 
 
@@ -335,7 +335,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False,
                                  dict_load, dict_rep, dict_set, dict_file)
                 args = imp.fdnDCIC.new_FDN.call_args
-                out, err = capsys.readouterr()
+                out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
                 post_json_arg = args[0][2]
                 assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
@@ -379,7 +379,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     updated_post = args_upload[0][0]
                     assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
                     # check for output message
-                    out, err = capsys.readouterr()
+                    out = capsys.readouterr()[0]
                     outlist = [i.strip() for i in out.split('\n') if i is not ""]
                     assert message0 == outlist[0]
                     assert message1 == outlist[1]
@@ -405,7 +405,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
             imp.excel_reader(test_insert, 'FileFastq', True, connection, False,
                              dict_load, dict_rep, dict_set, dict_file)
             args = imp.fdnDCIC.new_FDN.call_args
-            out, err = capsys.readouterr()
+            out = capsys.readouterr()[0]
             print([i for i in args])
             assert message == out.strip()
             assert args[0][2] == final_post
@@ -430,7 +430,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
             imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False,
                              dict_load, dict_rep, dict_set, dict_file)
             args = imp.fdnDCIC.new_FDN.call_args
-            out, err = capsys.readouterr()
+            out = capsys.readouterr()[0]
             assert message == out.strip()
             assert args[0][2] == final_post
 
@@ -453,7 +453,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False,
                              dict_load, dict_rep, dict_set, dict_file)
             args = imp.fdnDCIC.new_FDN.call_args
-            out, err = capsys.readouterr()
+            out = capsys.readouterr()[0]
             assert message == out.strip()
             print(args[0][2])
             assert args[0][2] == final_post
@@ -477,7 +477,7 @@ def test_excel_reader_update_new_file_set_post(capsys, mocker, connection):
             imp.excel_reader(test_insert, 'FileSet', True, connection, False,
                              dict_load, dict_rep, dict_set, dict_file)
             args = imp.fdnDCIC.new_FDN.call_args
-            out, err = capsys.readouterr()
+            out = capsys.readouterr()[0]
             assert message == out.strip()
             print(args[0][2])
             assert args[0][2] == final_post
@@ -491,7 +491,7 @@ def test_order_sorter(capsys):
     message0 = "WARNING! Trouble sheet(s) are not loaded"
     message1 = '''WARNING! Check the sheet names and the reference list "sheet_order"'''
     assert ordered_list == imp.order_sorter(test_list)
-    out, err = capsys.readouterr()
+    out = capsys.readouterr()[0]
     outlist = [i.strip() for i in out.split('\n') if i is not ""]
     import sys
     if (sys.version_info > (3, 0)):
@@ -506,5 +506,5 @@ def test_loadxl_cycle(capsys, mocker, connection):
     message = "EXPERIMENT(phase2): 1 items patched."
     with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
         imp.loadxl_cycle(patch_list, connection)
-        out, err = capsys.readouterr()
+        out = capsys.readouterr()[0]
         assert message == out.strip()
