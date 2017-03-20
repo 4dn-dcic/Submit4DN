@@ -145,9 +145,6 @@ def search_FDN(sheet, field, value, connection):
     if not response.status_code == 200:  # pragma: no cover
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
-        else:
-            # logging.warning('GET failure.  Response code = %s' % (response.text))
-            pass
     if response.json().get('@graph'):
         return response.json()['@graph']
     return response.json()
