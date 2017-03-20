@@ -220,8 +220,9 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     dict_load = {}
     dict_rep = {}
     dict_set = {}
+    all_aliases = []
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        imp.excel_reader(test_insert, 'Document', False, connection, False, dict_load, dict_rep, dict_set)
+        imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
         attach = args[0][0]['attachment']
         assert attach['href'].startswith('data:image/jpeg;base64')
@@ -277,6 +278,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     dict_load = {}
     dict_rep = {}
     dict_set = {}
+    all_aliases = []
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
@@ -286,7 +288,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
         with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
             # mock posting new items
             with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
-                imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False,
+                imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set)
                 args = imp.fdnDCIC.new_FDN.call_args
                 out = capsys.readouterr()[0]
@@ -305,6 +307,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     dict_load = {}
     dict_rep = {}
     dict_set = {}
+    all_aliases = []
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC(1)           :  0 posted / 0 not posted       1 patched / 0 not patched, 0 errors"
     existing_exp = {'uuid': 'sample_uuid', 'status': "uploading"}
@@ -321,7 +324,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
             with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
-                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True,
+                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, all_aliases,
                                      dict_load, dict_rep, dict_set)
                     # check for md5sum
                     args = imp.fdnDCIC.patch_FDN.call_args
@@ -344,6 +347,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
+    all_aliases = []
     message = "FILEFASTQ(1)               :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     final_post = {'aliases': ['dcic:test_alias'],
@@ -354,7 +358,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock posting new items
         with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
-            imp.excel_reader(test_insert, 'FileFastq', True, connection, False,
+            imp.excel_reader(test_insert, 'FileFastq', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set)
             args = imp.fdnDCIC.new_FDN.call_args
             out = capsys.readouterr()[0]
@@ -369,6 +373,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
     dict_set = {}
+    all_aliases = []
     message = "EXPERIMENTSETREPLICATE(1)  :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'sample_repset', '@id': 'sample_repset'}]}
     final_post = {'aliases': ['sample_repset'],
@@ -378,7 +383,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
         with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
-            imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False,
+            imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set)
             args = imp.fdnDCIC.new_FDN.call_args
             out = capsys.readouterr()[0]
@@ -392,6 +397,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     dict_load = {}
     dict_rep = {}
     dict_set = {'sample_expset': ['awesome_uuid']}
+    all_aliases = []
     message = "EXPERIMENTSET(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'sample_expset', '@id': 'sample_expset'}]}
     final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid'],
@@ -400,7 +406,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
         with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
-            imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False,
+            imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set)
             args = imp.fdnDCIC.new_FDN.call_args
             out = capsys.readouterr()[0]
