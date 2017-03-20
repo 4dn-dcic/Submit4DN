@@ -427,20 +427,21 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def error_report(error_dic, sheet):
+def error_report(error_dic, sheet, all_aliases):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
     error_header = {'@type': ['ValidationFailure', 'Error'], 'code': 422, 'status': 'error',
                     'title': 'Unprocessable Entity', 'description': 'Failed validation'}
     report = []
+    print(error_dic)
     if all(item in error_dic.items() for item in error_header.items()):
         for err in error_dic['errors']:
             error_field = err['name'][0]
             error_description = err['description']
             # not checking for object connections at the moment, skip the error
-            if error_description[-9:] == 'not found':
-                continue
+            # if error_description[-9:] == 'not found':
+            #     continue
             report.append("{sheet:<27}Error: Field '{er}': {des}"
                           .format(er=error_field, des=error_description, sheet=sheet.lower()))
         if report:
@@ -480,7 +481,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     return e
 
 
-def excel_reader(datafile, sheet, update, connection, patchall,
+def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
@@ -559,10 +560,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
             if e['status'] == 'success':
                 pass
             else:
-                error_rep = error_report(e, sheet)
+                error_rep = error_report(e, sheet, all_aliases)
                 if error_rep:
                     error += 1
-                    print(error_report(e, sheet))
+                    print(error_rep)
             continue
 
         # check status and if success fill transient storage dictionaries
@@ -710,6 +711,34 @@ def get_collections(connection):
     return supported_collections
 
 
+def get_all_aliases(workbook, sheets):
+    """Extracts all aliases existing in the workbook to later check object connections
+       Checks for same aliases that are used for different items and gives warning."""
+    all_aliases = []
+    for sheet in sheets:
+        alias_col = ""
+        rows = reader(workbook, sheetname=sheet)
+        keys = next(rows)  # grab the first row of headers
+        try:
+            alias_col = keys.index("aliases")
+        except:
+            continue
+        for row in rows:
+            my_aliases = []
+            if row[0].startswith('#'):
+                continue
+            my_alias = row[alias_col]
+            my_aliases = [x.strip() for x in my_alias.split(",")]
+            if my_aliases:
+                all_aliases.extend(my_aliases)
+    import collections
+    non_unique_aliases = [item for item, count in collections.Counter(all_aliases).items() if count > 1]
+    if non_unique_aliases:
+        print("WARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
+        print("WARNING! These aliases are used more than once,use a unique alias for each item\n")
+    return list(filter(None, all_aliases))
+
+
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
@@ -729,6 +758,8 @@ def main():  # pragma: no cover
     supported_collections = get_collections(connection)
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
+    # get all aliases from all sheets for dryrun object connections tests
+    all_aliases = get_all_aliases(args.infile, sorted_names)
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
     dict_replicates = {}
@@ -737,8 +768,8 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
-                         dict_replicates, dict_exp_sets)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
+                         dict_loadxl, dict_replicates, dict_exp_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
