@@ -427,7 +427,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def error_report(error_dic, sheet, all_aliases):
+def error_report(error_dic, sheet, all_aliases, connection):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
@@ -452,13 +452,51 @@ def error_report(error_dic, sheet, all_aliases):
                 error_field = err['name'][0]
                 report.append("{sheet:<30}Field '{er}': {des}"
                               .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
-        if report:
-            report_print = '\n'.join(report)
-            return report_print
-        else:
-            return
+    # if there is a conflict
+    elif error_dic.get('title') == "Conflict":
+        try:
+            report.extend(conflict_error_report(error_dic, sheet, connection))
+        except:
+            return error_dic
+    # if nothing works, give the full error, we should add that case to our reporting
     else:
         return error_dic
+    # print report
+    if report:
+        report_print = '\n'.join(report)
+        return report_print
+    else:
+        # if report is empty, return False
+        return
+
+
+def conflict_error_report(error_dic, sheet, connection):
+    # I am not sure of the complete case of HTTPConflicts
+    # To make sure we get all cases reported, I put a try/except
+    all_conflicts = []
+    try:
+        import ast
+        # list is reported as string, turned into list again
+        conflict_str = error_dic.get('detail').replace("Keys conflict:", "").strip()
+        conflict_list = ast.literal_eval(conflict_str)
+        for conflict in conflict_list:
+            error_field = conflict[0].split(":")[1]
+            error_value = conflict[1]
+            try:
+                # let's see if the user has access to conflicting item
+                existing_item = fdnDCIC.search_FDN(sheet, error_field, error_value, connection)[0]
+                link_id = existing_item.get('link_id').replace("~", "/")
+                add_text = "please use " + link_id
+            except:
+                # if there is a conflicting item, but it is not viewable by the user,
+                # we should release the item to the project/public
+                add_text = "please contact DCIC"
+            conflict_rep = ("{sheet:<30}Field '{er}': '{des}' already exists, {at}"
+                            .format(er=error_field, des=error_value, sheet="ERROR " + sheet.lower(), at=add_text))
+        all_conflicts.append(conflict_rep)
+        return all_conflicts
+    except:
+        return
 
 
 def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
@@ -550,6 +588,11 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                 not_posted += 1
         # add to success/error counters
         if e.get("status") == "error":
+
+            error_rep = error_report(e, sheet, all_aliases, connection)
+            if error_rep:
+                error += 1
+                print(error_rep)
             error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
@@ -568,7 +611,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
             if e['status'] == 'success':
                 pass
             else:
-                error_rep = error_report(e, sheet, all_aliases)
+                error_rep = error_report(e, sheet, all_aliases, connection)
                 if error_rep:
                     error += 1
                     print(error_rep)

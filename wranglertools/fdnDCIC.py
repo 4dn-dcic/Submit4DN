@@ -116,14 +116,39 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     except:  # pragma: no cover
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:  # pragma: no cover
-        # import pdb
-        # pdb.set_trace()
         if response.json().get("notification"):
             logging.warning('%s' % (response.json().get("notification")))
         else:
             # logging.warning('GET failure.  Response code = %s' % (response.text))
             pass
     if url_addon is not None and response.json().get('@graph'):
+        return response.json()['@graph']
+    return response.json()
+
+
+def search_FDN(sheet, field, value, connection):
+    '''When there is a conflict in a field that should be unique, pass
+    sheet, field, unique value, and find the already exisint object.
+    '''
+    obj_id = "search/?type={sheet}&{field}={value}".format(sheet=sheet, field=field, value=value)
+    url = FDN_url(obj_id, connection, frame="object")
+
+    logging.debug('GET %s' % (url))
+    response = requests.get(url, auth=connection.auth, headers=connection.headers)
+    logging.debug('GET RESPONSE code %s' % (response.status_code))
+    try:
+        if response.json():
+            logging.debug('GET RESPONSE JSON: %s' %
+                          (json.dumps(response.json(), indent=4, separators=(',', ': '))))
+    except:  # pragma: no cover
+        logging.debug('GET RESPONSE text %s' % (response.text))
+    if not response.status_code == 200:  # pragma: no cover
+        if response.json().get("notification"):
+            logging.warning('%s' % (response.json().get("notification")))
+        else:
+            # logging.warning('GET failure.  Response code = %s' % (response.text))
+            pass
+    if response.json().get('@graph'):
         return response.json()['@graph']
     return response.json()
 
@@ -165,7 +190,8 @@ def new_FDN(connection, collection_name, post_input):
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
     if not response.status_code == 201:  # pragma: no cover
-        logging.warning('POST failure. Response = %s' % (response.text))
+        # logging.warning('POST failure. Response = %s' % (response.text))
+        pass
     logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
                                          separators=(',', ': '))))
     return response.json()
