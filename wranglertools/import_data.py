@@ -434,16 +434,32 @@ def error_report(error_dic, sheet, all_aliases):
     error_header = {'@type': ['ValidationFailure', 'Error'], 'code': 422, 'status': 'error',
                     'title': 'Unprocessable Entity', 'description': 'Failed validation'}
     report = []
-    print(error_dic)
     if all(item in error_dic.items() for item in error_header.items()):
         for err in error_dic['errors']:
-            error_field = err['name'][0]
             error_description = err['description']
-            # not checking for object connections at the moment, skip the error
-            # if error_description[-9:] == 'not found':
-            #     continue
-            report.append("{sheet:<27}Error: Field '{er}': {des}"
-                          .format(er=error_field, des=error_description, sheet=sheet.lower()))
+            # if no field specified in the error, schema wide error
+            if not err['name']:
+                report.append("{sheet:<30}{des}"
+                              .format(des=error_description, sheet="ERROR " + sheet.lower()))
+            # if error is about object connections
+            elif error_description[-9:] == 'not found':
+                not_found = error_description[1:-11]
+                if not_found not in all_aliases:
+                    error_field = err['name'][0]
+                    report.append("{sheet:<30}Field '{er}': {des}"
+                                  .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
+                else:
+                    continue
+            else:
+                # if error is about object connections, check all aliases
+                # ignore ones about existing aliases
+                if error_description[-9:] == 'not found':
+                    not_found = error_description[1:-11]
+                    if not_found in all_aliases:
+                        continue
+                error_field = err['name'][0]
+                report.append("{sheet:<30}Field '{er}': {des}"
+                              .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
         if report:
             report_print = '\n'.join(report)
             return report_print
