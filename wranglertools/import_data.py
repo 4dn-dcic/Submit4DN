@@ -441,19 +441,11 @@ def error_report(error_dic, sheet, all_aliases):
             if not err['name']:
                 report.append("{sheet:<30}{des}"
                               .format(des=error_description, sheet="ERROR " + sheet.lower()))
-            # if error is about object connections
-            elif error_description[-9:] == 'not found':
-                not_found = error_description[1:-11]
-                if not_found not in all_aliases:
-                    error_field = err['name'][0]
-                    report.append("{sheet:<30}Field '{er}': {des}"
-                                  .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
-                else:
-                    continue
             else:
-                # if error is about object connections, check all aliases
-                # ignore ones about existing aliases
+                # field errors
                 if error_description[-9:] == 'not found':
+                    # if error is about object connections, check all aliases
+                    # ignore ones about existing aliases
                     not_found = error_description[1:-11]
                     if not_found in all_aliases:
                         continue
