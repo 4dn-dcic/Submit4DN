@@ -427,7 +427,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def error_report(error_dic, sheet):
+def error_report(error_dic, sheet, all_aliases, connection):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
@@ -436,20 +436,67 @@ def error_report(error_dic, sheet):
     report = []
     if all(item in error_dic.items() for item in error_header.items()):
         for err in error_dic['errors']:
-            error_field = err['name'][0]
             error_description = err['description']
-            # not checking for object connections at the moment, skip the error
-            if error_description[-9:] == 'not found':
-                continue
-            report.append("{sheet:<27}Error: Field '{er}': {des}"
-                          .format(er=error_field, des=error_description, sheet=sheet.lower()))
-        if report:
-            report_print = '\n'.join(report)
-            return report_print
-        else:
-            return
+            # if no field specified in the error, schema wide error
+            if not err['name']:
+                report.append("{sheet:<30}{des}"
+                              .format(des=error_description, sheet="ERROR " + sheet.lower()))
+            else:
+                # field errors
+                if error_description[-9:] == 'not found':
+                    # if error is about object connections, check all aliases
+                    # ignore ones about existing aliases
+                    not_found = error_description[1:-11]
+                    if not_found in all_aliases:
+                        continue
+                error_field = err['name'][0]
+                report.append("{sheet:<30}Field '{er}': {des}"
+                              .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
+    # if there is a conflict
+    elif error_dic.get('title') == "Conflict":
+        try:
+            report.extend(conflict_error_report(error_dic, sheet, connection))
+        except:
+            return error_dic
+    # if nothing works, give the full error, we should add that case to our reporting
     else:
         return error_dic
+    # print report
+    if report:
+        report_print = '\n'.join(report)
+        return report_print
+    else:
+        # if report is empty, return False
+        return
+
+
+def conflict_error_report(error_dic, sheet, connection):
+    # I am not sure of the complete case of HTTPConflicts
+    # To make sure we get all cases reported, I put a try/except
+    all_conflicts = []
+    try:
+        import ast
+        # list is reported as string, turned into list again
+        conflict_str = error_dic.get('detail').replace("Keys conflict:", "").strip()
+        conflict_list = ast.literal_eval(conflict_str)
+        for conflict in conflict_list:
+            error_field = conflict[0].split(":")[1]
+            error_value = conflict[1]
+            try:
+                # let's see if the user has access to conflicting item
+                existing_item = fdnDCIC.search_FDN(sheet, error_field, error_value, connection)[0]
+                link_id = existing_item.get('link_id').replace("~", "/")
+                add_text = "please use " + link_id
+            except:
+                # if there is a conflicting item, but it is not viewable by the user,
+                # we should release the item to the project/public
+                add_text = "please contact DCIC"
+            conflict_rep = ("{sheet:<30}Field '{er}': '{des}' already exists, {at}"
+                            .format(er=error_field, des=error_value, sheet="ERROR " + sheet.lower(), at=add_text))
+        all_conflicts.append(conflict_rep)
+        return all_conflicts
+    except:
+        return
 
 
 def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
@@ -480,7 +527,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     return e
 
 
-def excel_reader(datafile, sheet, update, connection, patchall,
+def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
@@ -541,6 +588,11 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                 not_posted += 1
         # add to success/error counters
         if e.get("status") == "error":
+
+            error_rep = error_report(e, sheet, all_aliases, connection)
+            if error_rep:
+                error += 1
+                print(error_rep)
             error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
@@ -559,10 +611,10 @@ def excel_reader(datafile, sheet, update, connection, patchall,
             if e['status'] == 'success':
                 pass
             else:
-                error_rep = error_report(e, sheet)
+                error_rep = error_report(e, sheet, all_aliases, connection)
                 if error_rep:
                     error += 1
-                    print(error_report(e, sheet))
+                    print(error_rep)
             continue
 
         # check status and if success fill transient storage dictionaries
@@ -710,6 +762,34 @@ def get_collections(connection):
     return supported_collections
 
 
+def get_all_aliases(workbook, sheets):
+    """Extracts all aliases existing in the workbook to later check object connections
+       Checks for same aliases that are used for different items and gives warning."""
+    all_aliases = []
+    for sheet in sheets:
+        alias_col = ""
+        rows = reader(workbook, sheetname=sheet)
+        keys = next(rows)  # grab the first row of headers
+        try:
+            alias_col = keys.index("aliases")
+        except:
+            continue
+        for row in rows:
+            my_aliases = []
+            if row[0].startswith('#'):
+                continue
+            my_alias = row[alias_col]
+            my_aliases = [x.strip() for x in my_alias.split(",")]
+            if my_aliases:
+                all_aliases.extend(my_aliases)
+    import collections
+    non_unique_aliases = [item for item, count in collections.Counter(all_aliases).items() if count > 1]
+    if non_unique_aliases:
+        print("WARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
+        print("WARNING! These aliases are used more than once,use a unique alias for each item\n")
+    return list(filter(None, all_aliases))
+
+
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
@@ -729,6 +809,8 @@ def main():  # pragma: no cover
     supported_collections = get_collections(connection)
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
+    # get all aliases from all sheets for dryrun object connections tests
+    all_aliases = get_all_aliases(args.infile, sorted_names)
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
     dict_replicates = {}
@@ -737,8 +819,8 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
-                         dict_replicates, dict_exp_sets)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
+                         dict_loadxl, dict_replicates, dict_exp_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
