@@ -80,12 +80,12 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--update',
                         default=False,
                         action='store_true',
-                        help="Let the script PATCH the data.  Default is False"),
+                        help="Let the script PATCH the data.  Default is False")
     parser.add_argument('--patchall',
                         default=False,
                         action='store_true',
                         help="PATCH existing objects.  Default is False \
-                        and will only PATCH with user override"),
+                        and will only PATCH with user override")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -128,7 +128,7 @@ def attachment(path):
         with open(path, "wb") as outfile:
             outfile.write(r.content)
     filename = os.path.basename(path)
-    mime_type, encoding = mimetypes.guess_type(path)
+    mime_type = mimetypes.guess_type(path)[0]
     major, minor = mime_type.split('/')
     detected_type = magic.from_file(path, mime=True)
     # XXX This validation logic should move server-side.
@@ -165,6 +165,7 @@ def reader(filename, sheetname=None):
         try:
             sheet = book.sheet_by_name(sheetname)
         except xlrd.XLRDError:
+            print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
             return
     datemode = sheet.book.datemode
     for index in range(sheet.nrows):
@@ -173,35 +174,34 @@ def reader(filename, sheetname=None):
 
 def cell_value(cell, datemode):
     """Get cell value from excel."""
+    # This should be always returning text format if the excel is generated
+    # by the get_field_info command
     ctype = cell.ctype
     value = cell.value
-
     if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
         raise ValueError(repr(cell), 'cell error')
-
     elif ctype == xlrd.XL_CELL_BOOLEAN:
         return str(value).upper()
-
     elif ctype == xlrd.XL_CELL_NUMBER:
         if value.is_integer():
             value = int(value)
         return str(value)
-
     elif ctype == xlrd.XL_CELL_DATE:
         value = xlrd.xldate_as_tuple(value, datemode)
         if value[3:] == (0, 0, 0):
             return datetime.date(*value[:3]).isoformat()
         else:  # pragma: no cover
             return datetime.datetime(*value).isoformat()
-
     elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
         return value
-
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
 def data_formatter(value, val_type, field=None):
     """Return formatted data."""
+    # If val_type is int/num, but the value is not
+    # this function will just return the string
+    # schema validation will report the error
     try:
         if val_type in ["int", "integer"]:
             return int(value)
@@ -236,7 +236,7 @@ def get_field_type(field_name):
     """Grab old style (ENCODE) data field type."""
     try:
         return field_name.split(":")[1]
-    except:
+    except IndexError:
         return "string"
 
 
@@ -276,40 +276,13 @@ def build_field(field, field_data, field_type):
     return {patch_field_name: patch_field_data}
 
 
-def build_patch_json(fields, fields2types):
-    """Create the data entry dictionary from the fields."""
-    # convert array types to array
-    for field, ftype in fields2types.items():
-        if 'array' in ftype:
-            fields2types[field] = 'array'
-
-    patch_data = {}
-    for field, field_data in fields.items():
-        field_type = None
-        if fields2types is not None:
-            field_type = fields2types[field]
-
-        patch_field = build_field(field, field_data, field_type)
-        if patch_field is not None:
-            if is_embedded_field(field):
-                top_field = get_field_name(field)
-                if patch_data.get(top_field, None) is None:
-                    # initially create an empty list for embedded field
-                    patch_data[top_field] = []
-                # we can have multiple embedded objects (they are numbered in excel)
-                subobject_num = get_sub_field_number(field)
-
-                if subobject_num >= len(patch_data[top_field]):
-                    # add a new row to the list
-                    patch_data[top_field].append(patch_field)
-                else:
-                    # update existing object in the list
-                    patch_data[top_field][subobject_num].update(patch_field)
-            else:
-                # normal case, just update the dictionary
-                patch_data.update(patch_field)
-
-    return patch_data
+def fix_attribution(sheet, post_json, connection):
+    if sheet.lower() not in ['lab', 'award', 'user', 'organism']:
+        if not post_json.get('lab'):
+            post_json['lab'] = connection.lab
+        if not post_json.get('award'):
+            post_json['award'] = connection.award
+    return post_json
 
 
 def get_existing(post_json, connection):
@@ -324,6 +297,67 @@ def get_existing(post_json, connection):
     elif post_json.get("@id"):
         temp = fdnDCIC.get_FDN(post_json["@id"], connection)
     return temp
+
+
+def build_patch_json(fields, fields2types):
+    """Create the data entry dictionary from the fields."""
+    # convert array types to array
+    for field, ftype in fields2types.items():
+        if 'array' in ftype:
+            fields2types[field] = 'array'
+
+    patch_data = {}
+    for field, field_data in fields.items():
+        field_type = None
+        if fields2types is not None:
+            field_type = fields2types[field]
+        patch_field = build_field(field, field_data, field_type)
+        if patch_field is not None:
+            if is_embedded_field(field):
+                top_field = get_field_name(field)
+                if patch_data.get(top_field, None) is None:
+                    # initially create an empty list for embedded field
+                    patch_data[top_field] = []
+                # we can have multiple embedded objects (they are numbered in excel)
+                subobject_num = get_sub_field_number(field)
+                if subobject_num >= len(patch_data[top_field]):
+                    # add a new row to the list
+                    patch_data[top_field].append(patch_field)
+                else:
+                    # update existing object in the list
+                    patch_data[top_field][subobject_num].update(patch_field)
+            else:
+                # normal case, just update the dictionary
+                patch_data.update(patch_field)
+    return patch_data
+
+
+def populate_post_json(post_json, connection, sheet):
+    """Get existing, add attachment, check for file and fix attribution."""
+    # add attachments
+    if post_json.get("attachment"):
+        attach = attachment(post_json["attachment"])
+        post_json["attachment"] = attach
+    # Get existing data if available
+    existing_data = get_existing(post_json, connection)
+    # should I upload files as well?
+    file_to_upload = False
+    filename_to_post = post_json.get('filename')
+    if filename_to_post:
+        # remove full path from filename
+        just_filename = filename_to_post.split('/')[-1]
+        # if new file
+        if not existing_data:
+            post_json['filename'] = just_filename
+            file_to_upload = True
+        # if there is an existing file metadata, the status should be uploading to upload a new one
+        if existing_data.get('status') == 'uploading':
+            post_json['filename'] = just_filename
+            file_to_upload = True
+    # if no existing data (new item), add missing award/lab information from submitter
+    if not existing_data.get("award"):
+        post_json = fix_attribution(sheet, post_json, connection)
+    return post_json, existing_data, file_to_upload
 
 
 def filter_set_from_exps(post_json):
@@ -341,16 +375,6 @@ def filter_set_from_exps(post_json):
         exp_set_info = post_json['experiment_set']
         post_json.pop('experiment_set')
     return post_json, rep_set_info, exp_set_info
-
-
-def filter_set_from_files(post_json):
-    """File set information is taken from files."""
-    file_set_info = []
-    # store the values in a list and delete them from post_json
-    if post_json.get('filesets'):
-        file_set_info = post_json['filesets']
-        post_json.pop('filesets')
-    return post_json, file_set_info
 
 
 def filter_loadxl_fields(post_json, sheet):
@@ -397,26 +421,10 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
                     post_json['replicate_exps'] = add_to_post + existing_sets
                 else:
                     post_json['replicate_exps'] = add_to_post
-            # Combination for filesets
-            if sheet == "FileSet":
-                if existing_data.get('files_in_set'):
-                    existing_files = existing_data.get('files_in_set')
-                    post_json['files_in_set'] = list(set(add_to_post + existing_files))
-                else:
-                    post_json['files_in_set'] = add_to_post
             # remove found item from the accumulate_dict
             accumulate_dict.pop(identifier)
             break
     return post_json, accumulate_dict
-
-
-def fix_attribution(sheet, post_json, connection):
-    if sheet.lower() not in ['lab', 'award', 'user', 'organism']:
-        if not post_json.get('lab'):
-            post_json['lab'] = connection.lab
-        if not post_json.get('award'):
-            post_json['award'] = connection.award
-    return post_json
 
 
 def error_report(error_dic, sheet):
@@ -444,8 +452,36 @@ def error_report(error_dic, sheet):
         return error_dic
 
 
+def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
+    # add the md5
+    if file_to_upload and not post_json.get('md5sum'):
+        print("calculating md5 sum for file %s " % (filename_to_post))
+        post_json['md5sum'] = md5(filename_to_post)
+
+    e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
+    if file_to_upload:
+        # get s3 credentials
+        creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
+        e['@graph'][0]['upload_credentials'] = creds
+        # upload
+        upload_file(e, filename_to_post)
+    return e
+
+
+def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
+    # add the md5
+    if file_to_upload and not post_json.get('md5sum'):
+        print("calculating md5 sum for file %s " % (filename_to_post))
+        post_json['md5sum'] = md5(filename_to_post)
+    e = fdnDCIC.new_FDN(connection, sheet, post_json)
+    if file_to_upload:
+        # upload the file
+        upload_file(e, filename_to_post)
+    return e
+
+
 def excel_reader(datafile, sheet, update, connection, patchall,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets, dict_file_sets):
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -471,114 +507,62 @@ def excel_reader(datafile, sheet, update, connection, patchall,
         # Get rid of the first empty cell
         values.pop(0)
         total += 1
+        # build post_json and get existing if available
         post_json = dict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
-        # add attchments here
-        if post_json.get("attachment"):
-            attach = attachment(post_json["attachment"])
-            post_json["attachment"] = attach
-
-        # Get existing data if available
-        existing_data = get_existing(post_json, connection)
-
-        # should I upload files as well?
-        file_to_upload = False
         filename_to_post = post_json.get('filename')
-        if filename_to_post:
-            # remove full path from filename
-            just_filename = filename_to_post.split('/')[-1]
-            # if new file
-            if not existing_data:
-                post_json['filename'] = just_filename
-                file_to_upload = True
-            # if there is an existing file metadata, the status should be uploading
-            if existing_data.get('status') == 'uploading':
-                post_json['filename'] = just_filename
-                file_to_upload = True
-
-        # if no existing data (new item), add missing award/lab information from submitter
-        if not existing_data.get("award"):
-            post_json = fix_attribution(sheet, post_json, connection)
+        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
         if sheet.startswith('Experiment') and not sheet.startswith('ExperimentSet'):
             post_json, rep_set_info, exp_set_info = filter_set_from_exps(post_json)
-        # Filter file set related fields from file
-        if sheet.startswith('File') and not sheet.startswith('FileSet'):
-            post_json, file_set_info = filter_set_from_files(post_json)
         # Combine set items with stored dictionaries
+        # Adds things to the existing items, will be a problem at some point
+        # We need a way to delete some from the parent object
         if sheet == 'ExperimentSet':
             post_json, dict_exp_sets = combine_set(post_json, existing_data, sheet, dict_exp_sets)
         if sheet == 'ExperimentSetReplicate':
             post_json, dict_replicates = combine_set(post_json, existing_data, sheet, dict_replicates)
-        if sheet == 'FileSet':
-            post_json, dict_file_sets = combine_set(post_json, existing_data, sheet, dict_file_sets)
 
-        # Run update or patch
+        # Run update or patchall
         e = {}
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
-                # add the md5
-                if file_to_upload and not post_json.get('md5sum'):
-                    print("calculating md5 sum for file %s " % (filename_to_post))
-                    post_json['md5sum'] = md5(filename_to_post)
-
-                e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
-                if file_to_upload:
-                    # get s3 credentials
-                    creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
-                    e['@graph'][0]['upload_credentials'] = creds
-                    # upload
-                    upload_file(e, filename_to_post)
-                if e.get("status") == "error":  # pragma: no cover
-                    error += 1
-                elif e.get("status") == "success":
-                    patch += 1
+                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
             else:
                 not_patched += 1
         # if there is no existing item try posting
         else:
             if update:
-                # add the md5
-                if file_to_upload and not post_json.get('md5sum'):
-                    print("calculating md5 sum for file %s " % (filename_to_post))
-                    post_json['md5sum'] = md5(filename_to_post)
-                e = fdnDCIC.new_FDN(connection, sheet, post_json)
-                if file_to_upload:
-                    # upload the file
-                    upload_file(e, filename_to_post)
-                if e.get("status") == "error":  # pragma: no cover
-                    error += 1
-                elif e.get("status") == "success":
-                    post += 1
+                e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
             else:
                 not_posted += 1
+        # add to success/error counters
+        if e.get("status") == "error":
+            error += 1
+        elif e.get("status") == "success":
+            if existing_data.get("uuid"):
+                patch += 1
+            else:
+                post += 1
 
         # dryrun option
         if not patchall and not update:
-            # simulate patch
+            # simulate patch/post
             if existing_data.get("uuid"):
                 e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
-                if e['status'] == 'success':
-                    pass
-                else:
-                    error += 1
-                    # to skip object connections
-                    if error_report(e, sheet):
-                        print(error_report(e, sheet))
-                pass
-            # simulate post
             else:
                 e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
-                if e['status'] == 'success':
-                    pass
-                else:
+            # check simulation status
+            if e['status'] == 'success':
+                pass
+            else:
+                error_rep = error_report(e, sheet)
+                if error_rep:
                     error += 1
-                    # to skip object connections
-                    if error_report(e, sheet):
-                        print(error_report(e, sheet))
+                    print(error_report(e, sheet))
             continue
 
         # check status and if success fill transient storage dictionaries
@@ -607,14 +591,6 @@ def excel_reader(datafile, sheet, update, connection, patchall,
                                 dict_exp_sets[exp_set].append(item_id)
                             else:
                                 dict_exp_sets[exp_set] = [item_id, ]
-            # if post/patch successful, add the fileset information to the accumulate lists
-            if sheet.startswith('File') and not sheet.startswith('FileSet'):
-                if file_set_info:
-                    for file_set in file_set_info:
-                        if dict_file_sets.get(file_set):
-                            dict_file_sets[file_set].append(item_id)
-                        else:
-                            dict_file_sets[file_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
     if patch_loadxl:
@@ -700,6 +676,7 @@ def loadxl_cycle(patch_list, connection):
 
 
 def cabin_cross_check(connection, patchall, update, infile, remote):
+    """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.server))
     # test connection
     if not connection.check:
@@ -725,34 +702,43 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
                 sys.exit(1)
 
 
+def get_collections(connection):
+    """Get a list of all the data_types in the system."""
+    profiles = fdnDCIC.get_FDN("/profiles/", connection)
+    supported_collections = list(profiles.keys())
+    supported_collections = [s.lower() for s in list(profiles.keys())]
+    return supported_collections
+
+
 def main():  # pragma: no cover
     args = getArgs()
     key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    # check if key has error
     if key.error:
         sys.exit(1)
+    # establish connection and run checks
     connection = fdnDCIC.FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
+    # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
         names = [args.type]
     else:
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
-
     # get me a list of all the data_types in the system
-    profiles = fdnDCIC.get_FDN("/profiles/", connection)
-    supported_collections = list(profiles.keys())
-    supported_collections = [s.lower() for s in list(profiles.keys())]
+    supported_collections = get_collections(connection)
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
     dict_replicates = {}
     dict_exp_sets = {}
-    dict_file_sets = {}
+    # Todo combine accumulate dicts to one
+    # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, dict_loadxl,
-                         dict_replicates, dict_exp_sets, dict_file_sets)
+                         dict_replicates, dict_exp_sets)
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
@@ -760,8 +746,7 @@ def main():  # pragma: no cover
     # it means that this items are not posted/patched
     # because they are not on the exp_set file_set sheets
     for dict_store, dict_sheet in [[dict_replicates, "ExperimentSetReplicate"],
-                                   [dict_exp_sets, "ExperimentSet"],
-                                   [dict_file_sets, "FileSet"]]:
+                                   [dict_exp_sets, "ExperimentSet"]]:
         if dict_store:
             remains = ', '.join(dict_store.keys())
             print('Following items are not posted')
