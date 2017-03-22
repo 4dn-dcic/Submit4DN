@@ -320,10 +320,7 @@ def get_existing(post_json, connection):
         print("ERROR - Personality disorder - ERROR")
         print("Used identifiers (aliases, uuid, accession, @id) point to following different existing items")
         print(unique_uuids)
-
-
-
-    return temp
+        return
 
 
 def build_patch_json(fields, fields2types):
