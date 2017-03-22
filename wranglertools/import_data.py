@@ -369,7 +369,9 @@ def populate_post_json(post_json, connection, sheet):
     if post_json.get('aliases') and existing_data.get('aliases'):
         aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
         post_json["aliases"] = aliases_to_post
-
+    # delete calculated property
+    if post_json.get('@id'):
+        del post_json['@id']
     # should I upload files as well?
     file_to_upload = False
     filename_to_post = post_json.get('filename')
