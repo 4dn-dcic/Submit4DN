@@ -140,7 +140,8 @@ def attachment(path):
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/pdf', 'text/plain', 'text/tab-separated-values', 'text/html', 'application/zip'):
+        if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
+                         'text/html', 'application/zip'):
             # XXX Should use chardet to detect charset for text files here.
             return attach
         if major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
@@ -347,7 +348,7 @@ def populate_post_json(post_json, connection, sheet):
         # remove full path from filename
         just_filename = filename_to_post.split('/')[-1]
         # if new file
-        if not existing_data:
+        if not existing_data.get('uuid'):
             post_json['filename'] = just_filename
             file_to_upload = True
         # if there is an existing file metadata, the status should be uploading to upload a new one
@@ -733,6 +734,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     # test connection
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
+        sys.exit(1)
         return
     print("Submitting User:  {server}".format(server=connection.email))
     print("Submitting Lab:   {server}".format(server=connection.lab))
