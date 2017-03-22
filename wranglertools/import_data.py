@@ -340,6 +340,12 @@ def populate_post_json(post_json, connection, sheet):
         post_json["attachment"] = attach
     # Get existing data if available
     existing_data = get_existing(post_json, connection)
+
+    # Combine aliases
+    if post_json.get('aliases') and existing_data.get('aliases'):
+        aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
+        post_json["aliases"] = aliases_to_post
+
     # should I upload files as well?
     file_to_upload = False
     filename_to_post = post_json.get('filename')
