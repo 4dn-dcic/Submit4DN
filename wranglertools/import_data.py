@@ -295,22 +295,22 @@ def get_existing(post_json, connection):
         if post_json.get(identifier):
             temp = {}
             temp = fdnDCIC.get_FDN(post_json[identifier], connection)
-            uuids.append(temp.get("uuid"))
+            if temp.get("uuid"):
+                uuids.append(temp.get("uuid"))
     # also look for all aliases
     if post_json.get("aliases"):
+        # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
         for an_alias in post_json.get("aliases"):
             temp = {}
-            # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
-            try:
-                temp = fdnDCIC.get_FDN(an_alias, connection)
+            temp = fdnDCIC.get_FDN(an_alias, connection)
+            if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
-            except:
-                pass
+
     # check if all existing identifiers point to the same object
     unique_uuids = list(set(uuids))
     # if no existing information
     if len(unique_uuids) == 0:
-        return
+        return {}
     # if everything is as expected
     elif len(unique_uuids) == 1:
         temp = fdnDCIC.get_FDN(unique_uuids[0], connection)
@@ -820,7 +820,7 @@ def get_all_aliases(workbook, sheets):
     import collections
     non_unique_aliases = [item for item, count in collections.Counter(all_aliases).items() if count > 1]
     if non_unique_aliases:
-        print("WARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
+        print("\nWARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
         print("WARNING! These aliases are used more than once,use a unique alias for each item\n")
     return list(filter(None, all_aliases))
 
