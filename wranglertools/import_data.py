@@ -289,14 +289,40 @@ def fix_attribution(sheet, post_json, connection):
 def get_existing(post_json, connection):
     """Get the entry that will be patched from the server."""
     temp = {}
-    if post_json.get("uuid"):
-        temp = fdnDCIC.get_FDN(post_json["uuid"], connection)
-    elif post_json.get("aliases"):
-        temp = fdnDCIC.get_FDN(post_json["aliases"][0], connection)
-    elif post_json.get("accession"):
-        temp = fdnDCIC.get_FDN(post_json["accession"], connection)
-    elif post_json.get("@id"):
-        temp = fdnDCIC.get_FDN(post_json["@id"], connection)
+    uuids = []
+    # look if post_json has these 3 identifiers
+    for identifier in ["uuid", "accession", "@id"]:
+        if post_json.get(identifier):
+            temp = {}
+            temp = fdnDCIC.get_FDN(post_json[identifier], connection)
+            uuids.append(temp.get("uuid"))
+    # also look for all aliases
+    if post_json.get("aliases"):
+        for an_alias in post_json.get("aliases"):
+            temp = {}
+            # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
+            try:
+                temp = fdnDCIC.get_FDN(an_alias, connection)
+                uuids.append(temp.get("uuid"))
+            except:
+                pass
+    # check if all existing identifiers point to the same object
+    unique_uuids = list(set(uuids))
+    # if no existing information
+    if len(unique_uuids) == 0:
+        return
+    # if everything is as expected
+    elif len(unique_uuids) == 1:
+        temp = fdnDCIC.get_FDN(unique_uuids[0], connection)
+        return temp
+    # funky business not allowed, if identifiers point to different objects
+    else:
+        print("ERROR - Personality disorder - ERROR")
+        print("Used identifiers (aliases, uuid, accession, @id) point to following different existing items")
+        print(unique_uuids)
+
+
+
     return temp
 
 
