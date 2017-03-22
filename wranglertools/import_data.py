@@ -347,14 +347,19 @@ def populate_post_json(post_json, connection, sheet):
     if filename_to_post:
         # remove full path from filename
         just_filename = filename_to_post.split('/')[-1]
+
         # if new file
         if not existing_data.get('uuid'):
             post_json['filename'] = just_filename
             file_to_upload = True
         # if there is an existing file metadata, the status should be uploading to upload a new one
-        if existing_data.get('status') == 'uploading':
+        elif existing_data.get('status') == 'uploading':
             post_json['filename'] = just_filename
             file_to_upload = True
+        else:
+            # if not uploading a file, do not post the filename
+            del post_json['filename']
+
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
@@ -462,7 +467,6 @@ def error_report(error_dic, sheet, all_aliases, connection):
     # if nothing works, give the full error, we should add that case to our reporting
     else:
         return error_dic
-    # print report
     if report:
         report_print = '\n'.join(report)
         return report_print
