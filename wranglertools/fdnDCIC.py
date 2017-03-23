@@ -167,8 +167,8 @@ def patch_FDN(obj_id, connection, patch_input):
         logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
         return response.json()
     else:
-        logging.warning('PATCH failure.  Response = %s' % (response.text))
-        return response.text
+        # logging.warning('PATCH failure.  Response = %s' % (response.text))
+        return response.json()
 
 
 def new_FDN(connection, collection_name, post_input):
