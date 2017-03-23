@@ -289,15 +289,38 @@ def fix_attribution(sheet, post_json, connection):
 def get_existing(post_json, connection):
     """Get the entry that will be patched from the server."""
     temp = {}
-    if post_json.get("uuid"):
-        temp = fdnDCIC.get_FDN(post_json["uuid"], connection)
-    elif post_json.get("aliases"):
-        temp = fdnDCIC.get_FDN(post_json["aliases"][0], connection)
-    elif post_json.get("accession"):
-        temp = fdnDCIC.get_FDN(post_json["accession"], connection)
-    elif post_json.get("@id"):
-        temp = fdnDCIC.get_FDN(post_json["@id"], connection)
-    return temp
+    uuids = []
+    # look if post_json has these 3 identifiers
+    for identifier in ["uuid", "accession", "@id"]:
+        if post_json.get(identifier):
+            temp = {}
+            temp = fdnDCIC.get_FDN(post_json[identifier], connection)
+            if temp.get("uuid"):
+                uuids.append(temp.get("uuid"))
+    # also look for all aliases
+    if post_json.get("aliases"):
+        # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
+        for an_alias in post_json.get("aliases"):
+            temp = {}
+            temp = fdnDCIC.get_FDN(an_alias, connection)
+            if temp.get("uuid"):
+                uuids.append(temp.get("uuid"))
+
+    # check if all existing identifiers point to the same object
+    unique_uuids = list(set(uuids))
+    # if no existing information
+    if len(unique_uuids) == 0:
+        return {}
+    # if everything is as expected
+    elif len(unique_uuids) == 1:
+        temp = fdnDCIC.get_FDN(unique_uuids[0], connection)
+        return temp
+    # funky business not allowed, if identifiers point to different objects
+    else:
+        print("ERROR - Personality disorder - ERROR")
+        print("Used identifiers (aliases, uuid, accession, @id) point to following different existing items")
+        print(unique_uuids)
+        return
 
 
 def build_patch_json(fields, fields2types):
@@ -341,6 +364,14 @@ def populate_post_json(post_json, connection, sheet):
         post_json["attachment"] = attach
     # Get existing data if available
     existing_data = get_existing(post_json, connection)
+
+    # Combine aliases
+    if post_json.get('aliases') and existing_data.get('aliases'):
+        aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
+        post_json["aliases"] = aliases_to_post
+    # delete calculated property
+    if post_json.get('@id'):
+        del post_json['@id']
     # should I upload files as well?
     file_to_upload = False
     filename_to_post = post_json.get('filename')
@@ -791,7 +822,7 @@ def get_all_aliases(workbook, sheets):
     import collections
     non_unique_aliases = [item for item, count in collections.Counter(all_aliases).items() if count > 1]
     if non_unique_aliases:
-        print("WARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
+        print("\nWARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
         print("WARNING! These aliases are used more than once,use a unique alias for each item\n")
     return list(filter(None, all_aliases))
 
