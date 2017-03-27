@@ -116,11 +116,10 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     except:  # pragma: no cover
         logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:  # pragma: no cover
-        if response.json().get("notification"):
+        try:
             logging.warning('%s' % (response.json().get("notification")))
-        else:
-            # logging.warning('GET failure.  Response code = %s' % (response.text))
-            pass
+        except:
+            logging.warning('%s' % (response.text))
     if url_addon is not None and response.json().get('@graph'):
         return response.json()['@graph']
     return response.json()
