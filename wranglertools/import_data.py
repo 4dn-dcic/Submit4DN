@@ -21,6 +21,9 @@ import attr
 import os
 import time
 import subprocess
+import shutil
+import urllib2
+from contextlib import closing
 
 EPILOG = '''
 This script takes in an Excel file with the data
@@ -114,19 +117,29 @@ def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url."""
     if not os.path.isfile(path):
         # if the path does not exist, check if it works as a URL
-        try:
-            r = requests.get(path)
-        except requests.exceptions.MissingSchema:
-            print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
-            sys.exit(1)
-        # if it works as a URL, but does not return 200
-        if r.status_code is not 200:
-            print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
-            sys.exit(1)
-        # parse response
-        path = path.split("/")[-1]
-        with open(path, "wb") as outfile:
-            outfile.write(r.content)
+        if path.startswith("ftp://"):  # grab the file from ftp
+            print("\nINFO: Attempting to download file from this url %s" % path)
+
+            with closing(urllib2.urlopen(path)) as r:
+                file_name = path.split("/")[-1]
+                with open(file_name, 'wb') as f:
+                    shutil.copyfileobj(r, f)
+                    path = file_name
+        else:
+            try:
+                r = requests.get(path)
+            except requests.exceptions.MissingSchema:
+                print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
+                sys.exit(1)
+            # if it works as a URL, but does not return 200
+            if r.status_code is not 200:
+                print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
+                sys.exit(1)
+            # parse response
+            path = path.split("/")[-1]
+            with open(path, "wb") as outfile:
+                outfile.write(r.content)
+
     filename = os.path.basename(path)
     mime_type = mimetypes.guess_type(path)[0]
     major, minor = mime_type.split('/')
@@ -134,7 +147,8 @@ def attachment(path):
     # XXX This validation logic should move server-side.
     if not (detected_type == mime_type or
             detected_type == 'text/plain' and major == 'text'):
-        raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
+        if not minor == 'zip':  # zip files are special beasts
+            raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
     with open(path, 'rb') as stream:
         attach = {
             'download': filename,

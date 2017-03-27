@@ -4,6 +4,12 @@ import pytest
 
 
 @pytest.mark.file_operation
+def test_attachment_from_ftp():
+    attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
+    assert attach
+
+
+@pytest.mark.file_operation
 def test_attachment_image():
     attach = imp.attachment("./tests/data_files/test.jpg")
     assert attach['height'] == 1080
