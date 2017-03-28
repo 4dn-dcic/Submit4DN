@@ -392,7 +392,6 @@ def populate_post_json(post_json, connection, sheet):
     if filename_to_post:
         # remove full path from filename
         just_filename = filename_to_post.split('/')[-1]
-
         # if new file
         if not existing_data.get('uuid'):
             post_json['filename'] = just_filename
@@ -609,6 +608,16 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
+        # if we are supposed to upload the file and it's and ftp link get it here
+        if file_to_upload and filename_to_post.startswith("ftp://"):  # grab the file from ftp
+            print("\nINFO: Attempting to download file from this url %s" % filename_to_post)
+
+            with closing(urllib2.urlopen(filename_to_post)) as r:
+                with open(post_json['filename'], 'wb') as f:
+                    shutil.copyfileobj(r, f)
+
+
+
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
