@@ -19,6 +19,7 @@ requires = [
     'xlwt>=1.1.2',
     'awscli',
     'six',
+    'urllib2',
 ]
 
 tests_require = [
