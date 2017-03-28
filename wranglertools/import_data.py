@@ -616,8 +616,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                 with open(post_json['filename'], 'wb') as f:
                     shutil.copyfileobj(r, f)
 
-
-
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
