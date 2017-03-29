@@ -301,7 +301,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
                 args = imp.fdnDCIC.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 print(out)
-                outlist = [i.strip() for i in out.split('\n') if i is not ""]
+                outlist = [i.strip() for i in out.split('\n') if i.strip() is not ""]
                 print(outlist)
                 post_json_arg = args[0][2]
                 assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
