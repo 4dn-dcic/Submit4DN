@@ -285,8 +285,8 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
     dict_rep = {}
     dict_set = {}
     all_aliases = []
-    message0 = ("INFO: Attempting to download file from this url to your computer before upload "
-                "ftp://speedtest.tele2.net/1KB.zip")
+    message0_1 = "INFO: Attempting to download file from this url to your computer before upload "
+    message0_2 = "ftp://speedtest.tele2.net/1KB.zip"
     message1 = "calculating md5 sum for file 1KB.zip"
     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
@@ -303,7 +303,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
                 post_json_arg = args[0][2]
                 assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-                assert message0 == outlist[0]
+                assert message0_1 + message0_2 == outlist[0]
                 assert message1 == outlist[1]
                 assert message2 == outlist[2]
 
