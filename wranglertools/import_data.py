@@ -552,6 +552,9 @@ def conflict_error_report(error_dic, sheet, connection):
 
 
 def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
+    # if FTP, grab the file from ftp
+    if file_to_upload and filename_to_post.startswith("ftp://"):
+        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
@@ -568,6 +571,9 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
 
 
 def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
+    # if FTP, grab the file from ftp
+    if file_to_upload and filename_to_post.startswith("ftp://"):
+        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
@@ -577,6 +583,20 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
         # upload the file
         upload_file(e, filename_to_post)
     return e
+
+
+def ftp_copy(filename_to_post, post_json):
+    try:
+        print("\nINFO: Attempting to download file from this url to your computer before upload %s" % filename_to_post)
+        with closing(urllib2.urlopen(filename_to_post)) as r:
+            new_file = post_json['filename']
+            with open(new_file, 'wb') as f:
+                shutil.copyfileobj(r, f)
+        return True, post_json, new_file
+    except:
+        # if download did not work, delete the filename from the post json
+        post_json.pop('filename')
+        return False, post_json, ""
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
@@ -611,15 +631,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
-        # if we are supposed to upload the file and it's and ftp link get it here
-        if patchall or update:
-            if file_to_upload and filename_to_post.startswith("ftp://"):  # grab the file from ftp
-                print("\nINFO: Attempting to download file from this url %s" % filename_to_post)
-
-                with closing(urllib2.urlopen(filename_to_post)) as r:
-                    with open(post_json['filename'], 'wb') as f:
-                        shutil.copyfileobj(r, f)
-
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment

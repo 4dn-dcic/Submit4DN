@@ -5,8 +5,13 @@ import pytest
 
 @pytest.mark.file_operation
 def test_attachment_from_ftp():
+    import os
     attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
     assert attach
+    try:
+        os.remove("1KB.zip")
+    except OSError:
+        pass
 
 
 @pytest.mark.file_operation
