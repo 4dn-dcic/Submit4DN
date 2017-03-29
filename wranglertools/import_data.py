@@ -153,20 +153,17 @@ def attachment(path):
             detected_type == 'text/plain' and major == 'text'):
         if not (minor == 'zip' or major == 'text'):  # zip files are special beasts
             raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
+    attach = {}
     with open(path, 'rb') as stream:
         attach = {
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if ftp_attach:
-            os.remove(path)
         if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
                          'text/html', 'application/zip'):
             # XXX Should use chardet to detect charset for text files here.
-            # if ftp_attach:
-            #     os.remove(path)
-            return attach
-        if major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
+            pass
+        elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
             # XXX we should just convert our tiffs to pngs
             stream.seek(0, 0)
             im = Image.open(stream)
@@ -175,12 +172,11 @@ def attachment(path):
                 msg = "Image file format %r does not match extension for %s"
                 raise ValueError(msg % (im.format, filename))
             attach['width'], attach['height'] = im.size
-            # if ftp_attach:
-            #     os.remove(path)
-            return attach
-    # if ftp_attach:
-    #     os.remove(path)
-    raise ValueError("Unknown file type for %s" % filename)
+        else:
+            raise ValueError("Unknown file type for %s" % filename)
+    if ftp_attach:
+        os.remove(path)
+    return attach
 
 
 def reader(filename, sheetname=None):
