@@ -22,7 +22,7 @@ def loc(ctx):
 
 
 @task
-def test(ctx, watch=False, last_failing=False, no_flake=False):
+def test(ctx, watch=False, last_failing=False, no_flake=False, k=''):
     """Run the tests.
     Note: --watch requires pytest-xdist to be installed.
     """
@@ -30,6 +30,8 @@ def test(ctx, watch=False, last_failing=False, no_flake=False):
     if not no_flake:
         flake(ctx)
     args = []
+    if k:
+        args.append('-k %s' % k)
     if watch:
         args.append('-f')
     if last_failing:

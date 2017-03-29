@@ -21,6 +21,12 @@ import attr
 import os
 import time
 import subprocess
+import shutil
+try:
+    import urllib2
+except:
+    from urllib import request as urllib2
+from contextlib import closing
 
 EPILOG = '''
 This script takes in an Excel file with the data
@@ -112,21 +118,32 @@ list_of_loadxl_fields = [
 
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url."""
+    ftp_attach = False
     if not os.path.isfile(path):
         # if the path does not exist, check if it works as a URL
-        try:
-            r = requests.get(path)
-        except requests.exceptions.MissingSchema:
-            print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
-            sys.exit(1)
-        # if it works as a URL, but does not return 200
-        if r.status_code is not 200:
-            print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
-            sys.exit(1)
-        # parse response
-        path = path.split("/")[-1]
-        with open(path, "wb") as outfile:
-            outfile.write(r.content)
+        if path.startswith("ftp://"):  # grab the file from ftp
+            print("\nINFO: Attempting to download file from this url %s" % path)
+            with closing(urllib2.urlopen(path)) as r:
+                file_name = path.split("/")[-1]
+                with open(file_name, 'wb') as f:
+                    shutil.copyfileobj(r, f)
+                    path = file_name
+                    ftp_attach = True
+        else:
+            try:
+                r = requests.get(path)
+            except requests.exceptions.MissingSchema:
+                print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
+                sys.exit(1)
+            # if it works as a URL, but does not return 200
+            if r.status_code is not 200:
+                print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
+                sys.exit(1)
+            # parse response
+            path = path.split("/")[-1]
+            with open(path, "wb") as outfile:
+                outfile.write(r.content)
+
     filename = os.path.basename(path)
     mime_type = mimetypes.guess_type(path)[0]
     major, minor = mime_type.split('/')
@@ -134,7 +151,9 @@ def attachment(path):
     # XXX This validation logic should move server-side.
     if not (detected_type == mime_type or
             detected_type == 'text/plain' and major == 'text'):
-        raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
+        if not (minor == 'zip' or major == 'text'):  # zip files are special beasts
+            raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
+    attach = {}
     with open(path, 'rb') as stream:
         attach = {
             'download': filename,
@@ -143,8 +162,8 @@ def attachment(path):
         if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
                          'text/html', 'application/zip'):
             # XXX Should use chardet to detect charset for text files here.
-            return attach
-        if major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
+            pass
+        elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
             # XXX we should just convert our tiffs to pngs
             stream.seek(0, 0)
             im = Image.open(stream)
@@ -153,8 +172,11 @@ def attachment(path):
                 msg = "Image file format %r does not match extension for %s"
                 raise ValueError(msg % (im.format, filename))
             attach['width'], attach['height'] = im.size
-            return attach
-    raise ValueError("Unknown file type for %s" % filename)
+        else:
+            raise ValueError("Unknown file type for %s" % filename)
+    if ftp_attach:
+        os.remove(path)
+    return attach
 
 
 def reader(filename, sheetname=None):
@@ -166,6 +188,7 @@ def reader(filename, sheetname=None):
         try:
             sheet = book.sheet_by_name(sheetname)
         except xlrd.XLRDError:
+            print(sheetname)
             print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
             return
     datemode = sheet.book.datemode
@@ -378,7 +401,6 @@ def populate_post_json(post_json, connection, sheet):
     if filename_to_post:
         # remove full path from filename
         just_filename = filename_to_post.split('/')[-1]
-
         # if new file
         if not existing_data.get('uuid'):
             post_json['filename'] = just_filename
@@ -536,6 +558,11 @@ def conflict_error_report(error_dic, sheet, connection):
 
 
 def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
+    # if FTP, grab the file from ftp
+    ftp_download = False
+    if file_to_upload and filename_to_post.startswith("ftp://"):
+        ftp_download = True
+        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
@@ -548,10 +575,17 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
         e['@graph'][0]['upload_credentials'] = creds
         # upload
         upload_file(e, filename_to_post)
+        if ftp_download:
+            os.remove(filename_to_post)
     return e
 
 
 def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
+    # if FTP, grab the file from ftp
+    ftp_download = False
+    if file_to_upload and filename_to_post.startswith("ftp://"):
+        ftp_download = True
+        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
@@ -560,7 +594,23 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     if file_to_upload:
         # upload the file
         upload_file(e, filename_to_post)
+        if ftp_download:
+            os.remove(filename_to_post)
     return e
+
+
+def ftp_copy(filename_to_post, post_json):
+    try:
+        print("\nINFO: Attempting to download file from this url to your computer before upload %s" % filename_to_post)
+        with closing(urllib2.urlopen(filename_to_post)) as r:
+            new_file = post_json['filename']
+            with open(new_file, 'wb') as f:
+                shutil.copyfileobj(r, f)
+        return True, post_json, new_file
+    except:
+        # if download did not work, delete the filename from the post json
+        post_json.pop('filename')
+        return False, post_json, ""
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
