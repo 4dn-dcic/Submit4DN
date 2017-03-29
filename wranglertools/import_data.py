@@ -22,7 +22,10 @@ import os
 import time
 import subprocess
 import shutil
-import urllib2
+try:
+    import urllib2
+except:
+    from urllib import request as urllib2
 from contextlib import closing
 
 EPILOG = '''
@@ -147,7 +150,7 @@ def attachment(path):
     # XXX This validation logic should move server-side.
     if not (detected_type == mime_type or
             detected_type == 'text/plain' and major == 'text'):
-        if not minor == 'zip':  # zip files are special beasts
+        if not (minor == 'zip' or major == 'text'):  # zip files are special beasts
             raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
     with open(path, 'rb') as stream:
         attach = {
