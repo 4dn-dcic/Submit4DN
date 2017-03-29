@@ -192,6 +192,7 @@ def reader(filename, sheetname=None):
         try:
             sheet = book.sheet_by_name(sheetname)
         except xlrd.XLRDError:
+            print(sheetname)
             print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
             return
     datemode = sheet.book.datemode
