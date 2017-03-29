@@ -136,7 +136,7 @@ def attachment(path):
                 print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
                 sys.exit(1)
             # if it works as a URL, but does not return 200
-            if r.status_code is not 200:
+            if r.status_code is not 200:  # pragma: no cover
                 print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
                 sys.exit(1)
             # parse response
@@ -237,7 +237,7 @@ def data_formatter(value, val_type, field=None):
         else:
             # default assumed to be string
             return str(value)
-    except ValueError:
+    except ValueError:  # pragma: no cover
         return str(value)
 
 
@@ -339,7 +339,7 @@ def get_existing(post_json, connection):
         temp = fdnDCIC.get_FDN(unique_uuids[0], connection)
         return temp
     # funky business not allowed, if identifiers point to different objects
-    else:
+    else:  # pragma: no cover
         print("ERROR - Personality disorder - ERROR")
         print("Used identifiers (aliases, uuid, accession, @id) point to following different existing items")
         print(unique_uuids)
@@ -813,7 +813,7 @@ def loadxl_cycle(patch_list, connection):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote):
+def cabin_cross_check(connection, patchall, update, infile, remote):  # pragma: no cover
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.server))
     # test connection

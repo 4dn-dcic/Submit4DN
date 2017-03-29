@@ -35,10 +35,11 @@ def test_attachment_image_wrong_extension():
 
 
 @pytest.mark.file_operation
-def test_attachment_text_wrong_extension():
-    with pytest.raises(ValueError) as excinfo:
-        imp.attachment("./tests/data_files/test_txt.pdf")
-    assert str(excinfo.value) == 'Wrong extension for text/plain: test_txt.pdf'
+def test_attachment_wrong_path():
+    # system exit with wrong file path
+    with pytest.raises(SystemExit) as excinfo:
+        imp.attachment("./tests/data_files/dontexisit.txt")
+    assert str(excinfo.value) == "1"
 
 
 @pytest.mark.webtest
