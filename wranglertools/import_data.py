@@ -118,16 +118,17 @@ list_of_loadxl_fields = [
 
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url."""
+    ftp_attach = False
     if not os.path.isfile(path):
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
             print("\nINFO: Attempting to download file from this url %s" % path)
-
             with closing(urllib2.urlopen(path)) as r:
                 file_name = path.split("/")[-1]
                 with open(file_name, 'wb') as f:
                     shutil.copyfileobj(r, f)
                     path = file_name
+                    ftp_attach = True
         else:
             try:
                 r = requests.get(path)
@@ -157,9 +158,13 @@ def attachment(path):
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
+        if ftp_attach:
+            os.remove(path)
         if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
                          'text/html', 'application/zip'):
             # XXX Should use chardet to detect charset for text files here.
+            # if ftp_attach:
+            #     os.remove(path)
             return attach
         if major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
             # XXX we should just convert our tiffs to pngs
@@ -170,7 +175,11 @@ def attachment(path):
                 msg = "Image file format %r does not match extension for %s"
                 raise ValueError(msg % (im.format, filename))
             attach['width'], attach['height'] = im.size
+            # if ftp_attach:
+            #     os.remove(path)
             return attach
+    # if ftp_attach:
+    #     os.remove(path)
     raise ValueError("Unknown file type for %s" % filename)
 
 
@@ -553,7 +562,9 @@ def conflict_error_report(error_dic, sheet, connection):
 
 def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
     # if FTP, grab the file from ftp
+    ftp_download = False
     if file_to_upload and filename_to_post.startswith("ftp://"):
+        ftp_download = True
         file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
@@ -567,12 +578,16 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
         e['@graph'][0]['upload_credentials'] = creds
         # upload
         upload_file(e, filename_to_post)
+        if ftp_download:
+            os.remove(filename_to_post)
     return e
 
 
 def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     # if FTP, grab the file from ftp
+    ftp_download = False
     if file_to_upload and filename_to_post.startswith("ftp://"):
+        ftp_download = True
         file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
@@ -582,6 +597,8 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     if file_to_upload:
         # upload the file
         upload_file(e, filename_to_post)
+        if ftp_download:
+            os.remove(filename_to_post)
     return e
 
 
