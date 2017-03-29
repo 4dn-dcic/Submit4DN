@@ -93,7 +93,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
         else:
             url = connection.server + obj_id + '?limit=all&frame=' + frame
         return url
-    elif url_addon is not None:
+    elif url_addon is not None:  # pragma: no cover
         return connection.server + url_addon
 
 
@@ -112,7 +112,7 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
             logging.warning('%s' % (response.json().get("notification")))
         except:
             logging.warning('%s' % (response.text))
-    if url_addon and response.json().get('@graph'):
+    if url_addon and response.json().get('@graph'):  # pragma: no cover
         return response.json()['@graph']
     return response.json()
 
@@ -326,7 +326,7 @@ def sort_item_list(item_list, item_id, field):
         try:
             sorted_list.remove(move_item)
             sorted_list.insert(0, move_item)
-        except:
+        except:  # pragma: no cover
             pass
     return sorted_list
 

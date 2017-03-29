@@ -40,6 +40,7 @@ def test_key_error_wrong_format(capsys):
     message = "The keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder"
     assert out.strip() == message
 
+
 def test_connection():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
@@ -84,6 +85,12 @@ def test_get_FDN(connection_public):
     award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
     assert award_schema['title'] == 'Grant'
     assert award_schema['properties'].get('description')
+
+
+@pytest.mark.webtest
+def test_search_FDN(connection_public):
+    my_award = fdnDCIC.search_FDN("Award", 'name', '1U01CA200059-01', connection_public)
+    assert my_award[0]['uuid']
 
 
 def test_get_FDN_mock(connection, mocker, returned_award_schema):
