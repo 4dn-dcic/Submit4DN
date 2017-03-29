@@ -285,7 +285,8 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
     dict_rep = {}
     dict_set = {}
     all_aliases = []
-    message0 = "INFO: Attempting to download file from this url to your computer before upload ftp://speedtest.tele2.net/1KB.zip"
+    message0 = ("INFO: Attempting to download file from this url to your computer before upload "
+                "ftp://speedtest.tele2.net/1KB.zip")
     message1 = "calculating md5 sum for file 1KB.zip"
     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
