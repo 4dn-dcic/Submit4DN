@@ -34,6 +34,12 @@ def test_key_file():
     assert isinstance(key.authid, string_types)
 
 
+def test_key_error_wrong_format(capsys):
+    fdnDCIC.FDN_Key([("key_name", "my_key")], "key_name")
+    out = capsys.readouterr()[0]
+    message = "The keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder"
+    assert out.strip() == message
+
 def test_connection():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
