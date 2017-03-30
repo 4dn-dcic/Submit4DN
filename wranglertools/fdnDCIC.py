@@ -145,14 +145,12 @@ def patch_FDN(obj_id, connection, patch_input):
     else:  # pragma: no cover
         print('Datatype to PATCH is not string or dict.')
     url = connection.server + obj_id
-    # logging.debug('PATCH URL : %s' % (url))
-    # logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
         try:
-            logging.warning('%s' % (response.json().get("notification")))
+            logging.debug('%s' % (response.json().get("notification")))
         except:
-            logging.warning('%s' % (response.text))
+            logging.debug('%s' % (response.text))
     return response.json()
 
 
@@ -169,9 +167,9 @@ def new_FDN(connection, collection_name, post_input):
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     if not response.status_code == 201:  # pragma: no cover
         try:
-            logging.warning('%s' % (response.json().get("notification")))
+            logging.debug('%s' % (response.json().get("notification")))
         except:
-            logging.warning('%s' % (response.text))
+            logging.debug('%s' % (response.text))
     return response.json()
 
 
