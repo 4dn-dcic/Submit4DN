@@ -101,13 +101,14 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
         or search, respectively.
+        Since we check if an object exists with this method, the logging is disabled for 404.
     '''
     if obj_id is not None:
         url = FDN_url(obj_id, connection, frame)
     elif url_addon is not None:
         url = FDN_url(None, connection, None, url_addon)
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
-    if not response.status_code == 200:  # pragma: no cover
+    if response.status_code not in [200, 404]:  # pragma: no cover
         try:
             logging.warning('%s' % (response.json().get("notification")))
         except:
@@ -144,14 +145,12 @@ def patch_FDN(obj_id, connection, patch_input):
     else:  # pragma: no cover
         print('Datatype to PATCH is not string or dict.')
     url = connection.server + obj_id
-    # logging.debug('PATCH URL : %s' % (url))
-    # logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
         try:
-            logging.warning('%s' % (response.json().get("notification")))
+            logging.debug('%s' % (response.json().get("notification")))
         except:
-            logging.warning('%s' % (response.text))
+            logging.debug('%s' % (response.text))
     return response.json()
 
 
@@ -168,9 +167,9 @@ def new_FDN(connection, collection_name, post_input):
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     if not response.status_code == 201:  # pragma: no cover
         try:
-            logging.warning('%s' % (response.json().get("notification")))
+            logging.debug('%s' % (response.json().get("notification")))
         except:
-            logging.warning('%s' % (response.text))
+            logging.debug('%s' % (response.text))
     return response.json()
 
 

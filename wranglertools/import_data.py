@@ -482,7 +482,6 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
                     post_json['replicate_exps'] = add_to_post
             # remove found item from the accumulate_dict
             accumulate_dict.pop(identifier)
-            break
     return post_json, accumulate_dict
 
 
