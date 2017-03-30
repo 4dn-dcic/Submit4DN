@@ -101,13 +101,14 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
         or search, respectively.
+        Since we check if an object exists with this method, the logging is disabled for 404.
     '''
     if obj_id is not None:
         url = FDN_url(obj_id, connection, frame)
     elif url_addon is not None:
         url = FDN_url(None, connection, None, url_addon)
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
-    if not response.status_code == 200:  # pragma: no cover
+    if response.status_code not in [200, 404]:  # pragma: no cover
         try:
             logging.warning('%s' % (response.json().get("notification")))
         except:
