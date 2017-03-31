@@ -477,3 +477,28 @@ def test_loadxl_cycle(capsys, mocker, connection):
         imp.loadxl_cycle(patch_list, connection)
         out = capsys.readouterr()[0]
         assert message == out.strip()
+
+
+@pytest.mark.file_operation
+def test_cabin_cross_check_key_error(connection_public):
+    with pytest.raises(SystemExit) as excinfo:
+        imp.cabin_cross_check(connection_public, False, False, './tests/data_files/Exp_Set_insert.xls', False)
+    assert str(excinfo.value) == "1"
+
+
+@pytest.mark.file_operation
+def test_cabin_cross_check_dryrun(connection_fake, capsys):
+    imp.cabin_cross_check(connection_fake, False, False, './tests/data_files/Exp_Set_insert.xls', False)
+    out = capsys.readouterr()[0]
+    message = '''
+Running on:       https://data.4dnucleome.org/
+Submitting User:  test@test.test
+Submitting Lab:   test_lab
+Submitting Award: test_award
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+    assert out.strip() == message.strip()

@@ -812,7 +812,7 @@ def loadxl_cycle(patch_list, connection):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote):  # pragma: no cover
+def cabin_cross_check(connection, patchall, update, infile, remote):
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.server))
     # test connection
