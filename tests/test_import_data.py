@@ -211,6 +211,28 @@ def test_combine_set_expsets_with_existing():
     assert dict_expsets2 == {}
 
 
+def test_error_report(connection):
+    # There are 3 errors, 2 of them are legit, one needs to be checked afains the all aliases list, and excluded
+    err_dict = {"title": "Unprocessable Entity",
+                "status": "error",
+                "errors": [
+                  {"name": ["protocol_documents", 0],
+                   "description": "'dcic:insituhicagar' not found", "location": "body"},
+                  {"name": ["age"],
+                   "description": "'at' is not of type 'number'", "location": "body"},
+                  {"name": ["sex"],
+                   "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
+                "code": 422,
+                "@type": ["ValidationFailure", "Error"],
+                "description": "Failed validation"}
+    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar'], connection)
+    message = '''
+ERROR vendor                  Field 'age': 'at' is not of type 'number'
+ERROR vendor                  Field 'sex': 'green' is not one of ['male', 'female', 'unknown', 'mixed']
+'''
+    assert rep.strip() == message.strip()
+
+
 def test_fix_attribution(connection):
     post_json = {'field': 'value', 'field2': 'value2'}
     result_json = imp.fix_attribution('some_sheet', post_json, connection)
