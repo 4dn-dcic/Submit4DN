@@ -233,6 +233,19 @@ ERROR vendor                  Field 'sex': 'green' is not one of ['male', 'femal
     assert rep.strip() == message.strip()
 
 
+def test_error_conflict_report(connection):
+    # There is one conflict error
+    err_dict = {"title": "Conflict",
+                "status": "error",
+                "description": "There was a conflict when trying to complete your request.",
+                "code": 409,
+                "detail": "Keys conflict: [('award:name', '1U54DK107981-01')]",
+                "@type": ["HTTPConflict", "Error"]}
+    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar'], connection)
+    message = "ERROR vendor                  Field 'name': '1U54DK107981-01' already exists, please contact DCIC"
+    assert rep.strip() == message.strip()
+
+
 def test_fix_attribution(connection):
     post_json = {'field': 'value', 'field2': 'value2'}
     result_json = imp.fix_attribution('some_sheet', post_json, connection)
