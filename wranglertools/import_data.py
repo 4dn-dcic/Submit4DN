@@ -672,7 +672,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
             else:
                 not_posted += 1
         # add to success/error counters
-        if e.get("status") == "error":
+        if e.get("status") == "error":  # pragma: no cover
 
             error_rep = error_report(e, sheet, all_aliases, connection)
             if error_rep:

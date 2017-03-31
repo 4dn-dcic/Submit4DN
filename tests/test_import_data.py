@@ -537,3 +537,16 @@ The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
     assert out.strip() == message.strip()
+
+
+def test_get_collections(connection_public):
+    all_cols = imp.get_collections(connection_public)
+    assert len(all_cols) > 10
+
+
+def test_get_all_aliases():
+    wb = "./tests/data_files/Exp_Set_insert.xls"
+    sheet = ["ExperimentSet"]
+    my_aliases = ['sample_expset']
+    all_aliases = imp.get_all_aliases(wb, sheet)
+    assert my_aliases == all_aliases
