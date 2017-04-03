@@ -136,7 +136,7 @@ def attachment(path):
                 print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
                 sys.exit(1)
             # if it works as a URL, but does not return 200
-            if r.status_code is not 200:
+            if r.status_code is not 200:  # pragma: no cover
                 print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
                 sys.exit(1)
             # parse response
@@ -237,7 +237,7 @@ def data_formatter(value, val_type, field=None):
         else:
             # default assumed to be string
             return str(value)
-    except ValueError:
+    except ValueError:  # pragma: no cover
         return str(value)
 
 
@@ -339,7 +339,7 @@ def get_existing(post_json, connection):
         temp = fdnDCIC.get_FDN(unique_uuids[0], connection)
         return temp
     # funky business not allowed, if identifiers point to different objects
-    else:
+    else:  # pragma: no cover
         print("ERROR - Personality disorder - ERROR")
         print("Used identifiers (aliases, uuid, accession, @id) point to following different existing items")
         print(unique_uuids)
@@ -672,7 +672,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
             else:
                 not_posted += 1
         # add to success/error counters
-        if e.get("status") == "error":
+        if e.get("status") == "error":  # pragma: no cover
 
             error_rep = error_report(e, sheet, all_aliases, connection)
             if error_rep:

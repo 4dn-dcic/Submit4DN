@@ -35,10 +35,11 @@ def test_attachment_image_wrong_extension():
 
 
 @pytest.mark.file_operation
-def test_attachment_text_wrong_extension():
-    with pytest.raises(ValueError) as excinfo:
-        imp.attachment("./tests/data_files/test_txt.pdf")
-    assert str(excinfo.value) == 'Wrong extension for text/plain: test_txt.pdf'
+def test_attachment_wrong_path():
+    # system exit with wrong file path
+    with pytest.raises(SystemExit) as excinfo:
+        imp.attachment("./tests/data_files/dontexisit.txt")
+    assert str(excinfo.value) == "1"
 
 
 @pytest.mark.webtest
@@ -210,6 +211,41 @@ def test_combine_set_expsets_with_existing():
     assert dict_expsets2 == {}
 
 
+def test_error_report(connection):
+    # There are 3 errors, 2 of them are legit, one needs to be checked afains the all aliases list, and excluded
+    err_dict = {"title": "Unprocessable Entity",
+                "status": "error",
+                "errors": [
+                  {"name": ["protocol_documents", 0],
+                   "description": "'dcic:insituhicagar' not found", "location": "body"},
+                  {"name": ["age"],
+                   "description": "'at' is not of type 'number'", "location": "body"},
+                  {"name": ["sex"],
+                   "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
+                "code": 422,
+                "@type": ["ValidationFailure", "Error"],
+                "description": "Failed validation"}
+    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar'], connection)
+    message = '''
+ERROR vendor                  Field 'age': 'at' is not of type 'number'
+ERROR vendor                  Field 'sex': 'green' is not one of ['male', 'female', 'unknown', 'mixed']
+'''
+    assert rep.strip() == message.strip()
+
+
+def test_error_conflict_report(connection):
+    # There is one conflict error
+    err_dict = {"title": "Conflict",
+                "status": "error",
+                "description": "There was a conflict when trying to complete your request.",
+                "code": 409,
+                "detail": "Keys conflict: [('award:name', '1U54DK107981-01')]",
+                "@type": ["HTTPConflict", "Error"]}
+    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar'], connection)
+    message = "ERROR vendor                  Field 'name': '1U54DK107981-01' already exists, please contact DCIC"
+    assert rep.strip() == message.strip()
+
+
 def test_fix_attribution(connection):
     post_json = {'field': 'value', 'field2': 'value2'}
     result_json = imp.fix_attribution('some_sheet', post_json, connection)
@@ -300,9 +336,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
                                  dict_load, dict_rep, dict_set)
                 args = imp.fdnDCIC.new_FDN.call_args
                 out = capsys.readouterr()[0]
-                print(out)
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
-                print(outlist)
                 post_json_arg = args[0][2]
                 assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
                 assert message0_1 + message0_2 == outlist[0]
@@ -478,3 +512,41 @@ def test_loadxl_cycle(capsys, mocker, connection):
         imp.loadxl_cycle(patch_list, connection)
         out = capsys.readouterr()[0]
         assert message == out.strip()
+
+
+@pytest.mark.file_operation
+def test_cabin_cross_check_key_error(connection_public):
+    with pytest.raises(SystemExit) as excinfo:
+        imp.cabin_cross_check(connection_public, False, False, './tests/data_files/Exp_Set_insert.xls', False)
+    assert str(excinfo.value) == "1"
+
+
+@pytest.mark.file_operation
+def test_cabin_cross_check_dryrun(connection_fake, capsys):
+    imp.cabin_cross_check(connection_fake, False, False, './tests/data_files/Exp_Set_insert.xls', False)
+    out = capsys.readouterr()[0]
+    message = '''
+Running on:       https://data.4dnucleome.org/
+Submitting User:  test@test.test
+Submitting Lab:   test_lab
+Submitting Award: test_award
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+    assert out.strip() == message.strip()
+
+
+def test_get_collections(connection_public):
+    all_cols = imp.get_collections(connection_public)
+    assert len(all_cols) > 10
+
+
+def test_get_all_aliases():
+    wb = "./tests/data_files/Exp_Set_insert.xls"
+    sheet = ["ExperimentSet"]
+    my_aliases = ['sample_expset']
+    all_aliases = imp.get_all_aliases(wb, sheet)
+    assert my_aliases == all_aliases
