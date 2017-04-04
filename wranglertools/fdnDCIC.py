@@ -93,7 +93,7 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
         else:
             url = connection.server + obj_id + '?limit=all&frame=' + frame
         return url
-    elif url_addon is not None:
+    elif url_addon is not None:  # pragma: no cover
         return connection.server + url_addon
 
 
@@ -101,27 +101,19 @@ def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
         or search, respectively.
+        Since we check if an object exists with this method, the logging is disabled for 404.
     '''
     if obj_id is not None:
         url = FDN_url(obj_id, connection, frame)
     elif url_addon is not None:
         url = FDN_url(None, connection, None, url_addon)
-    logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
-    logging.debug('GET RESPONSE code %s' % (response.status_code))
-    try:
-        if response.json():
-            logging.debug('GET RESPONSE JSON: %s' %
-                          (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    except:  # pragma: no cover
-        logging.debug('GET RESPONSE text %s' % (response.text))
-    if not response.status_code == 200:  # pragma: no cover
-        if response.json().get("notification"):
+    if response.status_code not in [200, 404]:  # pragma: no cover
+        try:
             logging.warning('%s' % (response.json().get("notification")))
-        else:
-            # logging.warning('GET failure.  Response code = %s' % (response.text))
-            pass
-    if url_addon is not None and response.json().get('@graph'):
+        except:
+            logging.warning('%s' % (response.text))
+    if url_addon and response.json().get('@graph'):  # pragma: no cover
         return response.json()['@graph']
     return response.json()
 
@@ -132,19 +124,12 @@ def search_FDN(sheet, field, value, connection):
     '''
     obj_id = "search/?type={sheet}&{field}={value}".format(sheet=sheet, field=field, value=value)
     url = FDN_url(obj_id, connection, frame="object")
-
-    logging.debug('GET %s' % (url))
     response = requests.get(url, auth=connection.auth, headers=connection.headers)
-    logging.debug('GET RESPONSE code %s' % (response.status_code))
-    try:
-        if response.json():
-            logging.debug('GET RESPONSE JSON: %s' %
-                          (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    except:  # pragma: no cover
-        logging.debug('GET RESPONSE text %s' % (response.text))
     if not response.status_code == 200:  # pragma: no cover
-        if response.json().get("notification"):
+        try:
             logging.warning('%s' % (response.json().get("notification")))
+        except:
+            logging.warning('%s' % (response.text))
     if response.json().get('@graph'):
         return response.json()['@graph']
     return response.json()
@@ -160,15 +145,13 @@ def patch_FDN(obj_id, connection, patch_input):
     else:  # pragma: no cover
         print('Datatype to PATCH is not string or dict.')
     url = connection.server + obj_id
-    logging.debug('PATCH URL : %s' % (url))
-    logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
-    if response.status_code == 200:
-        logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-        return response.json()
-    else:
-        # logging.warning('PATCH failure.  Response = %s' % (response.text))
-        return response.json()
+    if not response.status_code == 200:  # pragma: no cover
+        try:
+            logging.debug('%s' % (response.json().get("notification")))
+        except:
+            logging.debug('%s' % (response.text))
+    return response.json()
 
 
 def new_FDN(connection, collection_name, post_input):
@@ -181,21 +164,17 @@ def new_FDN(connection, collection_name, post_input):
     else:  # pragma: no cover
         print('Datatype to POST is not string or dict.')
     url = connection.server + collection_name
-    logging.debug("POST URL : %s" % (url))
-    logging.debug("POST data: %s" % (json.dumps(post_input, sort_keys=True, indent=4,
-                                     separators=(',', ': '))))
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
-    logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
     if not response.status_code == 201:  # pragma: no cover
-        # logging.warning('POST failure. Response = %s' % (response.text))
-        pass
-    logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
-                                         separators=(',', ': '))))
+        try:
+            logging.debug('%s' % (response.json().get("notification")))
+        except:
+            logging.debug('%s' % (response.text))
     return response.json()
 
 
 def new_FDN_check(connection, collection_name, post_input):
-    '''POST an FDN object as JSON and return the response JSON
+    '''Test POST an FDN object as JSON and return the response JSON
     '''
     collection_name = collection_name + "/?check_only=True"
     if isinstance(post_input, dict):
@@ -205,20 +184,12 @@ def new_FDN_check(connection, collection_name, post_input):
     else:  # pragma: no cover
         print('Datatype to POST is not string or dict.')
     url = connection.server + collection_name
-    logging.debug("POST URL : %s" % (url))
-    logging.debug("POST data: %s" % (json.dumps(post_input, sort_keys=True, indent=4,
-                                     separators=(',', ': '))))
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
-    logging.debug("POST RESPONSE: %s" % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    # if not response.status_code == 201:  # pragma: no cover
-    #     logging.warning('POST failure. Response = %s' % (response.text))
-    logging.debug("Return object: %s" % (json.dumps(response.json(), sort_keys=True, indent=4,
-                                         separators=(',', ': '))))
     return response.json()
 
 
 def patch_FDN_check(obj_id, connection, patch_input):
-    '''PATCH an existing FDN object and return the response JSON
+    '''Test PATCH an existing FDN object and return the response JSON
     '''
     if isinstance(patch_input, dict):
         json_payload = json.dumps(patch_input)
@@ -227,12 +198,7 @@ def patch_FDN_check(obj_id, connection, patch_input):
     else:  # pragma: no cover
         print('Datatype to PATCH is not string or dict.')
     url = connection.server + obj_id + "/?check_only=True"
-    logging.debug('PATCH URL : %s' % (url))
-    logging.debug('PATCH data: %s' % (json_payload))
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
-    logging.debug('PATCH RESPONSE: %s' % (json.dumps(response.json(), indent=4, separators=(',', ': '))))
-    # if not response.status_code == 200:  # pragma: no cover
-    #     logging.warning('PATCH failure.  Response = %s' % (response.text))
     return response.json()
 
 
@@ -359,7 +325,7 @@ def sort_item_list(item_list, item_id, field):
         try:
             sorted_list.remove(move_item)
             sorted_list.insert(0, move_item)
-        except:
+        except:  # pragma: no cover
             pass
     return sorted_list
 

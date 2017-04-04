@@ -46,6 +46,25 @@ def connection_public():
     return connection
 
 
+@pytest.fixture
+def connection_fake():
+    keypairs = {
+                "default":
+                {"server": "https://data.4dnucleome.org/",
+                 "key": "",
+                 "secret": ""
+                 }
+                }
+    key2 = fdnDCIC.FDN_Key(keypairs, "default")
+    connection = fdnDCIC.FDN_Connection(key2)
+    connection.lab = 'test_lab'
+    connection.user = 'test_user'
+    connection.award = 'test_award'
+    connection.email = 'test@test.test'
+    connection.check = True
+    return connection
+
+
 @pytest.fixture(scope="module")
 def item_properties():
     return {'@id': {'calculatedProperty': True, 'title': 'ID', 'type': 'string'},
