@@ -57,7 +57,7 @@ containing the full path to the file you wish to attach
 For more details:
 please see README.rst
 
-To delete a field, use the keyword "*deleted*" as the value.
+To delete a field, use the keyword "*delete*" as the value.
 '''
 
 
@@ -617,6 +617,12 @@ def delete_fields(post_json, connection):
 
 
 def remove_deleted(post_json):
+    fields_to_be_removed = []
+    for key, value in post_json.items():
+        if value in ['*delete*', ['*delete*']]:
+            fields_to_be_removed.append(key)
+    for rm_key in fields_to_be_removed:
+        del post_json[rm_key]
     return post_json
 
 
