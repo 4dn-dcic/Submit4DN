@@ -57,6 +57,7 @@ containing the full path to the file you wish to attach
 For more details:
 please see README.rst
 
+To delete a field, use the keyword "*deleted*" as the value.
 '''
 
 
@@ -611,6 +612,14 @@ def ftp_copy(filename_to_post, post_json):
         return False, post_json, ""
 
 
+def delete_fields(post_json, connection):
+    return post_json
+
+
+def remove_deleted(post_json):
+    return post_json
+
+
 def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
@@ -661,12 +670,14 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
+                post_json = delete_fields(post_json, connection)
                 e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
             else:
                 not_patched += 1
         # if there is no existing item try posting
         else:
             if update:
+                post_json = remove_deleted(post_json)
                 e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
             else:
                 not_posted += 1
@@ -688,8 +699,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         if not patchall and not update:
             # simulate patch/post
             if existing_data.get("uuid"):
+                post_json = remove_deleted(post_json)
                 e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
             else:
+                post_json = remove_deleted(post_json)
                 e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
             # check simulation status
             if e['status'] == 'success':
