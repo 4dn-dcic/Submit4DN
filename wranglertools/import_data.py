@@ -34,11 +34,10 @@ This is a dryrun-default script, run with --update, --patchall or both (--update
 
 By DEFAULT:
 If there is a uuid, @id, accession, or previously submitted alias in the document:
-it will ask if you want to PATCH that object
 Use '--patchall' if you want to patch ALL objects in your document and ignore that message
 
-If you want to upload new items(no object identifiers are found), in the document you need to use '--update'
-for POSTing to occur
+If you want to upload new items(no existing object identifiers are found),
+in the document you need to use '--update' for POSTing to occur
 
 Defining Object type:
     Each "sheet" of the excel file is named after the object type you are uploading,
@@ -866,6 +865,7 @@ def get_all_aliases(workbook, sheets):
                 continue
             my_alias = row[alias_col]
             my_aliases = [x.strip() for x in my_alias.split(",")]
+            my_aliases = list(filter(None, my_aliases))
             if my_aliases:
                 all_aliases.extend(my_aliases)
     import collections
