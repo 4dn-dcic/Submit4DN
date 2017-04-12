@@ -612,11 +612,22 @@ def ftp_copy(filename_to_post, post_json):
         return False, post_json, ""
 
 
-def delete_fields(post_json, connection):
+def delete_fields(post_json, connection, existing_data):
+    """Does a put to delete fields with the keyword '*delete*'."""
+    my_uuid = existing_data.get("uuid")
+    my_accesssion = existing_data.get("accession")
+    raw_json = fdnDCIC.get_FDN(my_uuid, connection, frame="raw")
+    fields_to_be_removed = []
+    for key, value in post_json.items():
+        if value in ['*delete*', ['*delete*']]:
+            fields_to_be_removed.append(key)
+    for rm_key in fields_to_be_removed:
+        del post_json[rm_key]
     return post_json
 
 
 def remove_deleted(post_json):
+    """Removes fields that have *delete* keyword"""
     fields_to_be_removed = []
     for key, value in post_json.items():
         if value in ['*delete*', ['*delete*']]:
@@ -676,14 +687,18 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
-                post_json = delete_fields(post_json, connection)
+                # First check for fields to be deleted, and do put
+                post_json = delete_fields(post_json, connection, existing_data)
+                # Do the patch
                 e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
             else:
                 not_patched += 1
         # if there is no existing item try posting
         else:
             if update:
+                # If there are some fields with delete keyword,just ignore them
                 post_json = remove_deleted(post_json)
+                # Do the post
                 e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
             else:
                 not_posted += 1

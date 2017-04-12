@@ -97,6 +97,17 @@ def FDN_url(obj_id, connection, frame, url_addon=None):
         return connection.server + url_addon
 
 
+def format_to_json(input_data):
+    json_payload = {}
+    if isinstance(input_data, dict):
+        json_payload = json.dumps(input_data)
+    elif isinstance(input_data, str):
+        json_payload = input_data
+    else:  # pragma: no cover
+        print('Datatype is not string or dict. (format_to_json)')
+    return json_payload
+
+
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
@@ -138,12 +149,20 @@ def search_FDN(sheet, field, value, connection):
 def patch_FDN(obj_id, connection, patch_input):
     '''PATCH an existing FDN object and return the response JSON
     '''
-    if isinstance(patch_input, dict):
-        json_payload = json.dumps(patch_input)
-    elif isinstance(patch_input, str):
-        json_payload = patch_input
-    else:  # pragma: no cover
-        print('Datatype to PATCH is not string or dict.')
+    json_payload = format_to_json(patch_input)
+    url = connection.server + obj_id
+    response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
+    if not response.status_code == 200:  # pragma: no cover
+        try:
+            logging.debug('%s' % (response.json().get("notification")))
+        except:
+            logging.debug('%s' % (response.text))
+    return response.json()
+
+
+def put_FDN(obj_id, connection, put_input):
+    '''PUT an existing FDN object and return the response JSON'''
+    json_payload = format_to_json(put_input)
     url = connection.server + obj_id
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
@@ -155,14 +174,8 @@ def patch_FDN(obj_id, connection, patch_input):
 
 
 def new_FDN(connection, collection_name, post_input):
-    '''POST an FDN object as JSON and return the response JSON
-    '''
-    if isinstance(post_input, dict):
-        json_payload = json.dumps(post_input)
-    elif isinstance(post_input, str):
-        json_payload = post_input
-    else:  # pragma: no cover
-        print('Datatype to POST is not string or dict.')
+    '''POST an FDN object as JSON and return the response JSON'''
+    json_payload = format_to_json(post_input)
     url = connection.server + collection_name
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     if not response.status_code == 201:  # pragma: no cover
@@ -174,29 +187,16 @@ def new_FDN(connection, collection_name, post_input):
 
 
 def new_FDN_check(connection, collection_name, post_input):
-    '''Test POST an FDN object as JSON and return the response JSON
-    '''
-    collection_name = collection_name + "/?check_only=True"
-    if isinstance(post_input, dict):
-        json_payload = json.dumps(post_input)
-    elif isinstance(post_input, str):
-        json_payload = post_input
-    else:  # pragma: no cover
-        print('Datatype to POST is not string or dict.')
-    url = connection.server + collection_name
+    '''Test POST an FDN object as JSON and return the response JSON'''
+    json_payload = format_to_json(post_input)
+    url = connection.server + collection_name + "/?check_only=True"
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     return response.json()
 
 
 def patch_FDN_check(obj_id, connection, patch_input):
-    '''Test PATCH an existing FDN object and return the response JSON
-    '''
-    if isinstance(patch_input, dict):
-        json_payload = json.dumps(patch_input)
-    elif isinstance(patch_input, str):
-        json_payload = patch_input
-    else:  # pragma: no cover
-        print('Datatype to PATCH is not string or dict.')
+    '''Test PATCH an existing FDN object and return the response JSON'''
+    json_payload = format_to_json(patch_input)
     url = connection.server + obj_id + "/?check_only=True"
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     return response.json()
