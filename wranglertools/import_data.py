@@ -389,9 +389,10 @@ def populate_post_json(post_json, connection, sheet):
     existing_data = get_existing(post_json, connection)
 
     # Combine aliases
-    if post_json.get('aliases') and existing_data.get('aliases'):
-        aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
-        post_json["aliases"] = aliases_to_post
+    if post_json.get('aliases') != ['*delete*']:
+        if post_json.get('aliases') and existing_data.get('aliases'):
+            aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
+            post_json["aliases"] = aliases_to_post
     # delete calculated property
     if post_json.get('@id'):
         del post_json['@id']
@@ -617,17 +618,35 @@ def delete_fields(post_json, connection, existing_data):
     my_uuid = existing_data.get("uuid")
     my_accesssion = existing_data.get("accession")
     raw_json = fdnDCIC.get_FDN(my_uuid, connection, frame="raw")
+    # check if the uuid is in the raw_json
+    if not raw_json.get("uuid"):
+        raw_json["uuid"] = my_uuid
+    # if there is an accession, add it to raw so it does not created again
+    if my_accesssion:
+        if not raw_json.get("accession"):
+            raw_json["accession"] = my_accesssion
+    # find fields to be removed
     fields_to_be_removed = []
     for key, value in post_json.items():
         if value in ['*delete*', ['*delete*']]:
             fields_to_be_removed.append(key)
+    # if there are no delete fields, move along sir
+    if not fields_to_be_removed:
+        return post_json
+    # remove the fields from the raw_json that will be PUT
+    for rm_key in fields_to_be_removed:
+        del raw_json[rm_key]
+    # Do the put with raw_json
+    fdnDCIC.put_FDN(my_uuid, connection, raw_json)
+    # Remove them also from the post_json
     for rm_key in fields_to_be_removed:
         del post_json[rm_key]
     return post_json
 
 
 def remove_deleted(post_json):
-    """Removes fields that have *delete* keyword"""
+    """Removes fields that have *delete* keyword,
+       used for Post and Validation."""
     fields_to_be_removed = []
     for key, value in post_json.items():
         if value in ['*delete*', ['*delete*']]:
@@ -702,14 +721,13 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                 e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
             else:
                 not_posted += 1
+
         # add to success/error counters
         if e.get("status") == "error":  # pragma: no cover
-
             error_rep = error_report(e, sheet, all_aliases, connection)
             if error_rep:
                 error += 1
                 print(error_rep)
-            error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
                 patch += 1

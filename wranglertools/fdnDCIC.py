@@ -164,7 +164,7 @@ def put_FDN(obj_id, connection, put_input):
     '''PUT an existing FDN object and return the response JSON'''
     json_payload = format_to_json(put_input)
     url = connection.server + obj_id
-    response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
+    response = requests.put(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
         try:
             logging.debug('%s' % (response.json().get("notification")))
