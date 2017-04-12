@@ -728,6 +728,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
             if error_rep:
                 error += 1
                 print(error_rep)
+            else:
+                # if error is a weird one
+                print(e)
+                error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
                 patch += 1
