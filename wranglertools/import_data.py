@@ -635,7 +635,8 @@ def delete_fields(post_json, connection, existing_data):
         return post_json
     # remove the fields from the raw_json that will be PUT
     for rm_key in fields_to_be_removed:
-        del raw_json[rm_key]
+        if raw_json.get(rm_key):
+            del raw_json[rm_key]
     # Do the put with raw_json
     fdnDCIC.put_FDN(my_uuid, connection, raw_json)
     # Remove them also from the post_json
