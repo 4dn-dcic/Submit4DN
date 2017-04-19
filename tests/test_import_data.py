@@ -342,7 +342,6 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
                 assert message1 == outlist[1]
 
 
-
 @pytest.mark.file_operation
 def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
     test_insert = './tests/data_files/Ftp_file_test.xls'
@@ -350,7 +349,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
     dict_rep = {}
     dict_set = {}
     all_aliases = []
-    message0 = "ERROR: File not uploaded"
+    message0 = "WARNING: File not uploaded"
     message1 = "Please add original md5 values of the files"
     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
@@ -362,10 +361,8 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
             with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set)
-                args = imp.fdnDCIC.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
-                post_json_arg = args[0][2]
                 assert message0 == outlist[0]
                 assert message1 == outlist[1]
                 assert message2 == outlist[2]

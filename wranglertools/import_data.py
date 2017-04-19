@@ -603,7 +603,7 @@ def ftp_copy(filename_to_post, post_json):
     """Downloads the file from the server, and reformats post_json."""
     if not post_json.get("md5sum"):
         # if the file is from the server, the md5 should be supplied by the user.
-        print("\nERROR: File not uploaded")
+        print("\nWARNING: File not uploaded")
         print("Please add original md5 values of the files")
         return False, post_json, ""
     try:
@@ -617,7 +617,7 @@ def ftp_copy(filename_to_post, post_json):
         return True, post_json, new_file
     except:
         # if download did not work, delete the filename from the post json
-        print("ERROR: Download failed")
+        print("WARNING: Download failed")
         post_json.pop('filename')
         return False, post_json, ""
 
