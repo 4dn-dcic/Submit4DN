@@ -601,7 +601,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
 
 def ftp_copy(filename_to_post, post_json):
     """Downloads the file from the server, and reformats post_json."""
-    if not post_json.get("md5"):
+    if not post_json.get("md5sum"):
         # if the file is from the server, the md5 should be supplied by the user.
         print("\nERROR: File not uploaded")
         print("Please add original md5 values of the files")
