@@ -34,11 +34,10 @@ This is a dryrun-default script, run with --update, --patchall or both (--update
 
 By DEFAULT:
 If there is a uuid, @id, accession, or previously submitted alias in the document:
-it will ask if you want to PATCH that object
 Use '--patchall' if you want to patch ALL objects in your document and ignore that message
 
-If you want to upload new items(no object identifiers are found), in the document you need to use '--update'
-for POSTing to occur
+If you want to upload new items(no existing object identifiers are found),
+in the document you need to use '--update' for POSTing to occur
 
 Defining Object type:
     Each "sheet" of the excel file is named after the object type you are uploading,
@@ -58,6 +57,7 @@ containing the full path to the file you wish to attach
 For more details:
 please see README.rst
 
+To delete a field, use the keyword "*delete*" as the value.
 '''
 
 
@@ -389,9 +389,10 @@ def populate_post_json(post_json, connection, sheet):
     existing_data = get_existing(post_json, connection)
 
     # Combine aliases
-    if post_json.get('aliases') and existing_data.get('aliases'):
-        aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
-        post_json["aliases"] = aliases_to_post
+    if post_json.get('aliases') != ['*delete*']:
+        if post_json.get('aliases') and existing_data.get('aliases'):
+            aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
+            post_json["aliases"] = aliases_to_post
     # delete calculated property
     if post_json.get('@id'):
         del post_json['@id']
@@ -612,6 +613,50 @@ def ftp_copy(filename_to_post, post_json):
         return False, post_json, ""
 
 
+def delete_fields(post_json, connection, existing_data):
+    """Does a put to delete fields with the keyword '*delete*'."""
+    my_uuid = existing_data.get("uuid")
+    my_accesssion = existing_data.get("accession")
+    raw_json = fdnDCIC.get_FDN(my_uuid, connection, frame="raw")
+    # check if the uuid is in the raw_json
+    if not raw_json.get("uuid"):
+        raw_json["uuid"] = my_uuid
+    # if there is an accession, add it to raw so it does not created again
+    if my_accesssion:
+        if not raw_json.get("accession"):
+            raw_json["accession"] = my_accesssion
+    # find fields to be removed
+    fields_to_be_removed = []
+    for key, value in post_json.items():
+        if value in ['*delete*', ['*delete*']]:
+            fields_to_be_removed.append(key)
+    # if there are no delete fields, move along sir
+    if not fields_to_be_removed:
+        return post_json
+    # remove the fields from the raw_json that will be PUT
+    for rm_key in fields_to_be_removed:
+        if raw_json.get(rm_key):
+            del raw_json[rm_key]
+    # Do the put with raw_json
+    fdnDCIC.put_FDN(my_uuid, connection, raw_json)
+    # Remove them also from the post_json
+    for rm_key in fields_to_be_removed:
+        del post_json[rm_key]
+    return post_json
+
+
+def remove_deleted(post_json):
+    """Removes fields that have *delete* keyword,
+       used for Post and Validation."""
+    fields_to_be_removed = []
+    for key, value in post_json.items():
+        if value in ['*delete*', ['*delete*']]:
+            fields_to_be_removed.append(key)
+    for rm_key in fields_to_be_removed:
+        del post_json[rm_key]
+    return post_json
+
+
 def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
@@ -662,23 +707,32 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
+                # First check for fields to be deleted, and do put
+                post_json = delete_fields(post_json, connection, existing_data)
+                # Do the patch
                 e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
             else:
                 not_patched += 1
         # if there is no existing item try posting
         else:
             if update:
+                # If there are some fields with delete keyword,just ignore them
+                post_json = remove_deleted(post_json)
+                # Do the post
                 e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
             else:
                 not_posted += 1
+
         # add to success/error counters
         if e.get("status") == "error":  # pragma: no cover
-
             error_rep = error_report(e, sheet, all_aliases, connection)
             if error_rep:
                 error += 1
                 print(error_rep)
-            error += 1
+            else:
+                # if error is a weird one
+                print(e)
+                error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
                 patch += 1
@@ -689,8 +743,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         if not patchall and not update:
             # simulate patch/post
             if existing_data.get("uuid"):
+                post_json = remove_deleted(post_json)
                 e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
             else:
+                post_json = remove_deleted(post_json)
                 e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
             # check simulation status
             if e['status'] == 'success':
@@ -866,6 +922,7 @@ def get_all_aliases(workbook, sheets):
                 continue
             my_alias = row[alias_col]
             my_aliases = [x.strip() for x in my_alias.split(",")]
+            my_aliases = list(filter(None, my_aliases))
             if my_aliases:
                 all_aliases.extend(my_aliases)
     import collections
