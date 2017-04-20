@@ -600,7 +600,15 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
 
 
 def ftp_copy(filename_to_post, post_json):
+    """Downloads the file from the server, and reformats post_json."""
+    if not post_json.get("md5sum"):
+        # if the file is from the server, the md5 should be supplied by the user.
+        print("\nWARNING: File not uploaded")
+        print("Please add original md5 values of the files")
+        return False, post_json, ""
     try:
+        # download the file from the server
+        # return new file location to upload from
         print("\nINFO: Attempting to download file from this url to your computer before upload %s" % filename_to_post)
         with closing(urllib2.urlopen(filename_to_post)) as r:
             new_file = post_json['filename']
@@ -609,6 +617,7 @@ def ftp_copy(filename_to_post, post_json):
         return True, post_json, new_file
     except:
         # if download did not work, delete the filename from the post json
+        print("WARNING: Download failed")
         post_json.pop('filename')
         return False, post_json, ""
 

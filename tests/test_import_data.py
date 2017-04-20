@@ -316,15 +316,14 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 
 @pytest.mark.file_operation
 def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
-    test_insert = './tests/data_files/Ftp_file_test.xls'
+    test_insert = './tests/data_files/Ftp_file_test_md5.xls'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
     all_aliases = []
     message0_1 = "INFO: Attempting to download file from this url to your computer before upload "
     message0_2 = "ftp://speedtest.tele2.net/1KB.zip"
-    message1 = "calculating md5 sum for file 1KB.zip"
-    message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
+    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
@@ -340,6 +339,31 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
                 post_json_arg = args[0][2]
                 assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
                 assert message0_1 + message0_2 == outlist[0]
+                assert message1 == outlist[1]
+
+
+@pytest.mark.file_operation
+def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
+    test_insert = './tests/data_files/Ftp_file_test.xls'
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {}
+    all_aliases = []
+    message0 = "WARNING: File not uploaded"
+    message1 = "Please add original md5 values of the files"
+    message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
+    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock upload file and skip
+        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+            # mock posting new items
+            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+                imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
+                                 dict_load, dict_rep, dict_set)
+                out = capsys.readouterr()[0]
+                outlist = [i.strip() for i in out.split('\n') if i.strip()]
+                assert message0 == outlist[0]
                 assert message1 == outlist[1]
                 assert message2 == outlist[2]
 
