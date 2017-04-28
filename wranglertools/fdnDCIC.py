@@ -393,22 +393,17 @@ def order_FDN(input_xls, connection):
         print(Sheets_read, "not in sheet_order list, please update")
         Sheets.extend(Sheets_read)
     for sheet in Sheets:
-        print(sheet)
         useful = []
         active_sheet = bookread.sheet_by_name(sheet)
         first_row_values = active_sheet.row_values(rowx=0)
         # remove items from fields in xls
         useful = filter_and_sort(first_row_values)
-        print(useful)
         # move selected to front
         useful = move_to_front(useful)
-        print(useful)
         # move selected to end
         useful = move_to_end(useful)
-        print(useful)
         # reorder some items based on reorder list
         useful = switch_fields(useful, sheet)
-        print(useful)
         # fetch all items for common objects
         all_items = fetch_all_items(sheet, useful, connection)
         # create a new sheet and write the data
