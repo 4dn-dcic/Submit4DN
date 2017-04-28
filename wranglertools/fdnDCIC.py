@@ -281,10 +281,10 @@ reorder = [
     ['GenomicRegion', 'location_description', 'start_location'],
     ['BiosampleCellCulture', 'protocol_documents', 'protocol_SOP_deviations'],
     ['Biosample', 'biosample_relation.relationship_type', 'biosample_relation.biosample'],
-    ['Enzyme', 'catalog_number', 'attachment'],
-    ['Enzyme', 'recognition_sequence', 'attachment'],
-    ['Enzyme', 'site_length', 'attachment'],
-    ['Enzyme', 'cut_position', 'attachment'],
+    ['Enzyme', 'catalog_number', 'documents'],
+    ['Enzyme', 'recognition_sequence', 'documents'],
+    ['Enzyme', 'site_length', 'documents'],
+    ['Enzyme', 'cut_position', 'documents'],
     ['File', 'related_files.relationship_type', 'related_files.file'],
     ['Experiment', 'average_fragment_size', 'fragment_size_range'],
     ['Experiment', 'files', 'documents'],
@@ -393,17 +393,22 @@ def order_FDN(input_xls, connection):
         print(Sheets_read, "not in sheet_order list, please update")
         Sheets.extend(Sheets_read)
     for sheet in Sheets:
+        print(sheet)
         useful = []
         active_sheet = bookread.sheet_by_name(sheet)
         first_row_values = active_sheet.row_values(rowx=0)
         # remove items from fields in xls
         useful = filter_and_sort(first_row_values)
+        print(useful)
         # move selected to front
         useful = move_to_front(useful)
+        print(useful)
         # move selected to end
         useful = move_to_end(useful)
+        print(useful)
         # reorder some items based on reorder list
         useful = switch_fields(useful, sheet)
+        print(useful)
         # fetch all items for common objects
         all_items = fetch_all_items(sheet, useful, connection)
         # create a new sheet and write the data
