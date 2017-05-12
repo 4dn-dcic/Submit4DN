@@ -842,7 +842,7 @@ def upload_file(metadata_post_response, path):  # pragma: no cover
     print("Uploading file.")
     start = time.time()
     try:
-        subprocess.check_call(['aws', 's3', 'cp', path, creds['upload_url']], env=env)
+        subprocess.check_call(['aws', 's3', 'cp', '--only-show-errors', path, creds['upload_url']], env=env)
     except subprocess.CalledProcessError as e:
         # The aws command returns a non-zero exit code on error.
         print("Upload failed with exit code %d" % e.returncode)
