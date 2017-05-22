@@ -871,6 +871,7 @@ def loadxl_cycle(patch_list, connection):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
+            entry = delete_fields(entry, connection, entry)
             if entry != {}:
                 total = total + 1
                 fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
