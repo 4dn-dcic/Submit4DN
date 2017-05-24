@@ -66,14 +66,22 @@ def test_attachment_not_accepted():
 def test_reader(vendor_raw_xls_fields):
     readxls = imp.reader('./tests/data_files/Vendor.xls')
     for n, row in enumerate(readxls):
-        assert row == vendor_raw_xls_fields[n]
+        # reader deletes the trailing space in description (at index 3.8)
+        if n == 2:
+            assert row[8] + " " == vendor_raw_xls_fields[n][8]
+        else:
+            assert row == vendor_raw_xls_fields[n]
 
 
 @pytest.mark.file_operation
 def test_reader_with_sheetname(vendor_raw_xls_fields):
     readxls = imp.reader('./tests/data_files/Vendor.xls', 'Vendor')
     for n, row in enumerate(readxls):
-        assert row == vendor_raw_xls_fields[n]
+        # reader deletes the trailing space in description (at index 3.8)
+        if n == 2:
+            assert row[8] + " " == vendor_raw_xls_fields[n][8]
+        else:
+            assert row == vendor_raw_xls_fields[n]
 
 
 @pytest.mark.file_operation
@@ -95,6 +103,11 @@ def test_formatter_gets_ints_correctly():
     assert 6 == imp.data_formatter(6, 'integer')
 
 
+def test_formatter_gets_ints_correctly_with_gap():
+    assert 6 == imp.data_formatter('6 ', 'int')
+    assert 6 == imp.data_formatter(6, 'integer')
+
+
 def test_formatter_gets_floats_correctly():
     assert 6.0 == imp.data_formatter('6', 'num')
     assert 7.2456 == imp.data_formatter(7.2456, 'number')
@@ -103,6 +116,10 @@ def test_formatter_gets_floats_correctly():
 def test_formatter_gets_lists_correctly():
     assert ['1', '2', '3'] == imp.data_formatter('[1,  2 ,3]', 'list')
     assert ['1', '2', '3'] == imp.data_formatter("'[1,2,3]'", 'array')
+
+
+def test_formatter_gets_strings_correctly():
+    assert "test \t string" == imp.data_formatter("\n\t test \t string\t", 'string')
 
 
 def test_build_field_empty_is_skipped():

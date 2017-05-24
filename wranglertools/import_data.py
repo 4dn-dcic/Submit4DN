@@ -205,11 +205,11 @@ def cell_value(cell, datemode):
     if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
         raise ValueError(repr(cell), 'cell error')
     elif ctype == xlrd.XL_CELL_BOOLEAN:
-        return str(value).upper()
+        return str(value).upper().strip()
     elif ctype == xlrd.XL_CELL_NUMBER:
         if value.is_integer():
             value = int(value)
-        return str(value)
+        return str(value).strip()
     elif ctype == xlrd.XL_CELL_DATE:
         value = xlrd.xldate_as_tuple(value, datemode)
         if value[3:] == (0, 0, 0):
@@ -217,7 +217,7 @@ def cell_value(cell, datemode):
         else:  # pragma: no cover
             return datetime.datetime(*value).isoformat()
     elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-        return value
+        return value.strip()
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
@@ -236,9 +236,9 @@ def data_formatter(value, val_type, field=None):
             return [data.strip() for data in data_list]
         else:
             # default assumed to be string
-            return str(value)
+            return str(value).strip()
     except ValueError:  # pragma: no cover
-        return str(value)
+        return str(value).strip()
 
 
 def get_field_name(field_name):
