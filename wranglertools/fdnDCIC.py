@@ -341,11 +341,19 @@ def fetch_all_items(sheet, field_list, connection):
         items_list = []
         for item_uuid in items_uuids:
             items_list.append(get_FDN(item_uuid, connection))
-        # order items with lab and user (Lab (1-user_lab 2-dcic_lab), User
+
+        # order items with lab and user
         # the date ordering is already in place through search result (resp)
+        # 1) order by dcic lab
         items_list = sort_item_list(items_list, '/lab/dcic-lab/', 'lab')
+        # 2) sort by submitters lab
         items_list = sort_item_list(items_list, connection.lab, 'lab')
+        # 3) sort by submitters user
         items_list = sort_item_list(items_list, connection.user, 'submitted_by')
+        # 4) If biosurce, also sort by tier
+        if sheet == "Biosource":
+            items_list = sort_item_list(items_list, 'Tier 1', 'cell_line_tier')
+
         # filter for fields that exist on the excel sheet
         for item in items_list:
             item_info = []
