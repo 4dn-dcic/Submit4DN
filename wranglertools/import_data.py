@@ -874,7 +874,14 @@ def loadxl_cycle(patch_list, connection):
             entry = delete_fields(entry, connection, entry)
             if entry != {}:
                 total = total + 1
-                fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
+                e = fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
+                if e.get("status") == "error":  # pragma: no cover
+                    error_rep = error_report(e, n.upper(), [], connection)
+                    if error_rep:
+                        print(error_rep)
+                    else:
+                        # if error is a weird one
+                        print(e)
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
