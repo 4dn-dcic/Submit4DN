@@ -407,7 +407,7 @@ def populate_post_json(post_json, connection, sheet):
             post_json['filename'] = just_filename
             file_to_upload = True
         # if there is an existing file metadata, the status should be uploading to upload a new one
-    elif existing_data.get('status') in ['uploading', 'upload failed']:
+        elif existing_data.get('status') in ['uploading', 'upload failed']:
             post_json['filename'] = just_filename
             file_to_upload = True
         else:
