@@ -224,7 +224,7 @@ sheet_order = [
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
     "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
-    "FileSet", "FileSetCalibration",
+    "FileSet", "FileSetCalibration", "ImagingPath", "ExperimentMic",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg']
 
