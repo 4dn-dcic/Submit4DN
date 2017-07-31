@@ -97,8 +97,8 @@ class FieldInfo(object):
 
 # additional fields for experiment sheets to capture experiment_set related information
 exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 'Grouping for replicate experiments'),
-                    FieldInfo('*bio_rep_no', 'number', 'Biological replicate number'),
-                    FieldInfo('*tec_rep_no', 'number', 'Technical replicate number'),
+                    FieldInfo('*bio_rep_no', 'integer', 'Biological replicate number'),
+                    FieldInfo('*tec_rep_no', 'integer', 'Technical replicate number'),
                     FieldInfo('experiment_set', 'array of Item:ExperimentSet', 'Grouping for non-replicate experiments')
                     ]
 
