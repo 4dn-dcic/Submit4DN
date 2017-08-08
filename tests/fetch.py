@@ -2,7 +2,7 @@ import wranglertools.fdnDCIC as fdnDCIC
 import os
 
 
-def run(keypairs_file, schema_name):
+def run(keypairs_file, schema_name, schema_class_name):
 
     assert os.path.isfile(str(keypairs_file))
 
@@ -20,22 +20,25 @@ def run(keypairs_file, schema_name):
         raise e
     try:
         # response = fdnDCIC.get_FDN("/profiles/file_reference.json", connection, frame="object")
-        response = fdnDCIC.get_FDN("/" + schema_name, connection, frame=None)
-        # response = fdnDCIC.get_FDN("/search/?type=FileReference", connection, frame=None)
+        if schema_name is not None:
+            response = fdnDCIC.get_FDN(schema_name, connection)
+            print(response)
+        if schema_class_name is not None:
+            response = fdnDCIC.get_FDN("search/?type=" + schema_class_name, connection)
+            print(response)
     except Exception as e:
         print(e)
-        print("post error")
+        print("get error")
         raise e
-
-    print(response)
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="file_reference_upload")
+    parser = argparse.ArgumentParser(description="get all the objects in a schema")
     parser.add_argument('-k', '--keypairs_file', help='key-pairs file')
     parser.add_argument('-s', '--schema', help='schema name (e.g. file_reference, workflow)')
+    parser.add_argument('-c', '--schema_class', help='schema class name (e.g. FileReference, Workflow)')
     args = parser.parse_args()
 
-    run(args.keypairs_file, args.schema)
+    run(args.keypairs_file, args.schema, args.schema_class)

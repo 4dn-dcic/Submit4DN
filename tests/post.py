@@ -36,7 +36,7 @@ def run(keypairs_file, post_json_file, schema_name):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="file_reference_upload")
+    parser = argparse.ArgumentParser(description="file_reference_post")
     parser.add_argument('-k', '--keypairs_file', help='key-pairs file')
     parser.add_argument('-p', '--post_json_file', help='key-pairs file')
     parser.add_argument('-s', '--schema', help='schema name (e.g. file_reference, workflow)')
