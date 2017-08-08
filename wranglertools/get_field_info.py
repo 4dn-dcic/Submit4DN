@@ -110,7 +110,7 @@ def get_field_type(field):
             return "Item:" + field.get('linkTo')
         # if multiple objects are linked by "anyOf"
         if field.get('anyOf', ''):
-            links = filter(None, [d.get('linkTo', '') for d in field.get('anyOf')])
+            links = list(filter(None, [d.get('linkTo', '') for d in field.get('anyOf')]))
             if links:
                 return "Item:" + ' or '.join(links)
         # if not object return string
