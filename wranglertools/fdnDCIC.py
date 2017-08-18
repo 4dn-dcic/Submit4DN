@@ -225,8 +225,8 @@ sheet_order = [
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
     "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "ImagingPath", "ExperimentMic",
-    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", 'ExperimentChiapet',
-    "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg']
+    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
+    "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg']
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out
