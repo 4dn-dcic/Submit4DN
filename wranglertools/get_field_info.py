@@ -226,7 +226,6 @@ def main():  # pragma: no cover
     if key.error:
         sys.exit(1)
     connection = fdnDCIC.FDN_Connection(key)
-    connection = fdnDCIC.FDN_Connection(key)
     # test connection
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
