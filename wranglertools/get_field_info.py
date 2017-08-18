@@ -45,7 +45,7 @@ def getArgs():  # pragma: no cover
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument('--type',
-                        help="Add a separate --type for each type you want to get.",
+                        help="Add a separate --type for each type you want to get or use 'all' to get all sheets.",
                         action="append")
     parser.add_argument('--descriptions',
                         default=True,
@@ -231,6 +231,9 @@ def main():  # pragma: no cover
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
         return
+    if args.type == ['all']:
+        # import pdb; pdb.set_trace()
+        args.type = fdnDCIC.sheet_order
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
