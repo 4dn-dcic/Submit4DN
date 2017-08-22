@@ -13,6 +13,11 @@ keypairs = {
             }
 
 
+@pytest.fixture
+def mkey():
+    return fdnDCIC.FDN_Key(keypairs, "default")
+
+
 def test_nothing():
     assert(1)
 
@@ -53,6 +58,115 @@ def test_test_connection_fail():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
     assert connection.check is False
+
+
+def test_connection_success(mocker, mkey, returned_user_me_submit_for_one_lab,
+                            returned_lab_w_one_award):
+    email = 'bil022@ucsd.edu'
+    lab2chk = '/labs/bing-ren-lab/'
+    awd2chk = '/awards/1U54DK107977-01/'
+    with mocker.patch('wranglertools.fdnDCIC.requests.get',
+                      side_effect=[returned_user_me_submit_for_one_lab,
+                                   returned_lab_w_one_award]):
+        connection = fdnDCIC.FDN_Connection(mkey)
+        assert connection.check is True
+        assert connection.email == email
+        assert lab2chk in connection.labs
+        assert connection.lab == lab2chk
+        assert connection.award == awd2chk
+
+
+def test_connection_prompt_for_lab_award_no_prompt_for_one_each(
+    mocker, mkey, returned_user_me_submit_for_one_lab,
+        returned_lab_w_one_award):
+    lab2chk = '/labs/bing-ren-lab/'
+    awd2chk = '/awards/1U54DK107977-01/'
+    with mocker.patch('wranglertools.fdnDCIC.requests.get',
+                      side_effect=[returned_user_me_submit_for_one_lab,
+                                   returned_lab_w_one_award,
+                                   returned_lab_w_one_award]):
+        connection = fdnDCIC.FDN_Connection(mkey)
+        connection.prompt_for_lab_award()
+        assert connection.lab == lab2chk
+        assert connection.award == awd2chk
+
+
+def test_connection_for_user_with_no_submits_for(
+        mocker, mkey, returned_user_me_submit_for_no_lab):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get',
+                      return_value=returned_user_me_submit_for_no_lab):
+        connection = fdnDCIC.FDN_Connection(mkey)
+        assert connection.check is True
+        assert not connection.labs
+
+
+def test_connection_prompt_for_lab_award_multi_lab(
+    mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
+        returned_lab_w_one_award, returned_otherlab_w_one_award):
+    defaultlab = '/labs/bing-ren-lab/'
+    defaultaward = '/awards/1U54DK107977-01/'
+    chosenlab = '/labs/ben-ring-lab/'
+    chosenaward = '/awards/1U01ES017166-01/'
+    with mocker.patch('wranglertools.fdnDCIC.requests.get',
+                      side_effect=[returned_user_me_submit_for_two_labs,
+                                   returned_lab_w_one_award,
+                                   returned_otherlab_w_one_award]):
+        connection = fdnDCIC.FDN_Connection(mkey)
+        assert connection.lab == defaultlab
+        assert connection.award == defaultaward
+        # monkeypatch the "input" function, so that it returns "2".
+        # This simulates the user entering "2" in the terminal:
+        monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
+        connection.prompt_for_lab_award()
+        assert connection.lab == chosenlab
+        assert connection.award == chosenaward
+
+
+def test_connection_prompt_for_lab_award_multi_award(
+    mocker, monkeypatch, mkey, returned_user_me_submit_for_one_lab,
+        returned_lab_w_two_awards):
+    '''this not only tests if the correct award is chosen if given the
+        choice but also that multiple awards are linked
+        to a lab the first is set as the defaul on init
+    '''
+    defaultlab = '/labs/bing-ren-lab/'
+    defaultaward = '/awards/1U54DK107977-01/'
+    chosenaward = '/awards/1U01ES017166-01/'
+    with mocker.patch('wranglertools.fdnDCIC.requests.get',
+                      side_effect=[returned_user_me_submit_for_one_lab,
+                                   returned_lab_w_two_awards,
+                                   returned_lab_w_two_awards]):
+        connection = fdnDCIC.FDN_Connection(mkey)
+        assert connection.lab == defaultlab
+        assert connection.award == defaultaward
+        # monkeypatch the "input" function, so that it returns "2".
+        # This simulates the user entering "2" in the terminal:
+        monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
+        connection.prompt_for_lab_award()
+        assert connection.lab == defaultlab
+        assert connection.award == chosenaward
+
+
+def test_connection_prompt_for_lab_award_multi_lab_award(
+    mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
+        returned_lab_w_two_awards, returned_otherlab_w_two_awards):
+    defaultlab = '/labs/bing-ren-lab/'
+    defaultaward = '/awards/1U54DK107977-01/'
+    chosenlab = '/labs/ben-ring-lab/'
+    chosenaward = '/awards/7777777/'
+    with mocker.patch('wranglertools.fdnDCIC.requests.get',
+                      side_effect=[returned_user_me_submit_for_two_labs,
+                                   returned_lab_w_two_awards,
+                                   returned_otherlab_w_two_awards]):
+        connection = fdnDCIC.FDN_Connection(mkey)
+        assert connection.lab == defaultlab
+        assert connection.award == defaultaward
+        # monkeypatch the "input" function, so that it returns "2".
+        # This simulates the user entering "2" in the terminal:
+        monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
+        connection.prompt_for_lab_award()
+        assert connection.lab == chosenlab
+        assert connection.award == chosenaward
 
 
 def test_FDN_url():

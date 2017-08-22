@@ -36,6 +36,47 @@ class FDN_Key:
 
 
 class FDN_Connection(object):
+
+    def set_award(self, lab, dontPrompt=True):
+        '''Sets the award for the connection for use in import_data
+           if dontPrompt is False will ask the User to choose if there
+           are more than one award for the connection.lab otherwise
+           the first award for the lab will be used
+        '''
+        lab_url = self.server + lab + '?frame=embedded'
+        lab_resp = requests.get(lab_url, auth=self.auth)
+        try:
+            labjson = lab_resp.json()
+            if labjson.get('awards') is not None:
+                awards = labjson.get('awards')
+                if dontPrompt:
+                    self.award = awards[0]['link_id'].replace("~", "/")
+                    return
+                else:
+                    if len(awards) == 1:
+                        self.award = awards[0]['link_id'].replace("~", "/")
+                        return
+                    else:
+                        achoices = []
+                        print("Multiple awards for {labname}:".format(labname=lab))
+                        for i, awd in enumerate(awards):
+                            ch = str(i + 1)
+                            achoices.append(ch)
+                            print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['name']))
+                        awd_resp = input("Select the award for this connection {choices}: ".format(choices=achoices))
+                        if awd_resp not in achoices:
+                            print("Not a valid choice - using {default}".format(
+                                default=awards[0]['link_id'].replace("~", "/")))
+                            return
+                        else:
+                            self.award = awards[int(awd_resp) - 1]['link_id'].replace("~", "/")
+                            return
+            else:
+                self.award = None
+        except:
+            if not self.award:  # only reset if not already set
+                self.award = None
+
     def __init__(self, key):
         self.headers = {'content-type': 'application/json', 'accept': 'application/json'}
         self.server = key.server
@@ -43,25 +84,49 @@ class FDN_Connection(object):
             self.auth = ()
         else:
             self.auth = (key.authid, key.authpw)
+        self.check = False
         # check connection and find user uuid
         me_page = self.server + 'me' + '?frame=embedded'
         r = requests.get(me_page, auth=self.auth)
-        self.check = False
-        if r.status_code == 307:  # pragma: no cover
+        if r.status_code == 307:
             self.check = True
             res = r.json()
             self.user = res['@id']
             self.email = res['email']
-            try:
-                self.lab = res['submits_for'][0]['link_id'].replace("~", "/")
-                lab_url = self.server + self.lab + '?frame=embedded'
-                r_lab = requests.get(lab_url, auth=self.auth)
-                res_lab = r_lab.json()
-                self.award = res_lab['awards'][0]['link_id'].replace("~", "/")
-            except:
-                # to catch possible gaps in the code
+
+            if res.get('submits_for') is not None:
+                # get all the labs that the user making the connection submits_for
+                self.labs = [l['link_id'].replace("~", "/") for l in res['submits_for']]
+                # take the first one as default value for the connection - reset in
+                # import_data if needed by calling set_lab_award
+                self.lab = self.labs[0]
+                self.set_award(self.lab)  # set as default first
+            else:
+                self.labs = None
                 self.lab = None
                 self.award = None
+
+    def prompt_for_lab_award(self):
+        '''Check to see if user submits_for multiple labs or the lab
+            has multiple awards and if so prompts for the one to set
+            for the connection
+        '''
+        if self.labs:
+            if len(self.labs) > 1:
+                lchoices = []
+                print("Submitting for multiple labs:")
+                for i, lab in enumerate(self.labs):
+                    ch = str(i + 1)
+                    lchoices.append(ch)
+                    print("  ({choice}) {labname}".format(choice=ch, labname=lab))
+                lab_resp = input("Select the lab for this connection {choices}: ".format(choices=lchoices))
+                if lab_resp not in lchoices:
+                    print("Not a valid choice - using {default}".format(default=self.lab))
+                    return
+                else:
+                    self.lab = self.labs[int(lab_resp) - 1]
+
+        self.set_award(self.lab, False)
 
 
 class FDN_Schema(object):

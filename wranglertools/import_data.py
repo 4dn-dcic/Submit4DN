@@ -893,13 +893,20 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
         print("CONNECTION ERROR: Please check your keys.")
         sys.exit(1)
         return
-    print("Submitting User:  {server}".format(server=connection.email))
-    print("Submitting Lab:   {server}".format(server=connection.lab))
-    print("Submitting Award: {server}".format(server=connection.award))
+
     # check input file (xls)
     if not os.path.isfile(infile):
         print("File {filename} not found!".format(filename=infile))
         sys.exit(1)
+
+    # check for multi labs and awards and reset connection appropriately
+    if not remote:
+        connection.prompt_for_lab_award()
+
+    print("Submitting User:  {server}".format(server=connection.email))
+    print("Submitting Lab:   {server}".format(server=connection.lab))
+    print("Submitting Award: {server}".format(server=connection.award))
+
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:
         print("\n##############   DRY-RUN MODE   ################")
