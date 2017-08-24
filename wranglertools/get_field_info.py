@@ -83,6 +83,11 @@ def getArgs():  # pragma: no cover
                         default=True,
                         action='store_true',
                         help="A reference file is used for ordering and filtering fields")
+    parser.add_argument('--remote',
+                        default=False,
+                        action='store_true',
+                        help="will skip attribution prompt \
+                        needed for automated submissions")
     args = parser.parse_args()
     return args
 
@@ -230,6 +235,10 @@ def main():  # pragma: no cover
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
         return
+
+    if not args.remote:
+        connection.prompt_for_lab_award()
+
     if args.type == ['all']:
         # import pdb; pdb.set_trace()
         args.type = fdnDCIC.sheet_order

@@ -61,6 +61,7 @@ def connection_fake():
     connection.user = 'test_user'
     connection.award = 'test_award'
     connection.email = 'test@test.test'
+    connection.labs = ['test_lab']
     connection.check = True
     return connection
 
@@ -323,4 +324,136 @@ def vendor_raw_xls_fields():
 @pytest.fixture
 def returned_vendor_existing_item():
     data = {'title': 'Test Vendor2', 'date_created': '2016-11-10T16:14:28.097832+00:00', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/', 'aliases': ['dcic:vendor_test2'], 'name': 'test-vendor', 'status': 'in review by lab', 'uuid': 'ab487748-5904-42c8-9a8b-47f82df9f049', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'url': 'http://www.test_vendor.com', '@id': '/vendors/test-vendor/', 'description': 'test description'}
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_user_me_submit_for_no_lab():
+    data = {
+        'first_name': 'Bin', 'last_name': 'Li', 'email': 'bil022@ucsd.edu', 'viewing_groups': ['4DN'],
+        'title': 'Bin Li', 'display_title': 'Bin Li', 'uuid': 'da4f53e5-4e54-4ae7-ad75-ba47316a8bfa',
+        '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
+        'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current'
+    }
+    return MockedResponse(data, 307)
+
+
+@pytest.fixture
+def returned_user_me_submit_for_one_lab():
+    data = {
+        'first_name': 'Bin', 'last_name': 'Li', 'email': 'bil022@ucsd.edu', 'viewing_groups': ['4DN'],
+        'title': 'Bin Li', 'display_title': 'Bin Li', 'uuid': 'da4f53e5-4e54-4ae7-ad75-ba47316a8bfa',
+        '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
+        'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current',
+        'submits_for': [
+            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~'}
+        ]
+    }
+    return MockedResponse(data, 307)
+
+
+@pytest.fixture
+def returned_user_me_submit_for_two_labs():
+    data = {
+        'first_name': 'Bin', 'last_name': 'Li', 'email': 'bil022@ucsd.edu', 'viewing_groups': ['4DN'],
+        'title': 'Bin Li', 'display_title': 'Bin Li', 'uuid': 'da4f53e5-4e54-4ae7-ad75-ba47316a8bfa',
+        '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
+        'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current',
+        'submits_for': [
+            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~'},
+            {'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~'}
+        ]
+    }
+    return MockedResponse(data, 307)
+
+
+@pytest.fixture
+def returned_lab_w_one_award():
+    data = {
+        'awards': [
+            {
+                'viewing_group': '4DN', 'title': 'SAN DIEGO CENTER FOR 4D NUCLEOME RESEARCH',
+                'link_id': '~awards~1U54DK107977-01~', '@id': '/awards/1U54DK107977-01/',
+                'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+                'status': 'current', 'uuid': '4871e338-b07d-4665-a00a-357648e5bad6', 'display_title': 'SAN DIEGO CENTER FOR 4D NUCLEOME RESEARCH',
+                'name': '1U54DK107977-01', '@type': ['Award', 'Item'], 'project': '4DN'
+            }
+        ],
+        'title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', 'institute_label': 'UCSD', '@id': '/labs/bing-ren-lab/',
+        'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+        'status': 'current', 'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD',
+        'name': 'bing-ren-lab', '@type': ['Lab', 'Item']
+    }
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_otherlab_w_one_award():
+    data = {
+        'awards': [
+            {
+                'viewing_group': 'Not 4DN', 'title': 'THE SAN DIEGO EPIGENOME CENTER',
+                'link_id': '~awards~1U01ES017166-01~', '@id': '/awards/1U01ES017166-01/',
+                'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+                'status': 'current', 'uuid': '1dbecc95-ec91-4081-a862-c79d18a8d0bd', 'display_title': 'THE SAN DIEGO EPIGENOME CENTER',
+                'name': '1U01ES017166-01', '@type': ['Award', 'Item'], 'project': 'External'
+            }
+        ],
+        'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~',
+        'title': 'Ben Ring, USDC', '@id': '/labs/ben-ring-lab/',
+        'status': 'current', 'name': 'ben-ring-lab', '@type': ['Lab', 'Item']
+    }
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_lab_w_two_awards():
+    data = {
+        'awards': [
+            {
+                'viewing_group': '4DN', 'title': 'SAN DIEGO CENTER FOR 4D NUCLEOME RESEARCH',
+                'link_id': '~awards~1U54DK107977-01~', '@id': '/awards/1U54DK107977-01/',
+                'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+                'status': 'current', 'uuid': '4871e338-b07d-4665-a00a-357648e5bad6', 'display_title': 'SAN DIEGO CENTER FOR 4D NUCLEOME RESEARCH',
+                'name': '1U54DK107977-01', '@type': ['Award', 'Item'], 'project': '4DN'
+            },
+            {
+                'viewing_group': 'Not 4DN', 'title': 'THE SAN DIEGO EPIGENOME CENTER',
+                'link_id': '~awards~1U01ES017166-01~', '@id': '/awards/1U01ES017166-01/',
+                'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+                'status': 'current', 'uuid': '1dbecc95-ec91-4081-a862-c79d18a8d0bd', 'display_title': 'THE SAN DIEGO EPIGENOME CENTER',
+                'name': '1U01ES017166-01', '@type': ['Award', 'Item'], 'project': 'External'
+            }
+        ],
+        'title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', 'institute_label': 'UCSD', '@id': '/labs/bing-ren-lab/',
+        'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+        'status': 'current', 'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD',
+        'name': 'bing-ren-lab', '@type': ['Lab', 'Item']
+    }
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_otherlab_w_two_awards():
+    data = {
+        'awards': [
+            {
+                'viewing_group': 'Not 4DN', 'title': 'THE SAN DIEGO EPIGENOME CENTER',
+                'link_id': '~awards~1U01ES017166-01~', '@id': '/awards/1U01ES017166-01/',
+                'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+                'status': 'current', 'uuid': '1dbecc95-ec91-4081-a862-c79d18a8d0bd', 'display_title': 'THE SAN DIEGO EPIGENOME CENTER',
+                'name': '1U01ES017166-01', '@type': ['Award', 'Item'], 'project': 'External'
+            },
+            {
+                'viewing_group': 'Not 4DN', 'title': 'THE OTHER AWARD',
+                'link_id': '~awards~7777777~', '@id': '/awards/7777777/',
+                'pi': {'link_id': '~users~e3159ffc-a5a9-43a1-8cfa-90b776c39788~', 'uuid': 'e3159ffc-a5a9-43a1-8cfa-90b776c39788', 'display_title': 'Bing Ren'},
+                'status': 'current', 'uuid': '2dbecc95-ec91-4081-a862-c79d18a8d0bd', 'display_title': 'THE OTHER AWARD',
+                'name': '7777777', '@type': ['Award', 'Item'], 'project': 'External'
+            }
+        ],
+        'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~',
+        'title': 'Ben Ring, USDC', '@id': '/labs/ben-ring-lab/',
+        'status': 'current', 'name': 'ben-ring-lab', '@type': ['Lab', 'Item']
+    }
     return MockedResponse(data, 200)
