@@ -111,6 +111,8 @@ list_of_loadxl_fields = [
     ['FileFastq', ['related_files']],
     ['FileFasta', ['related_files']],
     ['FileReference', ['related_files']],
+    ['FileCalibration', ['related_files']],
+    ['FileMicroscopy', ['related_files']],
     ['FileProcessed', ['related_files']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
