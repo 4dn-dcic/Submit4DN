@@ -917,7 +917,10 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
         print("##############   DRY-RUN MODE   ################\n")
     else:
         if not remote:
-            response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+            try:
+                response = raw_input("Do you want to continue with these credentials? (Y/N): ") or "N"
+            except NameError:
+                response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
             if response.lower() not in ["y", "yes"]:
                 sys.exit(1)
 

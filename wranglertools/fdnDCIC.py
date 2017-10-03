@@ -63,7 +63,8 @@ class FDN_Connection(object):
                             ch = str(i + 1)
                             achoices.append(ch)
                             print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['name']))
-                        awd_resp = input("Select the award for this connection {choices}: ".format(choices=achoices))
+                        awd_resp = str(input("Select the award for this connection {choices}: "
+                                             .format(choices=achoices)))
                         if awd_resp not in achoices:
                             print("Not a valid choice - using {default}".format(
                                 default=awards[0]['link_id'].replace("~", "/")))
@@ -119,7 +120,7 @@ class FDN_Connection(object):
                     ch = str(i + 1)
                     lchoices.append(ch)
                     print("  ({choice}) {labname}".format(choice=ch, labname=lab))
-                lab_resp = input("Select the lab for this connection {choices}: ".format(choices=lchoices))
+                lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
                 if lab_resp not in lchoices:
                     print("Not a valid choice - using {default}".format(default=self.lab))
                     return
