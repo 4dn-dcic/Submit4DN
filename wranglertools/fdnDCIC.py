@@ -63,7 +63,7 @@ class FDN_Connection(object):
                             ch = str(i + 1)
                             achoices.append(ch)
                             print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
-                        awd_resp = str(input("Select the award for this connection {choices}: ".format(choices=achoices)))
+                        awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
                         if awd_resp not in achoices:
                             print("Not a valid choice - using {default}".format(default=awards[0]['@id']))
                             return
