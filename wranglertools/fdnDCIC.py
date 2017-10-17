@@ -50,11 +50,11 @@ class FDN_Connection(object):
             if labjson.get('awards') is not None:
                 awards = labjson.get('awards')
                 if dontPrompt:
-                    self.award = awards[0]['link_id'].replace("~", "/")
+                    self.award = awards[0]['@id']
                     return
                 else:
                     if len(awards) == 1:
-                        self.award = awards[0]['link_id'].replace("~", "/")
+                        self.award = awards[0]['@id']
                         return
                     else:
                         achoices = []
@@ -62,15 +62,13 @@ class FDN_Connection(object):
                         for i, awd in enumerate(awards):
                             ch = str(i + 1)
                             achoices.append(ch)
-                            print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['name']))
-                        awd_resp = str(input("Select the award for this connection {choices}: "
-                                             .format(choices=achoices)))
+                            print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
+                        awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
                         if awd_resp not in achoices:
-                            print("Not a valid choice - using {default}".format(
-                                default=awards[0]['link_id'].replace("~", "/")))
+                            print("Not a valid choice - using {default}".format(default=awards[0]['@id']))
                             return
                         else:
-                            self.award = awards[int(awd_resp) - 1]['link_id'].replace("~", "/")
+                            self.award = awards[int(awd_resp) - 1]['@id']
                             return
             else:
                 self.award = None
