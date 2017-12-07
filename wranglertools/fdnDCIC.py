@@ -288,9 +288,12 @@ sheet_order = [
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
     "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
     "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
-    "FileSet", "FileSetCalibration", "FileMicroscopy", "ImagingPath", "ExperimentMic",
+    "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
+    "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
+    "ImagingPath", "ExperimentMic",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
-    "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg']
+    "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg',
+    'WorkflowRunAwsem']
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out
@@ -374,8 +377,13 @@ def switch_fields(list_names, sheet):
 # if object name is in the following list, fetch all current/released items and add to xls
 # if experiment is ever added to this list, experiment set related fields might cause some problems
 fetch_items = {
-    "Document": "document", "Protocol": "protocol", "Enzyme": "enzyme", "Biosource": "biosource",
-    "Publication": "publication", "Vendor": "vendor"}
+    "Document": "document",
+    "Protocol": "protocol",
+    "Enzyme": "enzyme",
+    "Biosource": "biosource",
+    "Publication": "publication",
+    "Vendor": "vendor"
+    }
 
 
 def sort_item_list(item_list, item_id, field):

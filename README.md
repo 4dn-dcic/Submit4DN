@@ -66,7 +66,6 @@ If you prefer to use a different file location or a different key name (not "def
 ## Generating data submission forms
 To create the data submission xls forms, you can use `get_field_info`.
 It will accept the following parameters:
-
     --type           use for each sheet that you want to add to the excel workbook
     --descriptions   adds the descriptions in the second line (by default True)
     --enums          adds the enum options in the third line (by default True)
@@ -84,13 +83,13 @@ get_field_info --type Biosample --comments --outfile biosample.xls
 
 ```
 
-Complete list of sheets:
+Example list of sheets:
 ~~~~
 get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
 
 ~~~~
 
-Complete list of sheets: (using python scripts)
+Example list of sheets: (using python scripts)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile AllItems.xls
 
