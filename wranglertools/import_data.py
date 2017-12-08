@@ -363,6 +363,7 @@ def build_patch_json(fields, fields2types):
         patch_field = build_field(field, field_data, field_type)
         if patch_field is not None:
             if is_embedded_field(field):
+                #### HERE STARTS THE BUGGY BIT
                 top_field = get_field_name(field)
                 if patch_data.get(top_field, None) is None:
                     # initially create an empty list for embedded field
@@ -370,6 +371,8 @@ def build_patch_json(fields, fields2types):
                 # we can have multiple embedded objects (they are numbered in excel)
                 subobject_num = get_sub_field_number(field)
                 if subobject_num >= len(patch_data[top_field]):
+                    # THIS SEEMS TO BE ASSUMING AN ORDERED DICT?
+                    # NEED DIFFERENT WAY TO ADD EMBEDDED ITEMS CORRECTLY TO A FIELD
                     # add a new row to the list
                     patch_data[top_field].append(patch_field)
                 else:
