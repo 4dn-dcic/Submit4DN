@@ -22,6 +22,7 @@ import os
 import time
 import subprocess
 import shutil
+from collections import OrderedDict
 try:
     import urllib2
 except:
@@ -363,7 +364,6 @@ def build_patch_json(fields, fields2types):
         patch_field = build_field(field, field_data, field_type)
         if patch_field is not None:
             if is_embedded_field(field):
-                #### HERE STARTS THE BUGGY BIT
                 top_field = get_field_name(field)
                 if patch_data.get(top_field, None) is None:
                     # initially create an empty list for embedded field
@@ -371,8 +371,6 @@ def build_patch_json(fields, fields2types):
                 # we can have multiple embedded objects (they are numbered in excel)
                 subobject_num = get_sub_field_number(field)
                 if subobject_num >= len(patch_data[top_field]):
-                    # THIS SEEMS TO BE ASSUMING AN ORDERED DICT?
-                    # NEED DIFFERENT WAY TO ADD EMBEDDED ITEMS CORRECTLY TO A FIELD
                     # add a new row to the list
                     patch_data[top_field].append(patch_field)
                 else:
@@ -572,7 +570,6 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-
     e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
     if file_to_upload:
         # get s3 credentials
@@ -699,7 +696,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         values.pop(0)
         total += 1
         # build post_json and get existing if available
-        post_json = dict(zip(keys, values))
+        post_json = OrderedDict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
