@@ -210,9 +210,10 @@ def search_FDN(sheet, field, value, connection):
     return response.json()
 
 
-def patch_FDN(obj_id, connection, patch_input, delete_fields=[]):
+def patch_FDN(obj_id, connection, patch_input, delete_fields=None):
     '''PATCH an existing FDN object and return the response JSON
     '''
+    delete_fields = delete_fields or []
     json_payload = format_to_json(patch_input)
     url = connection.server + obj_id
     # if there are fields to delete, they will be added to delete_fields paramater in the url
@@ -268,8 +269,9 @@ def new_FDN_check(connection, collection_name, post_input):
     return response.json()
 
 
-def patch_FDN_check(obj_id, connection, patch_input, delete_fields=[]):
+def patch_FDN_check(obj_id, connection, patch_input, delete_fields=None):
     '''Test PATCH an existing FDN object and return the response JSON'''
+    delete_fields = delete_fields or []
     json_payload = format_to_json(patch_input)
     url = connection.server + obj_id + "/?check_only=True"
     # if there are fields to delete, they will be added to delete_fields paramater in the url
