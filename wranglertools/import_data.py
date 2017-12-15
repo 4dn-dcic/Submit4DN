@@ -860,10 +860,10 @@ def loadxl_cycle(patch_list, connection):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
-            entry = delete_fields(entry, connection, entry)
+            entry, rm_list_2 = list_delete_fields(entry)
             if entry != {}:
                 total = total + 1
-                e = fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
+                e = fdnDCIC.patch_FDN(entry["uuid"], connection, entry, rm_list_2)
                 if e.get("status") == "error":  # pragma: no cover
                     error_rep = error_report(e, n.upper(), [], connection)
                     if error_rep:
