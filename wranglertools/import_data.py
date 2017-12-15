@@ -624,6 +624,25 @@ def ftp_copy(filename_to_post, post_json):
         return False, post_json, ""
 
 
+def list_delete_fields(post_json):
+    """Make list of fields to delete and clear them from the post_json."""
+    # find fields to be removed
+    fields_to_be_removed = []
+    for key, value in post_json.items():
+        if value in ['*delete*', ['*delete*']]:
+            fields_to_be_removed.append(key)
+
+    # if there are no delete fields, move along sir
+    if not fields_to_be_removed:
+        return post_json, []
+
+    # remove the fields from the raw_json that will be PUT
+    for rm_key in fields_to_be_removed:
+        del post_json[rm_key]
+
+    return post_json, fields_to_be_removed
+
+
 def delete_fields(post_json, connection, existing_data):
     """Does a put to delete fields with the keyword '*delete*'."""
     my_uuid = existing_data.get("uuid")
