@@ -210,11 +210,21 @@ def search_FDN(sheet, field, value, connection):
     return response.json()
 
 
-def patch_FDN(obj_id, connection, patch_input):
+def patch_FDN(obj_id, connection, patch_input, delete_fields=[]):
     '''PATCH an existing FDN object and return the response JSON
     '''
     json_payload = format_to_json(patch_input)
     url = connection.server + obj_id
+    # if there are fields to delete, they will be added to delete_fields paramater in the url
+    # the structure is comma separated keywords.
+    if delete_fields:
+        # some object ids can have the last character "/" already like /labs/dcic_lab/
+        # take care when appending
+        if url[-1] == '/':
+            url = url + '?delete_fields=' + ','.join(delete_fields)
+        else:
+            url = url + '/?delete_fields=' + ','.join(delete_fields)
+
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
         try:
@@ -258,10 +268,14 @@ def new_FDN_check(connection, collection_name, post_input):
     return response.json()
 
 
-def patch_FDN_check(obj_id, connection, patch_input):
+def patch_FDN_check(obj_id, connection, patch_input, delete_fields=[]):
     '''Test PATCH an existing FDN object and return the response JSON'''
     json_payload = format_to_json(patch_input)
     url = connection.server + obj_id + "/?check_only=True"
+    # if there are fields to delete, they will be added to delete_fields paramater in the url
+    # the structure is comma separated keywords.
+    if delete_fields:
+        url = url + '&delete_fields=' + ','.join(delete_fields)
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     return response.json()
 
