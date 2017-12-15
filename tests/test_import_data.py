@@ -607,5 +607,3 @@ def test_list_deleted_field():
     assert 'description' in rm_list
     assert 'dbxrefs' in rm_list
     assert len(new_json) == 3
-
-
