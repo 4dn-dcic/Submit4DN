@@ -111,6 +111,8 @@ Please refer to the submission guidelines provided by data wranglers, and get fa
 
 <img src="https://media.giphy.com/media/l0HlN5Y28D9MzzcRy/giphy.gif" width="200" height="200" />
 
+`--remote` is an option that will skip any prompt before submission, and useful if you are submitting LSF jobs where you expect to run automatically. You should take care of your submitting lab and award if you have multiple, since the first ones on your list will be assigned as default. 
+
 # Development
 Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format:
 
