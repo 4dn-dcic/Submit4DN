@@ -382,6 +382,39 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
+def build_tibanna_json(fields, fields2types):
+    """Create the data entry dictionary from the fields."""
+    # convert array types to array
+    for field, ftype in fields2types.items():
+        if 'array' in ftype:
+            fields2types[field] = 'array'
+
+    patch_data = {}
+    for field, field_data in fields.items():
+        field_type = None
+        if fields2types is not None:
+            field_type = fields2types[field]
+        patch_field = build_field(field, field_data, field_type)
+        if patch_field is not None:
+            if is_embedded_field(field):
+                top_field = get_field_name(field)
+                if patch_data.get(top_field, None) is None:
+                    # initially create an empty list for embedded field
+                    patch_data[top_field] = []
+                # we can have multiple embedded objects (they are numbered in excel)
+                subobject_num = get_sub_field_number(field)
+                if subobject_num >= len(patch_data[top_field]):
+                    # add a new row to the list
+                    patch_data[top_field].append(patch_field)
+                else:
+                    # update existing object in the list
+                    patch_data[top_field][subobject_num].update(patch_field)
+            else:
+                # normal case, just update the dictionary
+                patch_data.update(patch_field)
+    return patch_data
+
+
 def populate_post_json(post_json, connection, sheet):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
@@ -912,7 +945,6 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:
         print("\n##############   DRY-RUN MODE   ################")
-        print("Since there are no '--update' or '--patchall' arguments, you are running the DRY-RUN validation")
         print("The validation will only check for schema rules, but not for object relations")
         print("##############   DRY-RUN MODE   ################\n")
     else:

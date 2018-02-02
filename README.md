@@ -95,6 +95,21 @@ python3 -m wranglertools.get_field_info --type Publication --type Document --typ
 
 ~~~~
 
+Example list of sheets: (Experiment seq)
+~~~~
+python3 -m wranglertools.get_field_info --type Publication --type D ocument --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
+
+~~~~
+
+Example list of sheets: (Experiment seq simple)
+~~~~
+python3 -m wranglertools.get_field_info --type Publication --type Protocol --type BiosampleCellCulture --type Biosource --type Biosample --type FileFastq --type ExperimentSeq --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_simple.xls
+
+~~~~
+
+
+
+
 ## Data submission
 After you fill out the data submission forms, you can use `import_data` to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
 
@@ -111,7 +126,7 @@ Please refer to the submission guidelines provided by data wranglers, and get fa
 
 <img src="https://media.giphy.com/media/l0HlN5Y28D9MzzcRy/giphy.gif" width="200" height="200" />
 
-`--remote` is an option that will skip any prompt before submission, and useful if you are submitting LSF jobs where you expect to run automatically. You should take care of your submitting lab and award if you have multiple, since the first ones on your list will be assigned as default. 
+`--remote` is an option that will skip any prompt before submission, and useful if you are submitting LSF jobs where you expect to run automatically. You should take care of your submitting lab and award if you have multiple, since the first ones on your list will be assigned as default.
 
 # Development
 Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format:
