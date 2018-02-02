@@ -848,6 +848,58 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                       error=error, patch=patch, not_patched=not_patched))
 
 
+def user_workflow_reader(datafile, sheet, connection, all_aliases):
+    """takes the user workflow runsheet and ony post it to fourfront endpoint."""
+    row = reader(datafile, sheetname=sheet)
+    keys = next(row)  # grab the first row of headers
+    types = next(row)  # grab second row with type info
+    # remove title column
+    keys.pop(0)
+    types.pop(0)
+    # set counters to 0
+    total = 0
+    error = 0
+    post = 0
+    not_posted = 0
+    # iterate over the rows
+    for values in row:
+        # Rows that start with # are skipped
+        if values[0].startswith("#"):
+            continue
+        # Get rid of the first empty cell
+        values.pop(0)
+        total += 1
+        # build post_json and get existing if available
+        post_list = zip(keys, types, values)
+        post_json = build_tibanna_json(post_list)
+
+        if post_json:
+            # do the magic
+            e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            if e.get("status") == "success":
+                post += 1
+            elif e.get("status") == "error":  # pragma: no cover
+                error_rep = error_report(e, sheet, all_aliases, connection)
+                if error_rep:
+                    error += 1
+                    print(error_rep)
+                else:
+                    # if error is a weird one
+                    print(e)
+                    error += 1
+            else:
+                # the response had a weird organization, no status in it
+                print(e)
+                error += 1
+        else:
+            error += 1
+    # print final report
+    print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
+    {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
+          .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
+                  error=error, patch="-", not_patched="-"))
+
+
 def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
     url = "%s%s/upload/" % (connection.server, file_id)
     req = requests.post(url,
@@ -895,6 +947,10 @@ def order_sorter(list_of_names):
     for i in sheet_order:
         if i in list_of_names:
             ret_list.append(i)
+    # we add the list of user supplied workflows at the end
+    # expected list if multiple; ['user_workflow_1', 'user_workflow_2']
+    user_workflows = sorted([sh for sh in list_of_names if sh.startswith('user_workflow')])
+    ret_list.extend(user_workflows)
     if list(set(list_of_names)-set(ret_list)) != []:
         missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
         print("WARNING!", missing_items, "sheet(s) are not loaded")
@@ -945,6 +1001,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:
         print("\n##############   DRY-RUN MODE   ################")
+        print("Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation")
         print("The validation will only check for schema rules, but not for object relations")
         print("##############   DRY-RUN MODE   ################\n")
     else:
@@ -1025,6 +1082,11 @@ def main():  # pragma: no cover
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
+        elif n.lower().startswith('user_workflow'):
+            if args.update:
+                user_workflow_reader(args.infile, n, connection, all_aliases)
+            else:
+                print('user workflow sheets will only be processed with the --update argument')
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
