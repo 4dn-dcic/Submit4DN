@@ -286,7 +286,7 @@ def md5(path):
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
     "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
-    "GenomicRegion", "Target", "Modification", "Image", "BiosampleCellCulture", "Biosample",
+    "GenomicRegion", "Target", "Antibody", "Modification", "Image", "BiosampleCellCulture", "Biosample",
     "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
