@@ -871,7 +871,8 @@ def build_tibanna_json(keys, types, values, connection):
                  "metadata_only": True,
                  "output_files": []
                 }
-    for param in post_json:
+    # sorting only needed for the mock lists in tests to work - not cool
+    for param in sorted(post_json.keys()):
         # insert wf uuid and app_name
         if param == 'workflow_uuid':
             template['workflow_uuid'] = post_json['workflow_uuid']
@@ -882,11 +883,10 @@ def build_tibanna_json(keys, types, values, connection):
             template["output_files"].append(format_file(param, post_json[param], connection))
         else:
             template["wfr_meta"][param] = post_json[param]
-    print(template)
     return template
 
 
-def user_workflow_reader(datafile, sheet, connection, all_aliases):
+def user_workflow_reader(datafile, sheet, connection):
     """takes the user workflow runsheet and ony post it to fourfront endpoint."""
     row = reader(datafile, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
@@ -1116,7 +1116,7 @@ def main():  # pragma: no cover
                          dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower().startswith('user_workflow'):
             if args.update:
-                user_workflow_reader(args.infile, n, connection, all_aliases)
+                user_workflow_reader(args.infile, n, connection)
             else:
                 print('user workflow sheets will only be processed with the --update argument')
         else:

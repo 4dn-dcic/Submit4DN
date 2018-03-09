@@ -528,6 +528,74 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
             assert args[0][2] == final_post
 
 
+@pytest.mark.file_operation
+def test_user_workflow_reader_wfr_post(capsys, mocker, connection):
+    test_insert = './tests/data_files/Pseudo_wfr_insert.xls'
+    sheet_name = 'user_workflow_1'
+
+    message = "USER_WORKFLOW_1(1)         :  1 posted / 0 not posted       - patched / - not patched, 0 errors"
+    e = {'status': 'SUCCEEDED'}
+    final_post = {'wfr_meta':
+                  {'lab': 'test_lab',
+                   'submitted_by': 'test_user',
+                   'description': 'testing testing',
+                   'award': 'test_award',
+                   'aliases': [u'dcic:test_wfrs0004']},
+                  'parameters': {},
+                  'args': {},
+                  'app_name': None,
+                  'metadata_only': True,
+                  'output_files': [
+                      {'uuid': 'b0aaf32c-58de-475a-a222-3f16d3cb68f4',
+                       'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
+                       'workflow_argument_name': 'annotated_bam',
+                       'object_key': '4DNFIVQPE4WT.bam'},
+                      {'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71',
+                       'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
+                       'workflow_argument_name':
+                       'filtered_pairs',
+                       'object_key': '4DNFIGOJW3XZ.pairs.gz'}],
+                  'config': {},
+                  'workflow_uuid': '023bfb3e-9a8b-42b9-a9d4-216079526f68',
+                  'input_files': [{'uuid': '4a6d10ee-2edb-4402-a98f-0edb1d58f5e9',
+                                   'bucket_name': 'elasticbeanstalk-fourfront-webdev-files',
+                                   'workflow_argument_name': 'chromsize',
+                                   'object_key': '4DNFI823LSII.chrom.sizes'},
+                                  {'uuid': ['11c12207-6684-4346-9038-e7819dfde4e5',
+                                            '4d55623a-1698-44c2-b111-1aa1379edc57'],
+                                   'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
+                                   'workflow_argument_name': 'input_bams',
+                                   'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam']}]}
+    # mock fetching existing info, return None
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        # mock formating files
+        with mocker.patch('wranglertools.import_data.format_file',
+                          side_effect=[
+                              {'bucket_name': 'elasticbeanstalk-fourfront-webdev-files',
+                               'workflow_argument_name': 'chromsize', 'object_key': '4DNFI823LSII.chrom.sizes',
+                               'uuid': '4a6d10ee-2edb-4402-a98f-0edb1d58f5e9'},
+                              {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
+                               'workflow_argument_name': 'input_bams',
+                               'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam'],
+                               'uuid': ['11c12207-6684-4346-9038-e7819dfde4e5',
+                                        '4d55623a-1698-44c2-b111-1aa1379edc57']},
+                              {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
+                               'workflow_argument_name': 'annotated_bam', 'object_key': '4DNFIVQPE4WT.bam',
+                               'uuid': 'b0aaf32c-58de-475a-a222-3f16d3cb68f4'},
+                              {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
+                               'workflow_argument_name': 'filtered_pairs', 'object_key': '4DNFIGOJW3XZ.pairs.gz',
+                               'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71'}
+                            ]):
+            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+                imp.user_workflow_reader(test_insert, sheet_name, connection)
+                args = imp.fdnDCIC.new_FDN.call_args
+                out = capsys.readouterr()[0]
+                print([i for i in args])
+                assert message == out.strip()
+                for a_key in args[0][2]:
+                    assert args[0][2][a_key] == final_post[a_key]
+
+
 def test_order_sorter(capsys):
     test_list = ["ExperimentHiC", "BiosampleCellCulture", "Biosource", "Document", "Modification",
                  "IndividualMouse", "Biosample", "Lab", "User", "Trouble"]
