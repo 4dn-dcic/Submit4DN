@@ -106,7 +106,12 @@ def getArgs():  # pragma: no cover
 list_of_loadxl_fields = [
     ['Document', ['references']],
     ['User', ['lab', 'submits_for']],
+    ['Experiment', ['experiment_relation']],
     ['ExperimentHiC', ['experiment_relation']],
+    ['ExperimentSeq', ['experiment_relation']],
+    ['ExperimentDamid', ['experiment_relation']],
+    ['ExperimentChiapet', ['experiment_relation']],
+    ['ExperimentAtacseq', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
     ['ExperimentRepliseq', ['experiment_relation']],
     ['FileFastq', ['related_files']],
@@ -815,6 +820,117 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                       error=error, patch=patch, not_patched=not_patched))
 
 
+def format_file(param, files, connection):
+
+    template = {"bucket_name": "",
+                "workflow_argument_name": param.split('--')[-1]}
+    # find bucket
+    health_page = requests.get(connection.server + 'health', auth=connection.auth, headers=connection.headers)
+    bucket_main = health_page.json().get('file_upload_bucket')
+    resp = {}
+    # if it is a list of files, uuid and object key are list objects
+    if isinstance(files, list):
+        object_key = []
+        uuid = []
+        for a_file in files:
+            resp = fdnDCIC.get_FDN(a_file, connection)
+            object_key.append(resp['display_title'])
+            uuid.append(resp['uuid'])
+        template['object_key'] = object_key
+        template['uuid'] = uuid
+    # if it is not a list of files
+    else:
+        resp = fdnDCIC.get_FDN(files, connection)
+        template['object_key'] = resp['display_title']
+        template['uuid'] = resp['uuid']
+    # find the bucket from the last used response
+    if 'FileProcessed' in resp.get('@type'):
+        template['bucket_name'] = bucket_main.replace('-files', '-wfoutput')
+    else:
+        template['bucket_name'] = bucket_main
+    return template
+
+
+def build_tibanna_json(keys, types, values, connection):
+    post_json = OrderedDict(zip(keys, values))
+    fields2types = dict(zip(keys, types))
+    post_json = build_patch_json(post_json, fields2types)
+    # if not assigned in the excel for some service reason, add lab award and submitter
+    if not post_json.get('lab'):
+        post_json['lab'] = connection.lab
+    if not post_json.get('award'):
+        post_json['award'] = connection.award
+    if not post_json.get('submitted_by'):
+        post_json['submitted_by'] = connection.user
+    template = {
+                 "config": {},
+                 "args": {},
+                 "parameters": {},
+                 "wfr_meta": {},
+                 "input_files": [],
+                 "metadata_only": True,
+                 "output_files": []
+                }
+    # sorting only needed for the mock lists in tests to work - not cool
+    for param in sorted(post_json.keys()):
+        # insert wf uuid and app_name
+        if param == 'workflow_uuid':
+            template['workflow_uuid'] = post_json['workflow_uuid']
+            template['app_name'] = fdnDCIC.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
+        elif param.startswith('input--'):
+            template["input_files"].append(format_file(param, post_json[param], connection))
+        elif param.startswith('output--'):
+            template["output_files"].append(format_file(param, post_json[param], connection))
+        else:
+            template["wfr_meta"][param] = post_json[param]
+    return template
+
+
+def user_workflow_reader(datafile, sheet, connection):
+    """takes the user workflow runsheet and ony post it to fourfront endpoint."""
+    row = reader(datafile, sheetname=sheet)
+    keys = next(row)  # grab the first row of headers
+    types = next(row)  # grab second row with type info
+    # remove title column
+    keys.pop(0)
+    types.pop(0)
+    # set counters to 0
+    total = 0
+    error = 0
+    post = 0
+    not_posted = 0
+    # iterate over the rows
+    for values in row:
+        # Rows that start with # are skipped
+        if values[0].startswith("#"):
+            continue
+        # Get rid of the first empty cell
+        values.pop(0)
+        total += 1
+        # build post_json and get existing if available
+        post_json = build_tibanna_json(keys, types, values, connection)
+        existing_data = get_existing(post_json['wfr_meta'], connection)
+        if existing_data:
+            print('this workflow_run is already posted {}'.format(post_json['wfr_meta']['aliases'][0]))
+            error += 1
+            continue
+        if post_json:
+            # do the magic
+            e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            if e.get("status") == "SUCCEEDED":
+                post += 1
+            else:
+                print('can not post the workflow run {}'.format(post_json['wfr_meta']['aliases'][0]))
+                error += 1
+        else:
+            error += 1
+    # print final report
+    print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
+    {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
+          .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
+                  error=error, patch="-", not_patched="-"))
+
+
 def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
     url = "%s%s/upload/" % (connection.server, file_id)
     req = requests.post(url,
@@ -862,6 +978,10 @@ def order_sorter(list_of_names):
     for i in sheet_order:
         if i in list_of_names:
             ret_list.append(i)
+    # we add the list of user supplied workflows at the end
+    # expected list if multiple; ['user_workflow_1', 'user_workflow_2']
+    user_workflows = sorted([sh for sh in list_of_names if sh.startswith('user_workflow')])
+    ret_list.extend(user_workflows)
     if list(set(list_of_names)-set(ret_list)) != []:
         missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
         print("WARNING!", missing_items, "sheet(s) are not loaded")
@@ -912,7 +1032,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:
         print("\n##############   DRY-RUN MODE   ################")
-        print("Since there are no '--update' or '--patchall' arguments, you are running the DRY-RUN validation")
+        print("Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation")
         print("The validation will only check for schema rules, but not for object relations")
         print("##############   DRY-RUN MODE   ################\n")
     else:
@@ -982,6 +1102,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
+
     all_aliases = get_all_aliases(args.infile, sorted_names)
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
@@ -993,6 +1114,11 @@ def main():  # pragma: no cover
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
+        elif n.lower().startswith('user_workflow'):
+            if args.update:
+                user_workflow_reader(args.infile, n, connection)
+            else:
+                print('user workflow sheets will only be processed with the --update argument')
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
     loadxl_cycle(dict_loadxl, connection)
