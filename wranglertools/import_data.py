@@ -106,7 +106,12 @@ def getArgs():  # pragma: no cover
 list_of_loadxl_fields = [
     ['Document', ['references']],
     ['User', ['lab', 'submits_for']],
+    ['Experiment', ['experiment_relation']],
     ['ExperimentHiC', ['experiment_relation']],
+    ['ExperimentSeq', ['experiment_relation']],
+    ['ExperimentDamid', ['experiment_relation']],
+    ['ExperimentChiapet', ['experiment_relation']],
+    ['ExperimentAtacseq', ['experiment_relation']],
     ['ExperimentCaptureC', ['experiment_relation']],
     ['ExperimentRepliseq', ['experiment_relation']],
     ['FileFastq', ['related_files']],
@@ -350,39 +355,6 @@ def get_existing(post_json, connection):
 
 
 def build_patch_json(fields, fields2types):
-    """Create the data entry dictionary from the fields."""
-    # convert array types to array
-    for field, ftype in fields2types.items():
-        if 'array' in ftype:
-            fields2types[field] = 'array'
-
-    patch_data = {}
-    for field, field_data in fields.items():
-        field_type = None
-        if fields2types is not None:
-            field_type = fields2types[field]
-        patch_field = build_field(field, field_data, field_type)
-        if patch_field is not None:
-            if is_embedded_field(field):
-                top_field = get_field_name(field)
-                if patch_data.get(top_field, None) is None:
-                    # initially create an empty list for embedded field
-                    patch_data[top_field] = []
-                # we can have multiple embedded objects (they are numbered in excel)
-                subobject_num = get_sub_field_number(field)
-                if subobject_num >= len(patch_data[top_field]):
-                    # add a new row to the list
-                    patch_data[top_field].append(patch_field)
-                else:
-                    # update existing object in the list
-                    patch_data[top_field][subobject_num].update(patch_field)
-            else:
-                # normal case, just update the dictionary
-                patch_data.update(patch_field)
-    return patch_data
-
-
-def build_tibanna_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
     # convert array types to array
     for field, ftype in fields2types.items():
@@ -848,6 +820,48 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                       error=error, patch=patch, not_patched=not_patched))
 
 
+def format_file(file):
+    template = {"bucket_name": "",
+                "workflow_argument_name": "input_bams",
+                "object_key": [],
+                "uuid": []}
+    if 
+    pass
+
+
+def build_tibanna_json(keys, types, values, connection):
+    post_json = OrderedDict(zip(keys, values))
+    fields2types = dict(zip(keys, types))
+    post_json = build_patch_json(post_json, fields2types)
+    # if not assigned in the excel for some service reason, add lab award and submitter
+    if not post_json.get('lab'):
+        post_json['lab'] = connection.lab
+    if not post_json.get('award'):
+        post_json['award'] = connection.award
+    template = {
+                 "config": {},
+                 "args": {},
+                 "parameters": {},
+                 "wfr_meta": {},
+                 "input_files": [],
+                 "metadata_only": True,
+                 "output_files": []
+                }
+    for param in post_json:
+        # insert wf uuid and app_name
+        if param == 'workflow_uuid':
+            template['workflow_uuid'] = post_json['workflow_uuid']
+            template['app_name'] = fdnDCIC.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
+        elif param.startswith('input*'):
+            template["input_files"].append(format_file(post_json[param]))
+        elif param.startswith('output*'):
+            template["input_files"].append(format_file(post_json[param]))
+        else:
+            template["wfr_meta"][param] = post_json[param]
+    return template
+
+
+
 def user_workflow_reader(datafile, sheet, connection, all_aliases):
     """takes the user workflow runsheet and ony post it to fourfront endpoint."""
     row = reader(datafile, sheetname=sheet)
@@ -870,12 +884,12 @@ def user_workflow_reader(datafile, sheet, connection, all_aliases):
         values.pop(0)
         total += 1
         # build post_json and get existing if available
-        post_list = zip(keys, types, values)
-        post_json = build_tibanna_json(post_list)
+        post_json = build_tibanna_json(keys, types, values, connection)
+        print(post_json)
 
         if post_json:
             # do the magic
-            e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            #e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
             if e.get("status") == "success":
                 post += 1
             elif e.get("status") == "error":  # pragma: no cover
@@ -1071,6 +1085,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
+
     all_aliases = get_all_aliases(args.infile, sorted_names)
     # dictionaries that accumulate information during submission
     dict_loadxl = {}

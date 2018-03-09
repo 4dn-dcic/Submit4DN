@@ -293,7 +293,8 @@ sheet_order = [
     "ImagingPath", "ExperimentMic",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
     "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg',
-    'WorkflowRunAwsem']
+    'WorkflowRunAwsem',
+    ]
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out
