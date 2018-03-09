@@ -573,7 +573,7 @@ Submitting Lab:   test_lab
 Submitting Award: test_award
 
 ##############   DRY-RUN MODE   ################
-Since there are no '--update' or '--patchall' arguments, you are running the DRY-RUN validation
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
