@@ -820,13 +820,26 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                       error=error, patch=patch, not_patched=not_patched))
 
 
-def format_file(file):
-    template = {"bucket_name": "",
-                "workflow_argument_name": "input_bams",
-                "object_key": [],
-                "uuid": []}
-    if 
-    pass
+def format_file(param, files, connection):
+
+    template = {  # "bucket_name": "",
+                "workflow_argument_name": param.split('--')[-1]}
+    # find bucket
+
+    if isinstance(files, list):
+        object_key = []
+        uuid = []
+        for a_file in files:
+            resp = fdnDCIC.get_FDN(a_file, connection)
+            object_key.append(resp['display_title'])
+            uuid.append(resp['uuid'])
+        template['object_key'] = object_key
+        template['uuid'] = uuid
+    else:
+        resp = fdnDCIC.get_FDN(files, connection)
+        template['object_key'] = resp['display_title']
+        template['uuid'] = resp['uuid']
+    return template
 
 
 def build_tibanna_json(keys, types, values, connection):
@@ -838,6 +851,8 @@ def build_tibanna_json(keys, types, values, connection):
         post_json['lab'] = connection.lab
     if not post_json.get('award'):
         post_json['award'] = connection.award
+    if not post_json.get('submitted_by'):
+        post_json['submitted_by'] = connection.user
     template = {
                  "config": {},
                  "args": {},
@@ -852,14 +867,13 @@ def build_tibanna_json(keys, types, values, connection):
         if param == 'workflow_uuid':
             template['workflow_uuid'] = post_json['workflow_uuid']
             template['app_name'] = fdnDCIC.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
-        elif param.startswith('input*'):
-            template["input_files"].append(format_file(post_json[param]))
-        elif param.startswith('output*'):
-            template["input_files"].append(format_file(post_json[param]))
+        elif param.startswith('input--'):
+            template["input_files"].append(format_file(param, post_json[param], connection))
+        elif param.startswith('output--'):
+            template["output_files"].append(format_file(param, post_json[param], connection))
         else:
             template["wfr_meta"][param] = post_json[param]
     return template
-
 
 
 def user_workflow_reader(datafile, sheet, connection, all_aliases):
@@ -885,25 +899,18 @@ def user_workflow_reader(datafile, sheet, connection, all_aliases):
         total += 1
         # build post_json and get existing if available
         post_json = build_tibanna_json(keys, types, values, connection)
-        print(post_json)
-
+        existing_data = get_existing(post_json['wfr_meta'], connection)
+        if existing_data:
+            print('this workflow_run is already posted {}'.format(post_json['wfr_meta']['aliases'][0]))
+            error += 1
+            continue
         if post_json:
             # do the magic
-            #e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
-            if e.get("status") == "success":
+            e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            if e.get("status") == "SUCCEEDED":
                 post += 1
-            elif e.get("status") == "error":  # pragma: no cover
-                error_rep = error_report(e, sheet, all_aliases, connection)
-                if error_rep:
-                    error += 1
-                    print(error_rep)
-                else:
-                    # if error is a weird one
-                    print(e)
-                    error += 1
             else:
-                # the response had a weird organization, no status in it
-                print(e)
+                print('can not post the workflow run {}'.format(post_json['wfr_meta']['aliases'][0]))
                 error += 1
         else:
             error += 1
