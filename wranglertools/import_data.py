@@ -822,10 +822,13 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
 
 def format_file(param, files, connection):
 
-    template = {  # "bucket_name": "",
+    template = {"bucket_name": "",
                 "workflow_argument_name": param.split('--')[-1]}
     # find bucket
-
+    health_page = requests.get(connection.server + 'health', auth=connection.auth, headers=connection.headers)
+    bucket_main = health_page.json().get('file_upload_bucket')
+    resp = {}
+    # if it is a list of files, uuid and object key are list objects
     if isinstance(files, list):
         object_key = []
         uuid = []
@@ -835,10 +838,16 @@ def format_file(param, files, connection):
             uuid.append(resp['uuid'])
         template['object_key'] = object_key
         template['uuid'] = uuid
+    # if it is not a list of files
     else:
         resp = fdnDCIC.get_FDN(files, connection)
         template['object_key'] = resp['display_title']
         template['uuid'] = resp['uuid']
+    # find the bucket from the last used response
+    if 'FileProcessed' in resp.get('@type'):
+        template['bucket_name'] = bucket_main.replace('-files', '-wfoutput')
+    else:
+        template['bucket_name'] = bucket_main
     return template
 
 
@@ -873,6 +882,7 @@ def build_tibanna_json(keys, types, values, connection):
             template["output_files"].append(format_file(param, post_json[param], connection))
         else:
             template["wfr_meta"][param] = post_json[param]
+    print(template)
     return template
 
 
