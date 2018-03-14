@@ -22,7 +22,7 @@ EPILOG = '''
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
 
-    To get multiple objects use the '--type' argument multiple times
+    To get multiple objects use the '--type' argument multiple
 
             %(prog)s --type Biosample --type Biosource
 
