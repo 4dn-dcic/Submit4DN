@@ -1118,7 +1118,7 @@ def main():  # pragma: no cover
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
-        elif n.lower() == "ExperimentMic_Path":
+        elif n.lower() == "experimentmic_path":
             excel_reader(args.infile, "ExperimentMic", args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower().startswith('user_workflow'):
