@@ -387,7 +387,6 @@ def build_patch_json(fields, fields2types):
             else:
                 # normal case, just update the dictionary
                 patch_data.update(patch_field)
-
     return patch_data
 
 
