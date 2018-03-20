@@ -363,6 +363,9 @@ def build_patch_json(fields, fields2types):
 
     patch_data = {}
     for field, field_data in fields.items():
+        # ignore commented out rows
+        if field.startswith('#'):
+            continue
         field_type = None
         if fields2types is not None:
             field_type = fields2types[field]
@@ -384,6 +387,7 @@ def build_patch_json(fields, fields2types):
             else:
                 # normal case, just update the dictionary
                 patch_data.update(patch_field)
+
     return patch_data
 
 
