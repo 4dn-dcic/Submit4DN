@@ -290,7 +290,7 @@ sheet_order = [
     "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
-    "ImagingPath", "ExperimentMic",
+    "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
     "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg',
     'WorkflowRunAwsem',

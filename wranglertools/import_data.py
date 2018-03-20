@@ -363,6 +363,9 @@ def build_patch_json(fields, fields2types):
 
     patch_data = {}
     for field, field_data in fields.items():
+        # ignore commented out rows
+        if field.startswith('#'):
+            continue
         field_type = None
         if fields2types is not None:
             field_type = fields2types[field]
@@ -1113,6 +1116,9 @@ def main():  # pragma: no cover
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
+                         dict_loadxl, dict_replicates, dict_exp_sets)
+        elif n.lower() == "experimentmic_path":
+            excel_reader(args.infile, "ExperimentMic", args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower().startswith('user_workflow'):
             if args.update:
