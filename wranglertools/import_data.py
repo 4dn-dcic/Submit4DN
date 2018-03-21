@@ -354,6 +354,76 @@ def get_existing(post_json, connection):
         return
 
 
+def get_f_type(field, fields2types):
+    return fields2types.get(field, None)
+
+
+def add_to_mistype_message(msg='', words):
+    return msg + 'ERROR: %s is TYPE %s NOT SPECIFIED %s\n' % words
+
+
+def validate_item(itemlist, typeinfield, alias_dict, connection):
+    msg = ''
+    for item in itemlist:
+        if item in alias_dict:
+            itemtype = aliasdict[item]
+            if not alias_dict[item] == typeinfield:
+                msg = add_to_mistype_message(msg, (item, itemtype, typeinfield))
+        else:
+            res = fdnDCIC.get_FDN(item, connection)
+            itemtypes = res.get('@type')
+            if itemtypes:
+                if typeinfield != itemtypes[0]:
+                    msg = add_to_mistype_message(msg, (item, itemtypes[0], typeinfield))
+    return msg
+
+
+def validate_string(strings, alias_dict):
+    msg = ''
+    for s in strings:
+        if alias_dict[s]:
+            msg = msg + "WARNING: ALIAS %s USED IN string Field\n" % s
+    return msg
+
+
+def _convert_to_array(s, is_array):
+    if is_array:
+        return [i.strip() for i in s.split(',')]
+    return [s.strip()]
+
+
+def validate_field(field_data, field_type, aliases_by_type, connection):
+    import pdb; pdb.set_trace()
+    to_trim = 'array of embedded objects, '
+    print(field_data)
+    print(field_type)
+    is_array = False
+    if field_type.startswith(to_trim):
+        field_type = field_type.replace(to_trim, '')
+    if 'array' in field_type:
+        is_array = True
+    if 'Item:' in field_type:
+        _, itemtype = field_type.rsplit(':', 1)
+        items = _convert_to_array(field_data, is_array)
+        msg = validate_item(items, itemtype, aliases_by_type, connection)
+    elif 'string' in field_type:
+        strings = _convert_to_array(field_data, is_array)
+        msg = validate_string(strings, aliases_by_type)
+
+
+def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
+    # import pdb; pdb.set_trace()
+    for field, field_data in post_json.items():
+        # ignore commented out rows
+        if field.startswith('#'):
+            continue
+        # ignore empty fields
+        if not field_data:
+            continue
+        field_type = get_f_type(field, fields2types)
+        validate_field(field_data, field_type, aliases_by_type, connection)
+
+
 def build_patch_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
     # convert array types to array
@@ -366,9 +436,8 @@ def build_patch_json(fields, fields2types):
         # ignore commented out rows
         if field.startswith('#'):
             continue
-        field_type = None
-        if fields2types is not None:
-            field_type = fields2types[field]
+        field_type = get_f_type(field, fields2types)
+
         patch_field = build_field(field, field_data, field_type)
         if patch_field is not None:
             if is_embedded_field(field):
@@ -677,7 +746,7 @@ def remove_deleted(post_json):
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets):
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, aliases_by_type):
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
     dry = not(update or patchall)
@@ -707,6 +776,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         total += 1
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
+
+        # pre-validate the json by fields and data_types
+        pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet, dry)
@@ -1118,10 +1191,10 @@ def main():  # pragma: no cover
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets)
+                         dict_loadxl, dict_replicates, dict_exp_sets, aliases_by_type)
         elif n.lower() == "experimentmic_path":
             excel_reader(args.infile, "ExperimentMic", args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets)
+                         dict_loadxl, dict_replicates, dict_exp_sets, aliases_by_type)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(args.infile, n, connection)
