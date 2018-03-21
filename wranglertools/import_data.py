@@ -390,10 +390,10 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet):
+def populate_post_json(post_json, connection, sheet, dryrun):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
-    if post_json.get("attachment"):
+    if post_json.get("attachment") and not dryrun:
         attach = attachment(post_json["attachment"])
         post_json["attachment"] = attach
     # Get existing data if available
@@ -679,6 +679,8 @@ def remove_deleted(post_json):
 def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
+    # determine right from the top if dry run
+    dry = not(update or patchall)
     # dict for acumulating cycle patch data
     patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
@@ -707,7 +709,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         post_json = OrderedDict(zip(keys, values))
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
+        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet, dry)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -1059,7 +1061,7 @@ def get_collections(connection):
 def get_all_aliases(workbook, sheets):
     """Extracts all aliases existing in the workbook to later check object connections
        Checks for same aliases that are used for different items and gives warning."""
-    all_aliases = []
+    aliases_by_type = {}
     for sheet in sheets:
         alias_col = ""
         rows = reader(workbook, sheetname=sheet)
@@ -1076,13 +1078,13 @@ def get_all_aliases(workbook, sheets):
             my_aliases = [x.strip() for x in my_alias.split(",")]
             my_aliases = list(filter(None, my_aliases))
             if my_aliases:
-                all_aliases.extend(my_aliases)
-    import collections
-    non_unique_aliases = [item for item, count in collections.Counter(all_aliases).items() if count > 1]
-    if non_unique_aliases:
-        print("\nWARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
-        print("WARNING! These aliases are used more than once,use a unique alias for each item\n")
-    return list(filter(None, all_aliases))
+                for a in my_aliases:
+                    if aliases_by_type.get(a):
+                        print("\nWARNING! NON-UNIQUE ALIAS: ", a)
+                        print("\tused for TYPE ", aliases_by_type[a], "and ", sheet, "\n")
+                    else:
+                        aliases_by_type[a] = sheet
+    return aliases_by_type
 
 
 def main():  # pragma: no cover
@@ -1105,8 +1107,8 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-
-    all_aliases = get_all_aliases(args.infile, sorted_names)
+    aliases_by_type = get_all_aliases(args.infile, sorted_names)
+    all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
     dict_replicates = {}
