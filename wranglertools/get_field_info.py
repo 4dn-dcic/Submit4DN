@@ -218,7 +218,6 @@ def create_xls(all_fields, filename, sort_fields):
         if sort_fields:
             fields = sorted(sorted(fields), key=lambda x: x.lookup)
         for col, field in enumerate(fields):
-            print(col, field.name, field.lookup)
             ws.write(0, col+1, str(field.name))
             ws.write(1, col+1, str(field.ftype))
             if field.desc:
