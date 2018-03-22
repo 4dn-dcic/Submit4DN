@@ -88,6 +88,9 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="will skip attribution prompt \
                         needed for automated submissions")
+    parser.add_argument('--sort',
+                        default=False,
+                        action='store_true')
     args = parser.parse_args()
     return args
 
@@ -169,7 +172,7 @@ def build_field_list(properties, required_fields=None, include_description=False
                     desc = '' if not include_description else props.get('description', '')
                     comm = '' if not include_comment else props.get('comment', '')
                     enum = '' if not include_enums else props.get('enum', '')
-                    lookup = props.get('lookup', 500)
+                    lookup = props.get('lookup', 500) # field ordering info
                     # if array of string with enum
                     if field_type == "array of strings":
                         sub_props = props.get('items', '')
@@ -197,7 +200,7 @@ def get_uploadable_fields(connection, types, include_description=False,
     return fields
 
 
-def create_xls(all_fields, filename):
+def create_xls(all_fields, filename, sorting):
     '''
     fields being a dictionary of sheet -> FieldInfo(objects)
     create one sheet per dictionary item, with three columns of fields
@@ -210,7 +213,10 @@ def create_xls(all_fields, filename):
         ws.write(1, 0, "#Field Type:")
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
-        for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
+        # order fields in sheet based on lookup numbers, then alphabetically
+        if sorting:
+            fields = sorted(sorted(fields), key=lambda x: x.lookup)
+        for col, field in enumerate(fields):
             print(col, field.name, field.lookup)
             ws.write(0, col+1, str(field.name))
             ws.write(1, col+1, str(field.ftype))
@@ -257,7 +263,7 @@ def main():  # pragma: no cover
 
     if args.writexls:
         file_name = args.outfile
-        create_xls(fields, file_name)
+        create_xls(fields, file_name, args.sort)
         if args.order:
             fdnDCIC.order_FDN(file_name, connection)
 
