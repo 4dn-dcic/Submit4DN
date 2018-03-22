@@ -102,10 +102,10 @@ class FieldInfo(object):
     enum = attr.ib(default=u'')
 
 # additional fields for experiment sheets to capture experiment_set related information
-exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 'Grouping for replicate experiments'),
-                    FieldInfo('*bio_rep_no', 'integer', 'Biological replicate number'),
-                    FieldInfo('*tec_rep_no', 'integer', 'Technical replicate number'),
-                    FieldInfo('experiment_set', 'array of Item:ExperimentSet', 'Grouping for non-replicate experiments')
+exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
+                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
+                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
+                    FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2, 'Grouping for non-replicate experiments')
                     ]
 
 
