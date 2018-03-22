@@ -134,7 +134,7 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
-        gfi.create_xls(field_dict, xls_file, False)
+        gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
     try:
@@ -153,7 +153,7 @@ def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema_l):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
-        gfi.create_xls(field_dict, xls_file, True)
+        gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
     try:
@@ -172,7 +172,7 @@ def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_s
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_experiment_set_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['ExperimentSet'], True, True, True)
-        gfi.create_xls(field_dict, xls_file, False)
+        gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
     try:
