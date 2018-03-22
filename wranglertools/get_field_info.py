@@ -90,7 +90,8 @@ def getArgs():  # pragma: no cover
                         needed for automated submissions")
     parser.add_argument('--sort',
                         default=False,
-                        action='store_true')
+                        action='store_true',
+                        help="not yet implemented")
     args = parser.parse_args()
     return args
 
@@ -200,7 +201,7 @@ def get_uploadable_fields(connection, types, include_description=False,
     return fields
 
 
-def create_xls(all_fields, filename, sorting):
+def create_xls(all_fields, filename, sort_fields):
     '''
     fields being a dictionary of sheet -> FieldInfo(objects)
     create one sheet per dictionary item, with three columns of fields
@@ -214,7 +215,7 @@ def create_xls(all_fields, filename, sorting):
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
         # order fields in sheet based on lookup numbers, then alphabetically
-        if sorting:
+        if sort_fields:
             fields = sorted(sorted(fields), key=lambda x: x.lookup)
         for col, field in enumerate(fields):
             print(col, field.name, field.lookup)

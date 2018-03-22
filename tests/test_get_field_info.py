@@ -134,7 +134,7 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
-        gfi.create_xls(field_dict, xls_file)
+        gfi.create_xls(field_dict, xls_file, False)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
     try:
@@ -142,6 +142,24 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
     except OSError:
         pass
 
+@pytest.mark.file_operation
+def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
+    xls_file = "./tests/data_files/GFI_test_vendor_lookup.xls"
+    xls_ref_file = "./tests/data_files/GFI_test_vendor_lookup_ref.xls"
+    import os
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema_l):
+        field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
+        gfi.create_xls(field_dict, xls_file, True)
+        assert os.path.isfile(xls_file)
+        assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
+    try:
+        os.remove(xls_file)
+    except OSError:
+        pass
 
 @pytest.mark.file_operation
 def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_schema):
@@ -154,7 +172,7 @@ def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_s
         pass
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_experiment_set_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['ExperimentSet'], True, True, True)
-        gfi.create_xls(field_dict, xls_file)
+        gfi.create_xls(field_dict, xls_file, False)
         assert os.path.isfile(xls_file)
         assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
     try:
