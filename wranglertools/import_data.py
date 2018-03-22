@@ -358,7 +358,7 @@ def get_f_type(field, fields2types):
     return fields2types.get(field, None)
 
 
-def add_to_mistype_message(msg='', words):
+def add_to_mistype_message(words, msg=''):
     return msg + 'ERROR: %s is TYPE %s NOT SPECIFIED %s\n' % words
 
 
@@ -368,20 +368,20 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
         if item in alias_dict:
             itemtype = aliasdict[item]
             if not alias_dict[item] == typeinfield:
-                msg = add_to_mistype_message(msg, (item, itemtype, typeinfield))
+                msg = add_to_mistype_message((item, itemtype, typeinfield), msg)
         else:
             res = fdnDCIC.get_FDN(item, connection)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield != itemtypes[0]:
-                    msg = add_to_mistype_message(msg, (item, itemtypes[0], typeinfield))
+                    msg = add_to_mistype_message((item, itemtypes[0], typeinfield), msg)
     return msg
 
 
 def validate_string(strings, alias_dict):
     msg = ''
     for s in strings:
-        if alias_dict[s]:
+        if alias_dict.get(s, None) is not None:
             msg = msg + "WARNING: ALIAS %s USED IN string Field\n" % s
     return msg
 
@@ -393,11 +393,10 @@ def _convert_to_array(s, is_array):
 
 
 def validate_field(field_data, field_type, aliases_by_type, connection):
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     to_trim = 'array of embedded objects, '
-    print(field_data)
-    print(field_type)
     is_array = False
+    msg = None
     if field_type.startswith(to_trim):
         field_type = field_type.replace(to_trim, '')
     if 'array' in field_type:
@@ -409,19 +408,29 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
     elif 'string' in field_type:
         strings = _convert_to_array(field_data, is_array)
         msg = validate_string(strings, aliases_by_type)
+    return msg
 
 
 def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
     # import pdb; pdb.set_trace()
+    report = []
     for field, field_data in post_json.items():
-        # ignore commented out rows
+        # ignore commented out fields
         if field.startswith('#'):
             continue
         # ignore empty fields
         if not field_data:
             continue
+        # ignore aliases field as this was validated before
+        if field == 'aliases':
+            continue
+
         field_type = get_f_type(field, fields2types)
-        validate_field(field_data, field_type, aliases_by_type, connection)
+        msg = validate_field(field_data, field_type, aliases_by_type, connection)
+        if msg is not None:
+            report.append(msg)
+        for l in report:
+            print(l)
 
 
 def build_patch_json(fields, fields2types):
