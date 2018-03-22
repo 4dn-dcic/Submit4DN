@@ -96,6 +96,7 @@ def getArgs():  # pragma: no cover
 class FieldInfo(object):
     name = attr.ib()
     ftype = attr.ib()
+    lookup = attr.ib()
     desc = attr.ib(default=u'')
     comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
@@ -168,12 +169,13 @@ def build_field_list(properties, required_fields=None, include_description=False
                     desc = '' if not include_description else props.get('description', '')
                     comm = '' if not include_comment else props.get('comment', '')
                     enum = '' if not include_enums else props.get('enum', '')
+                    lookup = props.get('lookup', 500)
                     # if array of string with enum
                     if field_type == "array of strings":
                         sub_props = props.get('items', '')
                         enum = '' if not include_enums else sub_props.get('enum', '')
                     # copy paste exp set for ease of keeping track of different types in experiment objects
-                    fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
+                    fields.append(FieldInfo(field_name, field_type, lookup, desc, comm, enum))
     return fields
 
 
@@ -208,7 +210,8 @@ def create_xls(all_fields, filename):
         ws.write(1, 0, "#Field Type:")
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
-        for col, field in enumerate(fields):
+        for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
+            print(col, field.name, field.lookup)
             ws.write(0, col+1, str(field.name))
             ws.write(1, col+1, str(field.ftype))
             if field.desc:
