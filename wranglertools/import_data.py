@@ -300,6 +300,8 @@ def build_field(field, field_data, field_type):
     patch_field_name = get_field_name(field)
     if not field_type:
         field_type = get_field_type(field)
+    if 'array' in field_type:
+        field_type = 'array'
     if is_embedded_field(field):
         sub_field = get_sub_field(field)
         return build_field(sub_field, field_data, 'string')
@@ -359,18 +361,22 @@ def get_f_type(field, fields2types):
 
 
 def add_to_mistype_message(words, msg=''):
-    return msg + 'ERROR: %s is TYPE %s - THE REQUIRED TYPE IS %s\n' % words
+    return msg + 'ERROR: %s is TYPE %s - THE REQUIRED TYPE IS %s' % words
 
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
+    #import pdb; pdb.set_trace()
     for item in itemlist:
         if item in alias_dict:
+            #import pdb; pdb.set_trace()
             itemtype = alias_dict[item]
-            if not alias_dict[item] == typeinfield:
+            if typeinfield not in itemtype:
+                # need special cases for FileSet and ExperimentSet?
                 msg = add_to_mistype_message((item, itemtype, typeinfield), msg)
         else:
-            res = fdnDCIC.get_FDN(item, connection)
+            query = '/' + typeinfield + '/' + item
+            res = fdnDCIC.get_FDN(query, connection)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
@@ -429,18 +435,13 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
         msg = validate_field(field_data, field_type, aliases_by_type, connection)
         if msg:
             report.append(msg)
-    for l in report:
-        print(l)
+    #for l in report:
+    #    print(l)
     return report
 
 
 def build_patch_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
-    # convert array types to array
-    for field, ftype in fields2types.items():
-        if 'array' in ftype:
-            fields2types[field] = 'array'
-
     patch_data = {}
     for field, field_data in fields.items():
         # ignore commented out rows
@@ -469,14 +470,16 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet, dryrun):
+def populate_post_json(post_json, connection, sheet, existing_data, dryrun):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
-    if post_json.get("attachment") and not dryrun:
-        attach = attachment(post_json["attachment"])
+    if post_json.get("attachment"):
+        to_attach = post_json["attachment"]
+        if dryrun:
+            attach = {'download': to_attach}
+        else:
+            attach = attachment(post_json["attachment"])
         post_json["attachment"] = attach
-    # Get existing data if available
-    existing_data = get_existing(post_json, connection)
 
     # Combine aliases
     if post_json.get('aliases') != ['*delete*']:
@@ -507,7 +510,7 @@ def populate_post_json(post_json, connection, sheet, dryrun):
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
-    return post_json, existing_data, file_to_upload
+    return post_json, file_to_upload
 
 
 def filter_set_from_exps(post_json):
@@ -776,6 +779,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
     patch = 0
     not_patched = 0
     not_posted = 0
+    pre_validate_errors = []
+    invalid = False
     # iterate over the rows
     for values in row:
         # Rows that start with # are skipped
@@ -786,14 +791,25 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         total += 1
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
+        # Get existing data if available
+        existing_data = get_existing(post_json, connection)
 
         # pre-validate the row by fields and data_types
         row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
         if row_errors:
+            if existing_data.get("uuid"):
+                not_patched += 1
+            else:
+                not_posted += 1
+            error += 1
+            pre_validate_errors.extend(row_errors)
+            invalid = True
+            continue
 
+        # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet, dry)
+        post_json, file_to_upload = populate_post_json(post_json, connection, sheet, existing_data, dry)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -891,9 +907,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                                 dict_exp_sets[exp_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
-    if patch_loadxl:
+    if patch_loadxl and not invalid:
         dict_patch_loadxl[sheet] = patch_loadxl
 
+    if pre_validate_errors:
+        for l in pre_validate_errors:
+            print(l)
     # dryrun report
     if not patchall and not update:
         print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
