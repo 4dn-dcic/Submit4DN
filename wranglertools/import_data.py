@@ -359,21 +359,21 @@ def get_f_type(field, fields2types):
 
 
 def add_to_mistype_message(words, msg=''):
-    return msg + 'ERROR: %s is TYPE %s NOT SPECIFIED %s\n' % words
+    return msg + 'ERROR: %s is TYPE %s - THE REQUIRED TYPE IS %s\n' % words
 
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
     for item in itemlist:
         if item in alias_dict:
-            itemtype = aliasdict[item]
+            itemtype = alias_dict[item]
             if not alias_dict[item] == typeinfield:
                 msg = add_to_mistype_message((item, itemtype, typeinfield), msg)
         else:
             res = fdnDCIC.get_FDN(item, connection)
             itemtypes = res.get('@type')
             if itemtypes:
-                if typeinfield != itemtypes[0]:
+                if typeinfield not in itemtypes:
                     msg = add_to_mistype_message((item, itemtypes[0], typeinfield), msg)
     return msg
 
@@ -427,10 +427,11 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
 
         field_type = get_f_type(field, fields2types)
         msg = validate_field(field_data, field_type, aliases_by_type, connection)
-        if msg is not None:
+        if msg:
             report.append(msg)
-        for l in report:
-            print(l)
+    for l in report:
+        print(l)
+    return report
 
 
 def build_patch_json(fields, fields2types):
@@ -786,8 +787,9 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
 
-        # pre-validate the json by fields and data_types
-        pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+        # pre-validate the row by fields and data_types
+        row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+        if row_errors:
 
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
