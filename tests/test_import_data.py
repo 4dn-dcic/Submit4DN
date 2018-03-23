@@ -279,7 +279,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases, dict_load, dict_rep, dict_set)
         args = imp.get_existing.call_args
@@ -337,7 +337,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0_1 = "INFO: Attempting to download file from this url to your computer before upload "
     message0_2 = "ftp://speedtest.tele2.net/1KB.zip"
     message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
@@ -365,7 +365,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0 = "WARNING: File not uploaded"
     message1 = "Please add original md5 values of the files"
     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
@@ -391,7 +391,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
@@ -420,7 +420,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC(1)           :  0 posted / 0 not posted       1 patched / 0 not patched, 0 errors"
     existing_exp = {'uuid': 'sample_uuid', 'status': "uploading"}
@@ -460,7 +460,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message = "FILEFASTQ(1)               :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     final_post = {'aliases': ['dcic:test_alias'],
@@ -486,7 +486,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message = "EXPERIMENTSETREPLICATE(1)  :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'sample_repset', '@id': 'sample_repset'}]}
     final_post = {'aliases': ['sample_repset'],
@@ -510,7 +510,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     dict_load = {}
     dict_rep = {}
     dict_set = {'sample_expset': ['awesome_uuid']}
-    all_aliases = []
+    all_aliases = {}
     message = "EXPERIMENTSET(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'sample_expset', '@id': 'sample_expset'}]}
     final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid'],
@@ -656,6 +656,6 @@ def test_get_collections(connection_public):
 def test_get_all_aliases():
     wb = "./tests/data_files/Exp_Set_insert.xls"
     sheet = ["ExperimentSet"]
-    my_aliases = ['sample_expset']
+    my_aliases = {'sample_expset', 'ExperimentSet'}
     all_aliases = imp.get_all_aliases(wb, sheet)
     assert my_aliases == all_aliases
