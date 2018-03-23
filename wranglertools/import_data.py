@@ -758,11 +758,12 @@ def remove_deleted(post_json):
     return post_json
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets, aliases_by_type):
+def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets):
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
     dry = not(update or patchall)
+    all_aliases = list(aliases_by_type.keys())
     # dict for acumulating cycle patch data
     patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
@@ -1220,11 +1221,11 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets, aliases_by_type)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, aliases_by_type,
+                         dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower() == "experimentmic_path":
-            excel_reader(args.infile, "ExperimentMic", args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets, aliases_by_type)
+            excel_reader(args.infile, "ExperimentMic", args.update, connection, args.patchall, aliases_by_type,
+                         dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(args.infile, n, connection)
