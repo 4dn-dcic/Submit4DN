@@ -122,6 +122,12 @@ def xls_to_list(xls_file, sheet):
         return_list.append(row_val)
     return return_list.sort(key=itemgetter(1))
 
+def xls_field_order(xls_file, sheet):
+    # returns list of fields (in order) in an excel sheet
+    import xlrd
+    wb = xlrd.open_workbook(xls_file).sheet_by_name(sheet)
+    return [str(wb.cell_value(0, col)) for col in range(1, wb.ncols)]
+
 
 @pytest.mark.file_operation
 def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
@@ -145,7 +151,7 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
 @pytest.mark.file_operation
 def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
     xls_file = "./tests/data_files/GFI_test_vendor_lookup.xls"
-    xls_ref_file = "./tests/data_files/GFI_test_vendor_lookup_ref.xls"
+    ref_list = ['aliases', '*title', 'description', 'contributing_labs', 'tags', 'url']
     import os
     try:
         os.remove(xls_file)
@@ -155,7 +161,7 @@ def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
-        assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
+        assert xls_field_order(xls_file, "Vendor") == ref_list
     try:
         os.remove(xls_file)
     except OSError:
