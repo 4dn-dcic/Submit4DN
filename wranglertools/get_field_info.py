@@ -79,10 +79,10 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
-    parser.add_argument('--order',
-                        default=True,
-                        action='store_true',
-                        help="A reference file is used for ordering and filtering fields")
+    #parser.add_argument('--order',
+    #                    default=True,
+    #                    action='store_true',
+    #                    help="A reference file is used for ordering and filtering fields")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -204,7 +204,8 @@ def create_xls(all_fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
-    for obj_name, fields in all_fields.items():
+    sheet_list = [(sheet, all_fields[sheet]) for sheet in fdnDCIC.sheet_order if sheet in all_fields.keys()]
+    for obj_name, fields in sheet_list:
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
         ws.write(1, 0, "#Field Type:")
@@ -258,8 +259,8 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-        if args.order:
-            fdnDCIC.order_FDN(file_name, connection)
+        #if args.order:
+        #    fdnDCIC.order_FDN(file_name, connection)
 
 if __name__ == '__main__':
     main()

@@ -290,7 +290,7 @@ sheet_order = [
     "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
-    "ImagingPath", "ExperimentMic", 
+    "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
     "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg',
     'WorkflowRunAwsem',
@@ -313,6 +313,7 @@ def filter_and_sort(list_names):
     useful = sorted(useful)
     return useful
 
+'''
 move_front = ['experiment_set', '*tec_rep_no', '*bio_rep_no', '*replicate_set',
               'description', 'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
 
@@ -339,7 +340,7 @@ def move_to_end(list_names):
         except:  # pragma: no cover
             pass
     return list_names
-
+'''
 # reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
 reorder = [
     ['Biosource', 'cell_line', 'SOP_cell_line'],
@@ -453,7 +454,7 @@ def fetch_all_items(sheet, field_list, connection):
     else:  # pragma: no cover
         return
 
-
+'''
 def order_FDN(input_xls, connection):
     """Order and filter created xls file."""
     ReadFile = input_xls
@@ -508,6 +509,7 @@ def order_FDN(input_xls, connection):
                 write_column_index_III = write_column_index_II+1+i
                 new_sheet.write(write_column_index_III, ix, '', style)
     book_w.save(OutputFile)
+'''
 ############################################################
 ############################################################
 ############################################################
