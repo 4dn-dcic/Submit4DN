@@ -122,6 +122,7 @@ def xls_to_list(xls_file, sheet):
         return_list.append(row_val)
     return return_list.sort(key=itemgetter(1))
 
+
 def xls_field_order(xls_file, sheet):
     # returns list of fields (in order) in an excel sheet
     import xlrd
@@ -148,6 +149,7 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
     except OSError:
         pass
 
+
 @pytest.mark.file_operation
 def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
     xls_file = "./tests/data_files/GFI_test_vendor_lookup.xls"
@@ -166,6 +168,7 @@ def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
         os.remove(xls_file)
     except OSError:
         pass
+        
 
 @pytest.mark.file_operation
 def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_schema):

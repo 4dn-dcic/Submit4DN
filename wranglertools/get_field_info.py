@@ -79,10 +79,10 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
-    #parser.add_argument('--order',
-    #                    default=True,
-    #                    action='store_true',
-    #                    help="A reference file is used for ordering and filtering fields")
+#    parser.add_argument('--order',
+#                       default=True,
+#                       action='store_true',
+#                       help="A reference file is used for ordering and filtering fields")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -105,7 +105,8 @@ class FieldInfo(object):
 exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
                     FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
                     FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
-                    FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2, 'Grouping for non-replicate experiments')
+                    FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
+                              'Grouping for non-replicate experiments')
                     ]
 
 
@@ -169,7 +170,7 @@ def build_field_list(properties, required_fields=None, include_description=False
                     desc = '' if not include_description else props.get('description', '')
                     comm = '' if not include_comment else props.get('comment', '')
                     enum = '' if not include_enums else props.get('enum', '')
-                    lookup = props.get('lookup', 500) # field ordering info
+                    lookup = props.get('lookup', 500)  # field ordering info
                     # if array of string with enum
                     if field_type == "array of strings":
                         sub_props = props.get('items', '')
@@ -260,8 +261,8 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-        #if args.order:
-        #    fdnDCIC.order_FDN(file_name, connection)
+#       if args.order:
+#           fdnDCIC.order_FDN(file_name, connection)
 
 if __name__ == '__main__':
     main()
