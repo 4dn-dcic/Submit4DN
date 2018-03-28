@@ -298,38 +298,6 @@ def test_filter_and_sort():
                    'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
     assert result_list == fdnDCIC.filter_and_sort(test_list)
 
-'''
-def test_move_to_front():
-    test_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents', 'extra_field',
-                 'extra_field_2', 'name', 'references', 'title', 'url']
-    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
-                   'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
-    assert result_list == fdnDCIC.move_to_front(test_list)
-
-
-def test_move_to_end():
-    test_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
-                 'dbxrefs', 'documents', 'extra_field', 'extra_field_2', 'references', 'url']
-    result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
-                   'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
-    assert result_list == fdnDCIC.move_to_end(test_list)
-
-def test_switch_fields():
-    cases = [
-            [['cell_line_tier', 'cell_line', 'SOP_cell_line'], 'Biosource'],
-            [['start_coordinate', 'start_location', 'location_description',
-              'end_location', 'end_coordinate'], "GenomicRegion"],
-            [['experiment_relation.relationship_type', 'files', 'average_fragment_size',
-              'fragment_size_range', 'documents', 'experiment_relation.experiment',
-              'filesets'], "Experiment"]
-            ]
-    result_list = [['cell_line', 'cell_line_tier', 'SOP_cell_line'],
-                   ['location_description', 'start_location', 'end_location', 'start_coordinate', 'end_coordinate'],
-                   ['average_fragment_size', 'fragment_size_range', 'files', 'filesets',
-                    'experiment_relation.relationship_type', 'experiment_relation.experiment', 'documents']]
-    for n, (a, b) in enumerate(cases):
-        assert result_list[n] == fdnDCIC.switch_fields(a, b)
-'''
 
 def test_sort_item_list():
     test_list = [{"lab": "dcic", "submitted_by": "koray", "no": 1},
@@ -388,33 +356,3 @@ def xls_to_list(xls_file, sheet):
             row_val.append(cell_value)
         return_list.append(row_val)
     return return_list
-
-'''
-@pytest.mark.file_operation
-def test_order_FDN_mock(connection, mocker, returned_vendor_items,
-                        returned_vendor_item1, returned_vendor_item2, returned_vendor_item3):
-    vendor_file = './tests/data_files/Vendor.xls'
-    ordered_file = './tests/data_files/Vendor_ordered.xls'
-    ref_file = './tests/data_files/Vendor_ordered_reference.xls'
-    import os
-    try:
-        os.remove(ordered_file)
-    except OSError:
-        pass
-
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', side_effect=[returned_vendor_items,
-                                                                         returned_vendor_item1,
-                                                                         returned_vendor_item2,
-                                                                         returned_vendor_item3]):
-        connection.lab = 'test'
-        connection.user = 'test'
-        fdnDCIC.order_FDN(vendor_file, connection)
-        assert os.path.isfile(ordered_file)
-    ord_list = xls_to_list(ordered_file, "Vendor")
-    ref_list = xls_to_list(ref_file, "Vendor")
-    assert ord_list == ref_list
-    try:
-        os.remove(ordered_file)
-    except OSError:
-        pass
-'''

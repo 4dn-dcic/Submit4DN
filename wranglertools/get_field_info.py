@@ -204,6 +204,7 @@ def create_xls(all_fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
+    # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in fdnDCIC.sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
         ws = wb.add_sheet(obj_name)
