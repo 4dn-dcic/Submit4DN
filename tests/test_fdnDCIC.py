@@ -313,7 +313,6 @@ def test_move_to_end():
     result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
                    'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
     assert result_list == fdnDCIC.move_to_end(test_list)
-'''
 
 def test_switch_fields():
     cases = [
@@ -330,7 +329,7 @@ def test_switch_fields():
                     'experiment_relation.relationship_type', 'experiment_relation.experiment', 'documents']]
     for n, (a, b) in enumerate(cases):
         assert result_list[n] == fdnDCIC.switch_fields(a, b)
-
+'''
 
 def test_sort_item_list():
     test_list = [{"lab": "dcic", "submitted_by": "koray", "no": 1},

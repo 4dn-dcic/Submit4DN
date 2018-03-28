@@ -342,7 +342,7 @@ def move_to_end(list_names):
         except:  # pragma: no cover
             pass
     return list_names
-'''
+
 # reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
 reorder = [
     ['Biosource', 'cell_line', 'SOP_cell_line'],
@@ -377,7 +377,7 @@ def switch_fields(list_names, sheet):
             except:  # pragma: no cover
                 pass
     return list_names
-
+'''
 # if object name is in the following list, fetch all current/released items and add to xls
 # if experiment is ever added to this list, experiment set related fields might cause some problems
 fetch_items = {
