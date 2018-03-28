@@ -168,7 +168,7 @@ def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
         os.remove(xls_file)
     except OSError:
         pass
-        
+
 
 @pytest.mark.file_operation
 def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_schema):
