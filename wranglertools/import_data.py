@@ -682,6 +682,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
     # dict for acumulating cycle patch data
     patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
+    if sheet == "ExperimentMic_Path":
+        sheet = "ExperimentMic"
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
     # remove title column
@@ -1118,7 +1120,7 @@ def main():  # pragma: no cover
             excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower() == "experimentmic_path":
-            excel_reader(args.infile, "ExperimentMic", args.update, connection, args.patchall, all_aliases,
+            excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, all_aliases,
                          dict_loadxl, dict_replicates, dict_exp_sets)
         elif n.lower().startswith('user_workflow'):
             if args.update:
