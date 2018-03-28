@@ -298,7 +298,7 @@ def test_filter_and_sort():
                    'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
     assert result_list == fdnDCIC.filter_and_sort(test_list)
 
-
+'''
 def test_move_to_front():
     test_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents', 'extra_field',
                  'extra_field_2', 'name', 'references', 'title', 'url']
@@ -313,7 +313,7 @@ def test_move_to_end():
     result_list = ['#Field Name:', 'aliases', '*name', 'name', '*title', 'title', 'description',
                    'extra_field', 'extra_field_2', 'documents', 'references', 'url', 'dbxrefs']
     assert result_list == fdnDCIC.move_to_end(test_list)
-
+'''
 
 def test_switch_fields():
     cases = [
@@ -390,7 +390,7 @@ def xls_to_list(xls_file, sheet):
         return_list.append(row_val)
     return return_list
 
-
+'''
 @pytest.mark.file_operation
 def test_order_FDN_mock(connection, mocker, returned_vendor_items,
                         returned_vendor_item1, returned_vendor_item2, returned_vendor_item3):
@@ -418,3 +418,4 @@ def test_order_FDN_mock(connection, mocker, returned_vendor_items,
         os.remove(ordered_file)
     except OSError:
         pass
+'''
