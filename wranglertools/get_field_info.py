@@ -184,6 +184,7 @@ def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
     for name in types:
+        print(name)
         schema_name = name + '.json'
         uri = '/profiles/' + schema_name
         schema_grabber = fdnDCIC.FDN_Schema(connection, uri)
@@ -207,7 +208,7 @@ def create_xls(all_fields, filename):
     wb = xlwt.Workbook()
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in fdnDCIC.sheet_order if
-                    sheet in all_fields.keys() and sheet != 'ExperimentMic_Path']
+                    sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
@@ -248,7 +249,7 @@ def main():  # pragma: no cover
 
     if args.type == ['all']:
         # import pdb; pdb.set_trace()
-        args.type = fdnDCIC.sheet_order
+        args.type = [sheet for sheet in fdnDCIC.sheet_order if sheet != 'ExperimentMic_Path']
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
