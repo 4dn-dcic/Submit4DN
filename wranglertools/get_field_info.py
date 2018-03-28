@@ -184,7 +184,6 @@ def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
     for name in types:
-        print(name)
         schema_name = name + '.json'
         uri = '/profiles/' + schema_name
         schema_grabber = fdnDCIC.FDN_Schema(connection, uri)
