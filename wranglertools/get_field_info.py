@@ -105,8 +105,8 @@ class FieldInfo(object):
 exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
                     FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
                     FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
-#                    FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
-#                              'Grouping for non-replicate experiments')
+                    # FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
+                    #          'Grouping for non-replicate experiments')
                     ]
 
 
