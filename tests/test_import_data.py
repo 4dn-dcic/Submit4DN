@@ -659,3 +659,19 @@ def test_get_all_aliases():
     my_aliases = ['sample_expset']
     all_aliases = imp.get_all_aliases(wb, sheet)
     assert my_aliases == all_aliases
+
+
+def test_remove_deleted():
+    data_with_delete = {'url': 'https://www.neb.com', 'uuid': 'b31106bc-8535-4448-903e-854af460b21e',
+                        'title': 'New England Biolabs', 'description': '*delete*', 'dbxrefs': ['*delete*']}
+    new_json = imp.remove_deleted(data_with_delete)
+    assert len(new_json) == 3
+
+
+def test_list_deleted_field():
+    data_with_delete = {'url': 'https://www.neb.com', 'uuid': 'b31106bc-8535-4448-903e-854af460b21e',
+                        'title': 'New England Biolabs', 'description': '*delete*', 'dbxrefs': ['*delete*']}
+    new_json, rm_list = imp.list_delete_fields(data_with_delete)
+    assert 'description' in rm_list
+    assert 'dbxrefs' in rm_list
+    assert len(new_json) == 3

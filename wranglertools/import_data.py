@@ -568,7 +568,7 @@ def conflict_error_report(error_dic, sheet, connection):
         return
 
 
-def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
+def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection, rm_field_list):
     # if FTP, grab the file from ftp
     ftp_download = False
     if file_to_upload and filename_to_post.startswith("ftp://"):
@@ -578,7 +578,7 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
+    e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json, rm_field_list)
     if file_to_upload:
         # get s3 credentials
         creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
@@ -632,36 +632,23 @@ def ftp_copy(filename_to_post, post_json):
         return False, post_json, ""
 
 
-def delete_fields(post_json, connection, existing_data):
-    """Does a put to delete fields with the keyword '*delete*'."""
-    my_uuid = existing_data.get("uuid")
-    my_accesssion = existing_data.get("accession")
-    raw_json = fdnDCIC.get_FDN(my_uuid, connection, frame="raw")
-    # check if the uuid is in the raw_json
-    if not raw_json.get("uuid"):
-        raw_json["uuid"] = my_uuid
-    # if there is an accession, add it to raw so it does not created again
-    if my_accesssion:
-        if not raw_json.get("accession"):
-            raw_json["accession"] = my_accesssion
+def list_delete_fields(post_json):
+    """Make list of fields to delete and clear them from the post_json."""
     # find fields to be removed
     fields_to_be_removed = []
     for key, value in post_json.items():
         if value in ['*delete*', ['*delete*']]:
             fields_to_be_removed.append(key)
+
     # if there are no delete fields, move along sir
     if not fields_to_be_removed:
-        return post_json
+        return post_json, []
+
     # remove the fields from the raw_json that will be PUT
     for rm_key in fields_to_be_removed:
-        if raw_json.get(rm_key):
-            del raw_json[rm_key]
-    # Do the put with raw_json
-    fdnDCIC.put_FDN(my_uuid, connection, raw_json)
-    # Remove them also from the post_json
-    for rm_key in fields_to_be_removed:
         del post_json[rm_key]
-    return post_json
+
+    return post_json, fields_to_be_removed
 
 
 def remove_deleted(post_json):
@@ -728,10 +715,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         # if there is an existing item, try patching
         if existing_data.get("uuid"):
             if patchall:
-                # First check for fields to be deleted, and do put
-                post_json = delete_fields(post_json, connection, existing_data)
+                # First check for fields to be deleted, and grab the list of fields to delete
+                post_json, rm_fields = list_delete_fields(post_json)
                 # Do the patch
-                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
+                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection, rm_fields)
             else:
                 not_patched += 1
         # if there is no existing item try posting
@@ -764,8 +751,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         if not patchall and not update:
             # simulate patch/post
             if existing_data.get("uuid"):
-                post_json = remove_deleted(post_json)
-                e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                post_json, rm_fields = list_delete_fields(post_json)
+                e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json, rm_fields)
             else:
                 post_json = remove_deleted(post_json)
                 e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
@@ -998,10 +985,10 @@ def loadxl_cycle(patch_list, connection):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
-            entry = delete_fields(entry, connection, entry)
+            entry, rm_list_2 = list_delete_fields(entry)
             if entry != {}:
                 total = total + 1
-                e = fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
+                e = fdnDCIC.patch_FDN(entry["uuid"], connection, entry, rm_list_2)
                 if e.get("status") == "error":  # pragma: no cover
                     error_rep = error_report(e, n.upper(), [], connection)
                     if error_rep:
