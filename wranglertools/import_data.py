@@ -366,10 +366,10 @@ def add_to_mistype_message(words, msg=''):
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     for item in itemlist:
         if item in alias_dict:
-            #import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             itemtype = alias_dict[item]
             if typeinfield not in itemtype:
                 # need special cases for FileSet and ExperimentSet?
@@ -399,7 +399,7 @@ def _convert_to_array(s, is_array):
 
 
 def validate_field(field_data, field_type, aliases_by_type, connection):
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     to_trim = 'array of embedded objects, '
     is_array = False
     msg = None
@@ -435,7 +435,7 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
         msg = validate_field(field_data, field_type, aliases_by_type, connection)
         if msg:
             report.append(msg)
-    #for l in report:
+    # for l in report:
     #    print(l)
     return report
 
@@ -1212,7 +1212,7 @@ def main():  # pragma: no cover
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
     aliases_by_type = get_all_aliases(args.infile, sorted_names)
-    all_aliases = list(aliases_by_type.keys())
+    # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
     dict_replicates = {}

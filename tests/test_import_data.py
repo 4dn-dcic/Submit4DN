@@ -659,3 +659,43 @@ def test_get_all_aliases():
     my_aliases = {'sample_expset', 'ExperimentSet'}
     all_aliases = imp.get_all_aliases(wb, sheet)
     assert my_aliases == all_aliases
+
+
+@pytest.fixture
+def fields2type():
+    return {
+        'biosource': 'array of Item:Biosource',
+        'biosample': 'Item:Biosample',
+        'description': 'string',
+        'biosample_quantity': 'number',
+        'experiment_relations.relationship_type': 'string',
+        'experiment_relations.experiment': 'Item:Experiment',
+        'average_fragment_size': 'integer',
+        'aliases': 'array of string'
+    }
+
+
+def test_get_f_type(fields2type):
+    fields = fields2type.keys()
+    for f in fields:
+        assert imp.get_f_type(f, fields2type) == fields2type[f]
+    assert not imp.get_f_type('nonexistent field', fields2type)
+
+
+def test_add_to_mistype_message_3_words():
+    words = ('eeny', 'meeny', 'moe')
+    msg = imp.add_to_mistype_message(words, '')
+    assert msg == 'ERROR: eeny is TYPE meeny - THE REQUIRED TYPE IS moe'
+
+
+def test_add_to_mistype_message_w_msg():
+    words = ('eeny', 'meeny', 'moe')
+    msg = 'ERROR: eeny is TYPE meeny - THE REQUIRED TYPE IS moe'
+    msg = imp.add_to_mistype_message(words, msg)
+    assert msg == 'ERROR: eeny is TYPE meeny - THE REQUIRED TYPE IS moe' * 2
+
+
+def test_add_to_mistype_message_2_words():
+    words = ('eeny', 'meeny')
+    msg = imp.add_to_mistype_message(words, '')
+    assert msg == 'ERROR: eeny is TYPE meeny - THE REQUIRED TYPE IS '
