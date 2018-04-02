@@ -79,10 +79,10 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
-    parser.add_argument('--order',
-                        default=True,
-                        action='store_true',
-                        help="A reference file is used for ordering and filtering fields")
+#    parser.add_argument('--order',
+#                       default=True,
+#                       action='store_true',
+#                       help="A reference file is used for ordering and filtering fields")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -96,15 +96,17 @@ def getArgs():  # pragma: no cover
 class FieldInfo(object):
     name = attr.ib()
     ftype = attr.ib()
+    lookup = attr.ib()
     desc = attr.ib(default=u'')
     comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
 
 # additional fields for experiment sheets to capture experiment_set related information
-exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 'Grouping for replicate experiments'),
-                    FieldInfo('*bio_rep_no', 'integer', 'Biological replicate number'),
-                    FieldInfo('*tec_rep_no', 'integer', 'Technical replicate number'),
-                    FieldInfo('experiment_set', 'array of Item:ExperimentSet', 'Grouping for non-replicate experiments')
+exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
+                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
+                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
+                    # FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
+                    #          'Grouping for non-replicate experiments')
                     ]
 
 
@@ -168,12 +170,13 @@ def build_field_list(properties, required_fields=None, include_description=False
                     desc = '' if not include_description else props.get('description', '')
                     comm = '' if not include_comment else props.get('comment', '')
                     enum = '' if not include_enums else props.get('enum', '')
+                    lookup = props.get('lookup', 500)  # field ordering info
                     # if array of string with enum
                     if field_type == "array of strings":
                         sub_props = props.get('items', '')
                         enum = '' if not include_enums else sub_props.get('enum', '')
                     # copy paste exp set for ease of keeping track of different types in experiment objects
-                    fields.append(FieldInfo(field_name, field_type, desc, comm, enum))
+                    fields.append(FieldInfo(field_name, field_type, lookup, desc, comm, enum))
     return fields
 
 
@@ -202,13 +205,16 @@ def create_xls(all_fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
-    for obj_name, fields in all_fields.items():
+    # order sheets
+    sheet_list = [(sheet, all_fields[sheet]) for sheet in fdnDCIC.sheet_order if sheet in all_fields.keys()]
+    for obj_name, fields in sheet_list:
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
         ws.write(1, 0, "#Field Type:")
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
-        for col, field in enumerate(fields):
+        # order fields in sheet based on lookup numbers, then alphabetically
+        for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
             ws.write(0, col+1, str(field.name))
             ws.write(1, col+1, str(field.ftype))
             if field.desc:
@@ -241,7 +247,7 @@ def main():  # pragma: no cover
 
     if args.type == ['all']:
         # import pdb; pdb.set_trace()
-        args.type = fdnDCIC.sheet_order
+        args.type = [sheet for sheet in fdnDCIC.sheet_order if sheet != 'ExperimentMic_Path']
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
@@ -255,8 +261,8 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-        if args.order:
-            fdnDCIC.order_FDN(file_name, connection)
+#       if args.order:
+#           fdnDCIC.order_FDN(file_name, connection)
 
 if __name__ == '__main__':
     main()
