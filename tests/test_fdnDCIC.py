@@ -291,12 +291,12 @@ def test_patch_FDN_mock_post_item_str(connection, mocker, returned__patch_vendor
         assert args[1]['data'] == data
 
 
-def test_filter_and_sort():
-    test_list = ['dbxrefs', 'name', '#Field Name:', '*name', 'extra_field_2', 'aliases', 'description', 'documents',
-                 'extra_field', 'references', 'title', 'url', '*title']
-    result_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents',
-                   'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
-    assert result_list == fdnDCIC.filter_and_sort(test_list)
+# def test_filter_and_sort():
+#    test_list = ['dbxrefs', 'name', '#Field Name:', '*name', 'extra_field_2', 'aliases', 'description', 'documents',
+#                 'extra_field', 'references', 'title', 'url', '*title']
+#    result_list = ['#Field Name:', '*name', '*title', 'aliases', 'dbxrefs', 'description', 'documents',
+#                   'extra_field', 'extra_field_2', 'name', 'references', 'title', 'url']
+#    assert result_list == fdnDCIC.filter_and_sort(test_list)
 
 
 def test_sort_item_list():

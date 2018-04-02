@@ -300,20 +300,20 @@ sheet_order = [
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out
-do_not_use = ["filesets", "status"]
+# do_not_use = ["filesets", "status"]
 
 
-def filter_and_sort(list_names):
-    """Filter and sort fields"""
-    useful = []
-    for field in list_names:
-        if field in do_not_use:
-            pass
-        else:
-            useful.append(field)
-    # sort alphabetically
-    useful = sorted(useful)
-    return useful
+# def filter_and_sort(list_names):
+# """Filter and sort fields"""
+# useful = []
+# for field in list_names:
+#     if field in do_not_use:
+#         pass
+#     else:
+#         useful.append(field)
+# # sort alphabetically
+# useful = sorted(useful)
+# return useful
 
 
 # if object name is in the following list, fetch all current/released items and add to xls
