@@ -6,8 +6,8 @@ import json
 import logging
 import os.path
 import hashlib
-import xlrd
-import xlwt
+# import xlrd
+# import xlwt
 
 
 class FDN_Key:
@@ -284,96 +284,37 @@ def md5(path):
 ############################################################
 ############################################################
 sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism", "IndividualMouse", "IndividualHuman",
-    "Vendor", "Enzyme", "Biosource", "Construct", "TreatmentRnai", "TreatmentChemical",
-    "GenomicRegion", "Target", "Antibody", "Modification", "Image", "BiosampleCellCulture", "Biosample",
-    "FileFastq", "FileFasta", "FileProcessed", "FileReference", "FileCalibration",
-    "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
-    "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
-    "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
-    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
-    "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate", 'WorkflowRunSbg',
-    'WorkflowRunAwsem',
+    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
+    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Biosource",
+    "Biosample", "BiosampleCellCulture", "Construct", "TreatmentRnai",
+    "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
+    "Image", "FileFastq", "FileFasta", "FileProcessed", "FileReference",
+    "FileCalibration", "FileSet", "FileSetCalibration", "MicroscopeSettingD1",
+    "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
+    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic",
+    "ExperimentMic_Path", "ExperimentHiC", "ExperimentCaptureC",
+    "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
+    "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate",
+    "WorkflowRunSbg", "WorkflowRunAwsem",
     ]
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
 # do_not_use list can be populated if there are additional fields that nneds to be taken out
-do_not_use = ["filesets", "status"]
+# do_not_use = ["filesets", "status"]
 
 
-def filter_and_sort(list_names):
-    """Filter and sort fields"""
-    useful = []
-    for field in list_names:
-        if field in do_not_use:
-            pass
-        else:
-            useful.append(field)
-    # sort alphabetically
-    useful = sorted(useful)
-    return useful
+# def filter_and_sort(list_names):
+# """Filter and sort fields"""
+# useful = []
+# for field in list_names:
+#     if field in do_not_use:
+#         pass
+#     else:
+#         useful.append(field)
+# # sort alphabetically
+# useful = sorted(useful)
+# return useful
 
-move_front = ['experiment_set', '*tec_rep_no', '*bio_rep_no', '*replicate_set',
-              'description', 'title', '*title', 'name', '*name', 'aliases', '#Field Name:']
-
-
-def move_to_front(list_names):
-    """Move names front"""
-    for front in move_front:
-        try:
-            list_names.remove(front)
-            list_names.insert(0, front)
-        except:  # pragma: no cover
-            pass
-    return list_names
-
-move_end = ['documents', 'references', 'url', 'dbxrefs']
-
-
-def move_to_end(list_names):
-    """Move names to end"""
-    for end in move_end:
-        try:
-            list_names.pop(list_names.index(end))
-            list_names.append(end)
-        except:  # pragma: no cover
-            pass
-    return list_names
-
-# reorder individual items in sheets, [SHEET, MOVE_ITEM, MOVE_BEFORE]
-reorder = [
-    ['Biosource', 'cell_line', 'SOP_cell_line'],
-    ['Biosource', 'cell_line_tier', 'SOP_cell_line'],
-    ['GenomicRegion', 'start_coordinate', 'end_coordinate'],
-    ['GenomicRegion', 'start_location', 'end_location'],
-    ['GenomicRegion', 'location_description', 'start_location'],
-    ['BiosampleCellCulture', 'protocol_documents', 'protocol_SOP_deviations'],
-    ['Biosample', 'biosample_relation.relationship_type', 'biosample_relation.biosample'],
-    ['Enzyme', 'catalog_number', 'documents'],
-    ['Enzyme', 'recognition_sequence', 'documents'],
-    ['Enzyme', 'site_length', 'documents'],
-    ['Enzyme', 'cut_position', 'documents'],
-    ['File', 'related_files.relationship_type', 'related_files.file'],
-    ['Experiment', 'average_fragment_size', 'fragment_size_range'],
-    ['Experiment', 'files', 'documents'],
-    ['Experiment', 'filesets', 'documents'],
-    ['Experiment', 'experiment_relation.relationship_type', 'documents'],
-    ['Experiment', 'experiment_relation.experiment', 'documents']
-]
-
-
-def switch_fields(list_names, sheet):
-    for sort_case in reorder:
-        # to look for all experiments with "Experiment" name, it will also get ExperimentSet
-        # there are no conflicting field names
-        if sort_case[0] in sheet:
-            try:
-                # tihs is working more consistently then the pop item method
-                list_names.remove(sort_case[1])
-                list_names.insert(list_names.index(sort_case[2]), sort_case[1])
-            except:  # pragma: no cover
-                pass
-    return list_names
 
 # if object name is in the following list, fetch all current/released items and add to xls
 # if experiment is ever added to this list, experiment set related fields might cause some problems
@@ -453,61 +394,6 @@ def fetch_all_items(sheet, field_list, connection):
     else:  # pragma: no cover
         return
 
-
-def order_FDN(input_xls, connection):
-    """Order and filter created xls file."""
-    ReadFile = input_xls
-    OutputFile = input_xls[:-4]+'_ordered.xls'
-    bookread = xlrd.open_workbook(ReadFile)
-    book_w = xlwt.Workbook()
-    Sheets_read = bookread.sheet_names()
-    Sheets = []
-    # text styling for all columns
-    style = xlwt.XFStyle()
-    style.num_format_str = "@"
-    # reorder sheets based on sheet_order list and report if there are missing one from this list
-    for sh in sheet_order:
-        if sh in Sheets_read:
-            Sheets.append(sh)
-            Sheets_read.remove(sh)
-    if Sheets_read:  # pragma: no cover
-        print(Sheets_read, "not in sheet_order list, please update")
-        Sheets.extend(Sheets_read)
-    for sheet in Sheets:
-        useful = []
-        active_sheet = bookread.sheet_by_name(sheet)
-        first_row_values = active_sheet.row_values(rowx=0)
-        # remove items from fields in xls
-        useful = filter_and_sort(first_row_values)
-        # move selected to front
-        useful = move_to_front(useful)
-        # move selected to end
-        useful = move_to_end(useful)
-        # reorder some items based on reorder list
-        useful = switch_fields(useful, sheet)
-        # fetch all items for common objects
-        all_items = fetch_all_items(sheet, useful, connection)
-        # create a new sheet and write the data
-        new_sheet = book_w.add_sheet(sheet)
-        for write_row_index, write_item in enumerate(useful):
-            read_col_ind = first_row_values.index(write_item)
-            column_val = active_sheet.col_values(read_col_ind)
-            for write_column_index, cell_value in enumerate(column_val):
-                new_sheet.write(write_column_index, write_row_index, cell_value, style)
-        # write common objects
-        if all_items:
-            for i, item in enumerate(all_items):
-                for ix in range(len(useful)):
-                    write_column_index_II = write_column_index+1+i
-                    new_sheet.write(write_column_index_II, ix, str(item[ix]), style)
-        else:
-            write_column_index_II = write_column_index
-        # write 50 empty lines with text formatting
-        for i in range(100):
-            for ix in range(len(useful)):
-                write_column_index_III = write_column_index_II+1+i
-                new_sheet.write(write_column_index_III, ix, '', style)
-    book_w.save(OutputFile)
 ############################################################
 ############################################################
 ############################################################
