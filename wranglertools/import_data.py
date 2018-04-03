@@ -361,7 +361,12 @@ def get_f_type(field, fields2types):
 
 
 def add_to_mistype_message(words, msg=''):
-    return msg + 'ERROR: %s is TYPE %s - THE REQUIRED TYPE IS %s' % words
+    toadd = "ERROR '%s' is " % words[0]
+    if 'HTTPNotFound' in words[1]:
+        toadd += 'NOT FOUND '
+    else:
+        toadd += 'TYPE %s ' % words[1]
+    return msg + toadd + '- THE REQUIRED TYPE IS %s\n' % words[2]
 
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
@@ -381,7 +386,7 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
             if itemtypes:
                 if typeinfield not in itemtypes:
                     msg = add_to_mistype_message((item, itemtypes[0], typeinfield), msg)
-    return msg
+    return msg.rstrip()
 
 
 def validate_string(strings, alias_dict):
@@ -389,7 +394,7 @@ def validate_string(strings, alias_dict):
     for s in strings:
         if alias_dict.get(s, None) is not None:
             msg = msg + "WARNING: ALIAS %s USED IN string Field\n" % s
-    return msg
+    return msg.rstrip()
 
 
 def _convert_to_array(s, is_array):
@@ -1186,8 +1191,8 @@ def get_all_aliases(workbook, sheets):
             if my_aliases:
                 for a in my_aliases:
                     if aliases_by_type.get(a):
-                        print("\nWARNING! NON-UNIQUE ALIAS: ", a)
-                        print("\tused for TYPE ", aliases_by_type[a], "and ", sheet, "\n")
+                        print("WARNING! NON-UNIQUE ALIAS: ", a)
+                        print("\tused for TYPE ", aliases_by_type[a], "and ", sheet)
                     else:
                         aliases_by_type[a] = sheet
     return aliases_by_type
