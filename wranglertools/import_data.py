@@ -380,8 +380,13 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
                 # need special cases for FileSet and ExperimentSet?
                 msg = add_to_mistype_message((item, itemtype, typeinfield), msg)
         else:
-            query = '/' + typeinfield + '/' + item
-            res = fdnDCIC.get_FDN(query, connection)
+            # check for fully qualified path i.e. /labs/4dn-dcic-lab/
+            if not item.startswith('/'):
+                item = '/' + item
+            if typeinfield.lower() not in item:
+                # this will miss things like 'experiments_hi_c'
+                item = '/' + typeinfield + item
+            res = fdnDCIC.get_FDN(item, connection)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
