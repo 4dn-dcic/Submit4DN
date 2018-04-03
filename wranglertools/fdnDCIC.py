@@ -285,17 +285,15 @@ def md5(path):
 ############################################################
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Biosource",
-    "Biosample", "BiosampleCellCulture", "Construct", "TreatmentRnai",
+    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct", "TreatmentRnai",
     "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
-    "Image", "FileFastq", "FileFasta", "FileProcessed", "FileReference",
-    "FileCalibration", "FileSet", "FileSetCalibration", "MicroscopeSettingD1",
-    "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
-    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic",
-    "ExperimentMic_Path", "ExperimentHiC", "ExperimentCaptureC",
-    "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
-    "ExperimentDamid", "ExperimentSeq", "ExperimentSet", "ExperimentSetReplicate",
-    "WorkflowRunSbg", "WorkflowRunAwsem",
+    "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileFasta",
+    "FileProcessed", "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
+    "MicroscopeSettingD1", "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
+    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
+    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
+    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
     ]
 
 # Most fields are covered by "exclude_from:submit4dn" tag for removal
