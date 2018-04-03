@@ -288,7 +288,7 @@ sheet_order = [
     "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct", "TreatmentRnai",
     "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
     "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileFasta",
-    "FileProcessed", "FileReference","FileCalibration", "FileSet", "FileSetCalibration",
+    "FileProcessed", "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
     "MicroscopeSettingD1", "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
     "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
