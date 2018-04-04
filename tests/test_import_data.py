@@ -281,8 +281,8 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     dict_set = {}
     all_aliases = {}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # import pdb
-        # pdb.set_trace()
+        import pdb
+        pdb.set_trace()
         imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases,
                          dict_load, dict_rep, dict_set, True)
         args = imp.get_existing.call_args
