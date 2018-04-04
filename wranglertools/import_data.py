@@ -1188,6 +1188,8 @@ def get_all_aliases(workbook, sheets):
        Checks for same aliases that are used for different items and gives warning."""
     aliases_by_type = {}
     for sheet in sheets:
+        if sheet = 'ExperimentMic_Path':
+            continue
         alias_col = ""
         rows = reader(workbook, sheetname=sheet)
         keys = next(rows)  # grab the first row of headers
