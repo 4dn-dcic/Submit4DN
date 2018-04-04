@@ -700,3 +700,79 @@ def test_add_to_mistype_message_2_words():
     words = ['eeny', 'meeny', '']
     msg = imp.add_to_mistype_message(*words, msg='')
     assert msg == "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS \n"
+
+
+def test_add_to_mistype_message_not_found():
+    words = ['eeny', 'HTTPNotFound', 'moe']
+    msg = imp.add_to_mistype_message(*words, msg='')
+    assert msg == "ERROR: 'eeny' is NOT FOUND - THE REQUIRED TYPE IS moe\n"
+
+
+@pytest.fixture
+def alias_dict():
+    return {
+        'test:alias1': 'Biosource',
+        'test:alias2': 'Biosource',
+    }
+
+
+def test_validate_item_in_alias_dict_correct_type(alias_dict, connection):
+    item = 'test:alias1'
+    msg = imp.validate_item([item], 'Biosource', alias_dict, connection)
+    assert not msg
+
+
+def test_validate_item_in_alias_dict_incorrect_type(alias_dict, connection):
+    item = 'test:alias1'
+    msg = imp.validate_item([item], 'Biosample', alias_dict, connection)
+    assert msg.startswith("ERROR")
+
+
+def test_validate_multiple_items_in_alias_dict_correct_type(alias_dict, connection):
+    items = ['test:alias1', 'test:alias2']
+    msg = imp.validate_item(items, 'Biosource', alias_dict, connection)
+    assert not msg
+
+
+def test_validate_multiple_items_in_alias_dict_incorrect_type(alias_dict, connection):
+    items = ['test:alias1', 'test:alias2']
+    msg = imp.validate_item(items, 'Biosample', alias_dict, connection)
+    lns = msg.split('\n')
+    assert len(lns) == 2
+    for l in lns:
+        assert l.startswith("ERROR")
+
+
+def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection):
+    item = 'test:alias1'
+    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+                      return_value={'@type': ['Biosource']}):
+        msg = imp.validate_item([item], 'Biosource', {}, connection)
+        assert not msg
+
+
+def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection):
+    item = '/labs/test-lab'
+    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+                      return_value={'@type': ['Lab']}):
+        msg = imp.validate_item([item], 'Lab', {}, connection)
+        assert not msg
+
+
+def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection):
+    item = 'test:alias1'
+    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+                      return_value={'@type': ['HTTPNotFound']}):
+        msg = imp.validate_item([item], 'Biosource', {}, connection)
+        assert msg.startswith("ERROR")
+
+
+def test_validate_item_one_in_one_not_in_db(mocker, connection):
+    items = ['test:alias1', 'test:alias2']
+    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+                      side_effect=[{'@type': ['HTTPNotFound']},
+                                   {'@type': ['Biosource', 'Item']}]):
+        msg = imp.validate_item(items, 'Biosource', {}, connection)
+        assert msg.startswith("ERROR")
+        assert 'test:alias1' in msg
+        assert 'test:alias2' not in msg
