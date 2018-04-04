@@ -685,18 +685,18 @@ def test_get_f_type(fields2type):
 
 def test_add_to_mistype_message_3_words():
     words = ['eeny', 'meeny', 'moe']
-    msg = imp.add_to_mistype_message(*words, '')
+    msg = imp.add_to_mistype_message(*words, msg='')
     assert msg == "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS moe\n"
 
 
 def test_add_to_mistype_message_w_msg():
     words = ['eeny', 'meeny', 'moe']
     msg1 = "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS moe\n"
-    msg2 = imp.add_to_mistype_message(*words, msg1)
+    msg2 = imp.add_to_mistype_message(*words, msg=msg1)
     assert msg2 == msg1 * 2
 
 
 def test_add_to_mistype_message_2_words():
-    words = ['eeny', 'meeny']
-    msg = imp.add_to_mistype_message(*words, '', '')
+    words = ['eeny', 'meeny', '']
+    msg = imp.add_to_mistype_message(*words, msg='')
     assert msg == "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS \n"
