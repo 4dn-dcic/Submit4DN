@@ -280,12 +280,10 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     dict_rep = {}
     dict_set = {}
     all_aliases = {}
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        import pdb
-        pdb.set_trace()
+    with mocker.patch('wranglertools.import_data.remove_deleted', return_value={}):
         imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases,
                          dict_load, dict_rep, dict_set, True)
-        args = imp.get_existing.call_args
+        args = imp.remove_deleted.call_args
         attach = args[0][0]['attachment']
         assert attach['href'].startswith('data:image/jpeg;base64')
 
