@@ -22,6 +22,7 @@ import os
 import time
 import subprocess
 import shutil
+import re
 from collections import OrderedDict
 try:
     import urllib2
@@ -98,8 +99,13 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="will skip attribution prompt \
                         needed for automated submissions")
+    parser.add_argument('--novalidate',
+                        default=False,
+                        action='store_true',
+                        help="Will skip pre-validation of workbook")
     args = parser.parse_args()
     return args
+
 
 # list of [sheet, [fields]] that need to be patched as a second step
 # should be in sync with loadxl.py in fourfront
@@ -360,37 +366,39 @@ def get_f_type(field, fields2types):
     return fields2types.get(field, None)
 
 
-def add_to_mistype_message(words, msg=''):
-    toadd = "ERROR '%s' is " % words[0]
-    if 'HTTPNotFound' in words[1]:
+def add_to_mistype_message(item='', itype='', ftype='', msg=''):
+    toadd = "ERROR: '%s' is " % item
+    if 'HTTPNotFound' in itype:
         toadd += 'NOT FOUND '
     else:
-        toadd += 'TYPE %s ' % words[1]
-    return msg + toadd + '- THE REQUIRED TYPE IS %s\n' % words[2]
+        toadd += 'TYPE %s ' % itype
+    return msg + toadd + '- THE REQUIRED TYPE IS %s\n' % ftype
 
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
     # import pdb; pdb.set_trace()
+    pattern = re.compile(r"/(\w+)/\w")
     for item in itemlist:
         if item in alias_dict:
             # import pdb; pdb.set_trace()
             itemtype = alias_dict[item]
             if typeinfield not in itemtype:
                 # need special cases for FileSet and ExperimentSet?
-                msg = add_to_mistype_message((item, itemtype, typeinfield), msg)
+                msg = add_to_mistype_message(item, itemtype, typeinfield, msg)
         else:
             # check for fully qualified path i.e. /labs/4dn-dcic-lab/
+            match = pattern.match(item)
             if not item.startswith('/'):
                 item = '/' + item
-            if typeinfield.lower() not in item:
-                # this will miss things like 'experiments_hi_c'
+            match = pattern.match(item)
+            if match is None:
                 item = '/' + typeinfield + item
             res = fdnDCIC.get_FDN(item, connection)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
-                    msg = add_to_mistype_message((item, itemtypes[0], typeinfield), msg)
+                    msg = add_to_mistype_message(item, itemtypes[0], typeinfield, msg)
     return msg.rstrip()
 
 
@@ -769,7 +777,7 @@ def remove_deleted(post_json):
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets):
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
     dry = not(update or patchall)
@@ -808,16 +816,17 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         existing_data = get_existing(post_json, connection)
 
         # pre-validate the row by fields and data_types
-        row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
-        if row_errors:
-            if existing_data.get("uuid"):
-                not_patched += 1
-            else:
-                not_posted += 1
-            error += 1
-            pre_validate_errors.extend(row_errors)
-            invalid = True
-            continue
+        if not novalidate:
+            row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+            if row_errors:
+                if existing_data.get("uuid"):
+                    not_patched += 1
+                else:
+                    not_posted += 1
+                error += 1
+                pre_validate_errors.extend(row_errors)
+                invalid = True
+                continue
 
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
@@ -984,14 +993,14 @@ def build_tibanna_json(keys, types, values, connection):
     if not post_json.get('submitted_by'):
         post_json['submitted_by'] = connection.user
     template = {
-                 "config": {},
-                 "args": {},
-                 "parameters": {},
-                 "wfr_meta": {},
-                 "input_files": [],
-                 "metadata_only": True,
-                 "output_files": []
-                }
+        "config": {},
+        "args": {},
+        "parameters": {},
+        "wfr_meta": {},
+        "input_files": [],
+        "metadata_only": True,
+        "output_files": []
+    }
     # sorting only needed for the mock lists in tests to work - not cool
     for param in sorted(post_json.keys()):
         # insert wf uuid and app_name
@@ -1234,10 +1243,10 @@ def main():  # pragma: no cover
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets)
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
         elif n.lower() == "experimentmic_path":
-            excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets)
+            excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(args.infile, n, connection)
@@ -1256,6 +1265,7 @@ def main():  # pragma: no cover
             print('Following items are not posted')
             print('make sure they are on {} sheet'.format(dict_sheet))
             print(remains)
+
 
 if __name__ == '__main__':
         main()
