@@ -488,15 +488,11 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet, existing_data, dryrun):
+def populate_post_json(post_json, connection, sheet, existing_data):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
     if post_json.get("attachment"):
-        to_attach = post_json["attachment"]
-        if dryrun:
-            attach = {'download': to_attach}
-        else:
-            attach = attachment(post_json["attachment"])
+        attach = attachment(post_json["attachment"])
         post_json["attachment"] = attach
 
     # Combine aliases
@@ -780,7 +776,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
-    dry = not(update or patchall)
+    dryrun = not(update or patchall)
     all_aliases = list(aliases_by_type.keys())
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -831,7 +827,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, file_to_upload = populate_post_json(post_json, connection, sheet, existing_data, dry)
+        post_json, file_to_upload = populate_post_json(post_json, connection, sheet, existing_data)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -883,7 +879,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 post += 1
 
         # dryrun option
-        if not patchall and not update:
+        if dryrun:
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
@@ -936,7 +932,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         for l in pre_validate_errors:
             print(l)
     # dryrun report
-    if not patchall and not update:
+    if dryrun:
         print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
     {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
               .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
@@ -1188,7 +1184,7 @@ def get_all_aliases(workbook, sheets):
        Checks for same aliases that are used for different items and gives warning."""
     aliases_by_type = {}
     for sheet in sheets:
-        if sheet = 'ExperimentMic_Path':
+        if sheet == 'ExperimentMic_Path':
             continue
         alias_col = ""
         rows = reader(workbook, sheetname=sheet)
