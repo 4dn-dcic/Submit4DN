@@ -23,7 +23,7 @@ import time
 import subprocess
 import shutil
 import re
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 try:
     import urllib2
 except:
@@ -770,6 +770,67 @@ def remove_deleted(post_json):
     return post_json
 
 
+def _pairing_consistency_check(files):
+    """checks the datastructure for consistency"""
+    file_list = sorted(list(files.keys()))
+    pair_list = []
+    for f, info in files.items():
+        pair = info.get('pair')
+        if not pair:
+            print(f, " is missing a pair information but has paired_end = ", info.get('end'))
+        else:
+            pair_list.append(pair)
+    paircnts = Counter(pair_list)
+    if len(file_list) != len(paircnts):
+        print("Something funny's going on")
+        print(len(file_list), " FILES paired with ", len(paircnts))
+
+
+def check_file_pairing(fastq_sheet, fields):
+    """checks consistency between file pair info within sheet"""
+    alias_idx = fields.index("aliases")
+    pair_idx = fields.index("paired_end")
+    # print('Alias index = ', alias_idx)
+    # print('Paired end index = ', pair_idx)
+
+    files = {}
+    for row in fastq_sheet:
+        file_info = {}
+        if row[0].startswith("#"):
+            continue
+        row.pop(0)  # to make indexes same
+        #rint(row)
+        alias = row[alias_idx]
+        paired_end = row[pair_idx]
+        saw_pair = False
+        for i, fld in enumerate(row):
+            if fld.strip() == 'paired with':
+                #import pdb; pdb.set_trace()
+                if saw_pair:
+                    print("WARNING: you can't have more than one paired_with in a single row")
+                    continue
+                else:
+                    file = row[i + 1]
+                    saw_pair = True
+                    if not paired_end:
+                        print('Missing paired end number for ', alias)
+                    files[alias] = {'end': paired_end, 'pair': file}
+        if not saw_pair and paired_end:
+            files[alias] = {'end': paired_end}
+
+    for f, info in files.items():
+        if info.get('pair'):
+            fp = info.get('pair')
+            if fp not in files:
+                print("Missing a row for %s - that is paired with %s in sheet" % (fp, f))
+            else:
+                files[fp]['pair'] = f
+
+    # for k, v in files.items():
+    #    print(k, '\t', v)
+    _pairing_consistency_check(files)
+
+
 def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
     """takes an excel sheet and post or patched the data in."""
@@ -796,6 +857,11 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
     not_posted = 0
     pre_validate_errors = []
     invalid = False
+
+    if sheet == "FileFastq" and not novalidate:
+        # check for consistent file pairing of fastqs in the sheet (no db chk)
+        ans = check_file_pairing(row, keys)
+        print(ans)
     # iterate over the rows
     for values in row:
         # Rows that start with # are skipped
