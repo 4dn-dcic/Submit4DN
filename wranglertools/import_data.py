@@ -453,8 +453,6 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
         msg = validate_field(field_data, field_type, aliases_by_type, connection)
         if msg:
             report.append(msg)
-    # for l in report:
-    #    print(l)
     return report
 
 

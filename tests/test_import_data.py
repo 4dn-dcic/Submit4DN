@@ -676,6 +676,25 @@ def fields2type():
     }
 
 
+@pytest.fixture
+def json2post():
+    return {
+        'biosource': 'dcic:imr90',
+        '#biosample': 'dcic:biosamp',
+        'description': '',
+        'biosample_quantity': 1,
+        'aliases': 'dcic:test'
+    }
+
+
+@pytest.fixture
+def alias_dict():
+    return {
+        'test:alias1': 'Biosource',
+        'test:alias2': 'Biosource',
+    }
+
+
 def test_get_f_type(fields2type):
     fields = fields2type.keys()
     for f in fields:
@@ -706,14 +725,6 @@ def test_add_to_mistype_message_not_found():
     words = ['eeny', 'HTTPNotFound', 'moe']
     msg = imp.add_to_mistype_message(*words, msg='')
     assert msg == "ERROR: 'eeny' is NOT FOUND - THE REQUIRED TYPE IS moe\n"
-
-
-@pytest.fixture
-def alias_dict():
-    return {
-        'test:alias1': 'Biosource',
-        'test:alias2': 'Biosource',
-    }
 
 
 def test_validate_item_in_alias_dict_correct_type(alias_dict, connection):
@@ -776,3 +787,74 @@ def test_validate_item_one_in_one_not_in_db(mocker, connection):
         assert msg.startswith("ERROR")
         assert 'test:alias1' in msg
         assert 'test:alias2' not in msg
+
+
+def test_validate_string_are_strings_not_alias(alias_dict):
+    s = ['test_string', 'test_string2']
+    msg = imp.validate_string(s, alias_dict)
+    assert not msg
+
+
+def test_validate_string_one_string_is_alias(alias_dict):
+    s = ['test:alias1', 'test_string2']
+    msg = imp.validate_string(s, alias_dict)
+    assert msg == 'WARNING: ALIAS test:alias1 USED IN string Field'
+
+
+def test_convert_to_array_is_array():
+    arrstr = 'eeny, meeny,moe'
+    result = imp._convert_to_array(arrstr, True)
+    assert len(result) == 3
+
+
+def test_convert_to_array_is_string():
+    s = ' whatsup,! '
+    result = imp._convert_to_array(s, False)
+    assert len(result) == 1
+    assert result[0] == s.strip()
+
+
+def test_validate_field_single_string(mocker, connection, alias_dict):
+    fdata = 'test_string'
+    ftype = 'string'
+    with mocker.patch('wranglertools.import_data.validate_string',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_array_of_string(mocker, connection, alias_dict):
+    fdata = 'test_string'
+    ftype = 'array of string'
+    with mocker.patch('wranglertools.import_data.validate_string',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_single_item(mocker, connection, alias_dict):
+    fdata = 'test_item'
+    ftype = 'Item:Biosource'
+    with mocker.patch('wranglertools.import_data.validate_item',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_array_of_items(mocker, connection, alias_dict):
+    fdata = 'test_item'
+    ftype = 'array of Item:Biosource'
+    with mocker.patch('wranglertools.import_data.validate_item',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_array_of_embedded_objects(mocker, connection, alias_dict):
+    fdata = 'test_item'
+    ftype = 'array of embedded objects, Item:File'
+    with mocker.patch('wranglertools.import_data.validate_item',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_pre_validate_json(mocker, json2post, fields2type, alias_dict, connection):
+    with mocker.patch('wranglertools.import_data.validate_field',
+                      side_effect=['', '']):
+        assert not imp.pre_validate_json(json2post, fields2type, alias_dict, connection)
