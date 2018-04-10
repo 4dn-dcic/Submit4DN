@@ -210,11 +210,13 @@ def search_FDN(sheet, field, value, connection):
     return response.json()
 
 
-def patch_FDN(obj_id, connection, patch_input):
+def patch_FDN(obj_id, connection, patch_input, url_addon=None):
     '''PATCH an existing FDN object and return the response JSON
     '''
     json_payload = format_to_json(patch_input)
     url = connection.server + obj_id
+    if url_addon:
+        url = url + url_addon
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
         try:
@@ -237,10 +239,12 @@ def put_FDN(obj_id, connection, put_input):
     return response.json()
 
 
-def new_FDN(connection, collection_name, post_input):
+def new_FDN(connection, collection_name, post_input, url_addon=None):
     '''POST an FDN object as JSON and return the response JSON'''
     json_payload = format_to_json(post_input)
     url = connection.server + collection_name
+    if url_addon:
+        url = url + url_addon 
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     if not response.status_code == 201:  # pragma: no cover
         try:
