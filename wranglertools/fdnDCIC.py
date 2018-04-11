@@ -244,7 +244,7 @@ def new_FDN(connection, collection_name, post_input, url_addon=None):
     json_payload = format_to_json(post_input)
     url = connection.server + collection_name
     if url_addon:
-        url = url + url_addon 
+        url = url + url_addon
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     if not response.status_code == 201:  # pragma: no cover
         try:
