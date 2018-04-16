@@ -6,9 +6,10 @@ import json
 import logging
 import os.path
 import hashlib
-# import xlrd
-# import xlwt
 
+print("""SUBMIT4DN TOOLS ARE DEPRECIATED
+      PLEASE SWITCH TO USING DCICUTILS INSTEAD
+      fdnDCIC WILL BE DELETED JUNE 2018""")
 
 class FDN_Key:
     def __init__(self, keyfile, keyname):
@@ -36,6 +37,9 @@ class FDN_Key:
 
 
 class FDN_Connection(object):
+    print("""SUBMIT4DN TOOLS ARE DEPRECIATED
+          PLEASE SWITCH TO USING DCICUTILS INSTEAD
+          fdnDCIC WILL BE DELETED JUNE 2018""")
 
     def set_award(self, lab, dontPrompt=True):
         '''Sets the award for the connection for use in import_data
@@ -173,6 +177,9 @@ def format_to_json(input_data):
 
 
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
+    print("""SUBMIT4DN TOOLS ARE DEPRECIATED
+          PLEASE SWITCH TO USING DCICUTILS INSTEAD
+          fdnDCIC WILL BE DELETED JUNE 2018""")
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
         or search, respectively.
