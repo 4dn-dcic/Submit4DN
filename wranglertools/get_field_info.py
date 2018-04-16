@@ -1,9 +1,7 @@
-submit_utils#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-
-from wranglertools import helper
 
 from dcicutils import submit_utils
 # from wranglertools import fdnDCIC
