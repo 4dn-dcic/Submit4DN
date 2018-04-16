@@ -4,7 +4,7 @@
 import json
 import argparse
 import os.path
-
+import hashlib
 
 # from wranglertools import fdnDCIC
 # from wranglertools.fdnDCIC import sheet_order
