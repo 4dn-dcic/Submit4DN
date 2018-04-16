@@ -356,7 +356,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set)
-                args = imp.fdnDCIC.new_FDN.call_args
+                args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
                 post_json_arg = args[0][2]
@@ -409,7 +409,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set)
-                args = imp.fdnDCIC.new_FDN.call_args
+                args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
                 post_json_arg = args[0][2]
@@ -446,7 +446,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, all_aliases,
                                      dict_load, dict_rep, dict_set)
                     # check for md5sum
-                    args = imp.fdnDCIC.patch_FDN.call_args
+                    args = imp.submit_utils.patch_FDN.call_args
                     post_json_arg = args[0][2]
                     assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
                     # check for cred getting updated (from old_creds to new_creds)
@@ -479,7 +479,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'FileFastq', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set)
-            args = imp.fdnDCIC.new_FDN.call_args
+            args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             print([i for i in args])
             assert message == out.strip()
@@ -504,7 +504,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set)
-            args = imp.fdnDCIC.new_FDN.call_args
+            args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
             assert args[0][2] == final_post
@@ -527,7 +527,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set)
-            args = imp.fdnDCIC.new_FDN.call_args
+            args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
             print(args[0][2])
@@ -594,7 +594,7 @@ def test_user_workflow_reader_wfr_post(capsys, mocker, connection):
                             ]):
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.user_workflow_reader(test_insert, sheet_name, connection)
-                args = imp.fdnDCIC.new_FDN.call_args
+                args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 print([i for i in args])
                 assert message == out.strip()
