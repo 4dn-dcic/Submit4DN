@@ -2,9 +2,7 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-
 from dcicutils import submit_utils
-# from wranglertools import fdnDCIC
 import attr
 import xlwt
 import sys
@@ -81,10 +79,6 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
-#    parser.add_argument('--order',
-#                       default=True,
-#                       action='store_true',
-#                       help="A reference file is used for ordering and filtering fields")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -279,7 +273,7 @@ def get_uploadable_fields(connection, types, include_description=False,
     for name in types:
         schema_name = name + '.json'
         uri = '/profiles/' + schema_name
-        schema_grabber = fdnDCIC.FDN_Schema(connection, uri)
+        schema_grabber = submit_utils.FDN_Schema(connection, uri)
         required_fields = schema_grabber.required
         fields[name] = build_field_list(schema_grabber.properties,
                                         required_fields,
@@ -339,7 +333,6 @@ def main():  # pragma: no cover
         connection.prompt_for_lab_award()
 
     if args.type == ['all']:
-        # import pdb; pdb.set_trace()
         args.type = [sheet for sheet in sheet_order if sheet != 'ExperimentMic_Path']
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
@@ -354,8 +347,7 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-#       if args.order:
-#           fdnDCIC.order_FDN(file_name, connection)
+
 
 if __name__ == '__main__':
     main()
