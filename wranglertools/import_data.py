@@ -5,16 +5,8 @@ import json
 import argparse
 import os.path
 import hashlib
-
-# from wranglertools import fdnDCIC
-# from wranglertools.fdnDCIC import sheet_order
-# from wranglertools.fdnDCIC import md5
-
-
 from wranglertools.get_field_info import sheet_order
 from dcicutils import submit_utils
-
-
 import xlrd
 import datetime
 import sys
