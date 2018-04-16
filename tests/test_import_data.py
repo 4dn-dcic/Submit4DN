@@ -10,6 +10,12 @@ def test_attachment_from_ftp():
 
 
 @pytest.mark.file_operation
+def test_md5():
+    md5_keypairs = imp.md5('./tests/data_files/keypairs.json')
+    assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
+
+
+@pytest.mark.file_operation
 def test_attachment_image():
     attach = imp.attachment("./tests/data_files/test.jpg")
     assert attach['height'] == 1080
