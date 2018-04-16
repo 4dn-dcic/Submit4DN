@@ -11,7 +11,7 @@ import os.path
 # from wranglertools.fdnDCIC import md5
 
 
-from wranglertools.helper import sheet_order
+from wranglertools.get_field_info import sheet_order
 from dcicutils import submit_utils
 
 
@@ -36,7 +36,6 @@ try:
 except:
     from urllib import request as urllib2
 from contextlib import closing
-
 
 
 EPILOG = '''
