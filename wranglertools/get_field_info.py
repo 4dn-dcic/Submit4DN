@@ -334,6 +334,38 @@ def main():  # pragma: no cover
 
     if args.type == ['all']:
         args.type = [sheet for sheet in sheet_order if sheet != 'ExperimentMic_Path']
+    elif args.type == ['HiC']:
+        args.type = [
+            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
+            "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
+            "GenomicRegion", "Target", "Modification", "Biosource", "Biosample",
+            "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
+            "ExperimentHiC", "ExperimentSetReplicate",
+            ]
+    elif args.type.lower() == ['chip-seq']:
+        args.type == [
+            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
+            "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
+            "GenomicRegion", "Target", "Antibody", "Modification", "Biosource",
+            "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
+            "ExperimentSeq", "ExperimentSetReplicate",
+            ]
+    elif args.type.lower() == ['repliseq']:
+        args.type == [
+            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
+            "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
+            "GenomicRegion", "Target", "Antibody", "Modification", "Biosource",
+            "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
+            "ExperimentRepliseq", "ExperimentSetReplicate",
+            ]
+    elif args.type.upper() == ['FISH']:
+        args.type = [
+            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
+            "Vendor", "Construct", "TreatmentRnai", "TreatmentChemical", "GenomicRegion",
+            "Target", "Antibody", "Modification", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFasta", "FileProcessed", "MicroscopeSettingA1", "FileMicroscopy",
+            "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
+            ]
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
