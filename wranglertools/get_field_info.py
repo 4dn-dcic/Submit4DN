@@ -17,7 +17,6 @@ EPILOG = '''
         --comments       adds the comments together with enums (by default False)
         --writexls       creates the xls file (by default True)
         --outfile        change the default file name "fields.xls" to a specified one
-        --order          create an ordered and filtered version of the excel (by default True)
 
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
@@ -25,6 +24,11 @@ EPILOG = '''
     To get multiple objects use the '--type' argument multiple times
 
             %(prog)s --type Biosample --type Biosource
+
+    The '--type' argument can also be used with a few custom options to generate multiple
+    sheets, namely 'all', 'HiC', 'Chip-Seq', 'Repliseq', or 'FISH'
+
+            %(prog)s --type HiC
 
     to include comments (useful tips) for all types use the appropriate flag at the end
 
