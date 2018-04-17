@@ -4,9 +4,9 @@
 import json
 import argparse
 import os.path
-from wranglertools import fdnDCIC
-from wranglertools.fdnDCIC import md5
-from wranglertools.fdnDCIC import sheet_order
+import hashlib
+from wranglertools.get_field_info import sheet_order
+from dcicutils import submit_utils
 import xlrd
 import datetime
 import sys
@@ -28,6 +28,7 @@ try:
 except:
     from urllib import request as urllib2
 from contextlib import closing
+
 
 EPILOG = '''
 This script takes in an Excel file with the data
@@ -122,6 +123,14 @@ list_of_loadxl_fields = [
     ['FileProcessed', ['related_files']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
+
+
+def md5(path):
+    md5sum = hashlib.md5()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(1024*1024), b''):
+            md5sum.update(chunk)
+    return md5sum.hexdigest()
 
 
 def attachment(path):
@@ -325,7 +334,7 @@ def get_existing(post_json, connection):
     for identifier in ["uuid", "accession", "@id"]:
         if post_json.get(identifier):
             temp = {}
-            temp = fdnDCIC.get_FDN(post_json[identifier], connection)
+            temp = submit_utils.get_FDN(post_json[identifier], connection)
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
     # also look for all aliases
@@ -333,7 +342,7 @@ def get_existing(post_json, connection):
         # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
         for an_alias in post_json.get("aliases"):
             temp = {}
-            temp = fdnDCIC.get_FDN(an_alias, connection)
+            temp = submit_utils.get_FDN(an_alias, connection)
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
 
@@ -344,7 +353,7 @@ def get_existing(post_json, connection):
         return {}
     # if everything is as expected
     elif len(unique_uuids) == 1:
-        temp = fdnDCIC.get_FDN(unique_uuids[0], connection)
+        temp = submit_utils.get_FDN(unique_uuids[0], connection)
         return temp
     # funky business not allowed, if identifiers point to different objects
     else:  # pragma: no cover
@@ -553,7 +562,7 @@ def conflict_error_report(error_dic, sheet, connection):
             error_value = conflict[1]
             try:
                 # let's see if the user has access to conflicting item
-                existing_item = fdnDCIC.search_FDN(sheet, error_field, error_value, connection)[0]
+                existing_item = submit_utils.search_FDN(sheet, error_field, error_value, connection)[0]
                 link_id = existing_item.get('link_id').replace("~", "/")
                 add_text = "please use " + link_id
             except:
@@ -578,7 +587,7 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = fdnDCIC.patch_FDN(existing_data["uuid"], connection, post_json)
+    e = submit_utils.patch_FDN(existing_data["uuid"], connection, post_json)
     if file_to_upload:
         # get s3 credentials
         creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
@@ -600,7 +609,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = fdnDCIC.new_FDN(connection, sheet, post_json)
+    e = submit_utils.new_FDN(connection, sheet, post_json)
     if file_to_upload:
         # upload the file
         upload_file(e, filename_to_post)
@@ -636,7 +645,7 @@ def delete_fields(post_json, connection, existing_data):
     """Does a put to delete fields with the keyword '*delete*'."""
     my_uuid = existing_data.get("uuid")
     my_accesssion = existing_data.get("accession")
-    raw_json = fdnDCIC.get_FDN(my_uuid, connection, frame="raw")
+    raw_json = submit_utils.get_FDN(my_uuid, connection, frame="raw")
     # check if the uuid is in the raw_json
     if not raw_json.get("uuid"):
         raw_json["uuid"] = my_uuid
@@ -657,7 +666,7 @@ def delete_fields(post_json, connection, existing_data):
         if raw_json.get(rm_key):
             del raw_json[rm_key]
     # Do the put with raw_json
-    fdnDCIC.put_FDN(my_uuid, connection, raw_json)
+    submit_utils.put_FDN(my_uuid, connection, raw_json)
     # Remove them also from the post_json
     for rm_key in fields_to_be_removed:
         del post_json[rm_key]
@@ -765,10 +774,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
-                e = fdnDCIC.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                e = submit_utils.patch_FDN_check(existing_data["uuid"], connection, post_json)
             else:
                 post_json = remove_deleted(post_json)
-                e = fdnDCIC.new_FDN_check(connection, sheet, post_json)
+                e = submit_utils.new_FDN_check(connection, sheet, post_json)
             # check simulation status
             if e['status'] == 'success':
                 pass
@@ -838,14 +847,14 @@ def format_file(param, files, connection):
         object_key = []
         uuid = []
         for a_file in files:
-            resp = fdnDCIC.get_FDN(a_file, connection)
+            resp = submit_utils.get_FDN(a_file, connection)
             object_key.append(resp['display_title'])
             uuid.append(resp['uuid'])
         template['object_key'] = object_key
         template['uuid'] = uuid
     # if it is not a list of files
     else:
-        resp = fdnDCIC.get_FDN(files, connection)
+        resp = submit_utils.get_FDN(files, connection)
         template['object_key'] = resp['display_title']
         template['uuid'] = resp['uuid']
     # find the bucket from the last used response
@@ -881,7 +890,7 @@ def build_tibanna_json(keys, types, values, connection):
         # insert wf uuid and app_name
         if param == 'workflow_uuid':
             template['workflow_uuid'] = post_json['workflow_uuid']
-            template['app_name'] = fdnDCIC.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
+            template['app_name'] = submit_utils.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
         elif param.startswith('input--'):
             template["input_files"].append(format_file(param, post_json[param], connection))
         elif param.startswith('output--'):
@@ -921,7 +930,7 @@ def user_workflow_reader(datafile, sheet, connection):
             continue
         if post_json:
             # do the magic
-            e = fdnDCIC.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            e = submit_utils.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
             if e.get("status") == "SUCCEEDED":
                 post += 1
             else:
@@ -1001,7 +1010,7 @@ def loadxl_cycle(patch_list, connection):
             entry = delete_fields(entry, connection, entry)
             if entry != {}:
                 total = total + 1
-                e = fdnDCIC.patch_FDN(entry["uuid"], connection, entry)
+                e = submit_utils.patch_FDN(entry["uuid"], connection, entry)
                 if e.get("status") == "error":  # pragma: no cover
                     error_rep = error_report(e, n.upper(), [], connection)
                     if error_rep:
@@ -1052,7 +1061,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 
 def get_collections(connection):
     """Get a list of all the data_types in the system."""
-    profiles = fdnDCIC.get_FDN("/profiles/", connection)
+    profiles = submit_utils.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     return supported_collections
@@ -1089,12 +1098,12 @@ def get_all_aliases(workbook, sheets):
 
 def main():  # pragma: no cover
     args = getArgs()
-    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    key = submit_utils.FDN_Key(args.keyfile, args.key)
     # check if key has error
     if key.error:
         sys.exit(1)
     # establish connection and run checks
-    connection = fdnDCIC.FDN_Connection(key)
+    connection = submit_utils.FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
