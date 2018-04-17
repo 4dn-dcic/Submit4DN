@@ -762,7 +762,7 @@ def test_validate_multiple_items_in_alias_dict_incorrect_type(alias_dict, connec
 
 def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection):
     item = 'test:alias1'
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       return_value={'@type': ['Biosource']}):
         msg = imp.validate_item([item], 'Biosource', {}, connection)
         assert not msg
@@ -770,7 +770,7 @@ def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection):
 
 def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection):
     item = '/labs/test-lab'
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       return_value={'@type': ['Lab']}):
         msg = imp.validate_item([item], 'Lab', {}, connection)
         assert not msg
@@ -778,7 +778,7 @@ def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection
 
 def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection):
     item = 'test:alias1'
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       return_value={'@type': ['HTTPNotFound']}):
         msg = imp.validate_item([item], 'Biosource', {}, connection)
         assert msg.startswith("ERROR")
@@ -786,7 +786,7 @@ def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection):
 
 def test_validate_item_one_in_one_not_in_db(mocker, connection):
     items = ['test:alias1', 'test:alias2']
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       side_effect=[{'@type': ['HTTPNotFound']},
                                    {'@type': ['Biosource', 'Item']}]):
         msg = imp.validate_item(items, 'Biosource', {}, connection)

@@ -403,7 +403,7 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
             match = pattern.match(item)
             if match is None:
                 item = '/' + typeinfield + item
-            res = fdnDCIC.get_FDN(item, connection)
+            res = submit_utils.get_FDN(item, connection)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
