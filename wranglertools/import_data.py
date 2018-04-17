@@ -780,31 +780,41 @@ def remove_deleted(post_json):
     return post_json
 
 
-def _pairing_consistency_check(files):
+def _add_e_to_edict(alias, err, errors):
+    if alias in errors:
+        errors[alias].append(err)
+    else:
+        errors[alias] = [err]
+    return errors
+
+
+def _pairing_consistency_check(files, errors):
     """checks the datastructure for consistency"""
-    file_list = sorted(list(files.keys()))
+    file_list = sorted([f for f in files])
     pair_list = []
     for f, info in files.items():
         pair = info.get('pair')
         if not pair:
-            print(f, " is missing a pair information but has paired_end = ", info.get('end'))
+            err = 'no paired file but paired_end = ' + info.get('end')
+            errors = _add_e_to_edict(f, err, errors)
         else:
             pair_list.append(pair)
     paircnts = Counter(pair_list)
     if len(file_list) != len(paircnts):
-        print("Something funny's going on")
-        print(len(file_list), " FILES paired with ", len(paircnts))
+        err = str(len(file_list)) + " FILES paired with " + str(len(paircnts))
+        errors = _add_e_to_edict('MISMATCH', err, errors)
+    return errors
 
 
-def check_file_pairing(fastq_sheet, fields):
+def check_file_pairing(fastq_row):
     """checks consistency between file pair info within sheet"""
+    fields = next(fastq_row)
+    fields.pop(0)
     alias_idx = fields.index("aliases")
     pair_idx = fields.index("paired_end")
-    # print('Alias index = ', alias_idx)
-    # print('Paired end index = ', pair_idx)
-
     files = {}
-    for row in fastq_sheet:
+    errors = {}
+    for row in fastq_row:
         file_info = {}
         if row[0].startswith("#"):
             continue
@@ -817,13 +827,15 @@ def check_file_pairing(fastq_sheet, fields):
             if fld.strip() == 'paired with':
                 #import pdb; pdb.set_trace()
                 if saw_pair:
-                    print("WARNING: you can't have more than one paired_with in a single row")
+                    err = 'single row with multiple paired_with values'
+                    errors = _add_e_to_edict(alias, err, errors)
                     continue
                 else:
                     file = row[i + 1]
                     saw_pair = True
                     if not paired_end:
-                        print('Missing paired end number for ', alias)
+                        err = 'missing paired_end number'
+                        errors = _add_e_to_edict(alias, err, errors)
                     files[alias] = {'end': paired_end, 'pair': file}
         if not saw_pair and paired_end:
             files[alias] = {'end': paired_end}
@@ -832,13 +844,12 @@ def check_file_pairing(fastq_sheet, fields):
         if info.get('pair'):
             fp = info.get('pair')
             if fp not in files:
-                print("Missing a row for %s - that is paired with %s in sheet" % (fp, f))
+                err = "paired_with missing %s" % fp
+                errors = _add_e_to_edict(f, err, errors)
             else:
                 files[fp]['pair'] = f
 
-    # for k, v in files.items():
-    #    print(k, '\t', v)
-    _pairing_consistency_check(files)
+    return _pairing_consistency_check(files, errors)
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
@@ -869,9 +880,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
     invalid = False
 
     if sheet == "FileFastq" and not novalidate:
-        # check for consistent file pairing of fastqs in the sheet (no db chk)
-        ans = check_file_pairing(row, keys)
-        print(ans)
+        # check for consistent file pairing of fastqs in the sheet
+        pair_errs = check_file_pairing(reader(datafile, sheetname=sheet))
+        for f, err in sorted(pair_errs.items()):
+            for e in err:
+                print('WARNING: ', f, '\t', e)
+
     # iterate over the rows
     for values in row:
         # Rows that start with # are skipped
