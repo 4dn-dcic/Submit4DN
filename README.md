@@ -72,7 +72,10 @@ It will accept the following parameters:
     --comments       adds the comments together with enums (by default False)
     --writexls       creates the xls file (by default True)
     --outfile        change the default file name "fields.xls" to a specified one
-    --order          create an ordered and filtered version of the excel (by default True)
+
+The --type argument also has a few custom options available: '--type all' generates a workbook
+with all sheets, while '--type HiC', '--type Chip-Seq', '--type Repliseq', and '--type FISH'
+will generate a workbook with all sheets except those irrelevant to that experiment type.
 
 
 Examples generating a single sheet:
@@ -104,6 +107,15 @@ python3 -m wranglertools.get_field_info --type Publication --type D ocument --ty
 Example list of sheets: (Experiment seq simple)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type Protocol --type BiosampleCellCulture --type Biosource --type Biosample --type FileFastq --type ExperimentSeq --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_simple.xls
+
+~~~~
+
+Examples for list of sheets using a preset option:
+~~~~
+python3 -m wranglertools.get_field_info --type HiC --comments --outfile exp_hic_generic.xls
+python3 -m wranglertools.get_field_info --type Chip-Seq --comments --outfile exp_seq_generic.xls
+python3 -m wranglertools.get_field_info --type FISH --comments --outfile exp_fish_generic.xls
+python3 -m wranglertools.get_field_info --type Repliseq --comments --outfile exp_repliseq_generic.xls
 
 ~~~~
 
@@ -170,6 +182,3 @@ For a better testing experienece that also check to ensure sufficient coverage a
 ```
 
 This will first run linters, if linters pass, tests will be run and if tests achieve specified minimum coverage (89% as of time of writting) pass the tests.
-
-
-
