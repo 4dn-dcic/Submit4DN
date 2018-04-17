@@ -817,15 +817,15 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
         # Get existing data if available
-        #existing_data = get_existing(post_json, connection)
+        # existing_data = get_existing(post_json, connection)
 
         # pre-validate the row by fields and data_types
         if not novalidate:
             row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
             if row_errors:
-                #if existing_data.get("uuid"):
+                # if existing_data.get("uuid"):
                 #    not_patched += 1
-                #else:
+                # else:
                 #    not_posted += 1
                 error += 1
                 pre_validate_errors.extend(row_errors)
