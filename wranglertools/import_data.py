@@ -495,13 +495,14 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet, existing_data):
+def populate_post_json(post_json, connection, sheet):  # , existing_data):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
     if post_json.get("attachment"):
         attach = attachment(post_json["attachment"])
         post_json["attachment"] = attach
 
+    existing_data = get_existing(post_json, connection)
     # Combine aliases
     if post_json.get('aliases') != ['*delete*']:
         if post_json.get('aliases') and existing_data.get('aliases'):
@@ -531,7 +532,7 @@ def populate_post_json(post_json, connection, sheet, existing_data):
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
-    return post_json, file_to_upload
+    return post_json, existing_data, file_to_upload
 
 
 def filter_set_from_exps(post_json):
@@ -784,7 +785,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
     dryrun = not(update or patchall)
-    all_aliases = list(aliases_by_type.keys())
+    all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
@@ -816,16 +817,16 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
         # Get existing data if available
-        existing_data = get_existing(post_json, connection)
+        #existing_data = get_existing(post_json, connection)
 
         # pre-validate the row by fields and data_types
         if not novalidate:
             row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
             if row_errors:
-                if existing_data.get("uuid"):
-                    not_patched += 1
-                else:
-                    not_posted += 1
+                #if existing_data.get("uuid"):
+                #    not_patched += 1
+                #else:
+                #    not_posted += 1
                 error += 1
                 pre_validate_errors.extend(row_errors)
                 invalid = True
@@ -834,7 +835,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, file_to_upload = populate_post_json(post_json, connection, sheet, existing_data)
+        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)  # , existing_data)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
