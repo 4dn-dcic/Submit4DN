@@ -6,8 +6,10 @@ import json
 import logging
 import os.path
 import hashlib
-# import xlrd
-# import xlwt
+
+print("""SUBMIT4DN fdnDCIC TOOLS ARE DEPRECIATED.
+      PLEASE SWITCH TO USING DCICUTILS INSTEAD.
+      fdnDCIC WILL BE DELETED JUNE 2018.""")
 
 
 class FDN_Key:
@@ -36,7 +38,9 @@ class FDN_Key:
 
 
 class FDN_Connection(object):
-
+    # print("""SUBMIT4DN TOOLS ARE DEPRECIATED
+    #       PLEASE SWITCH TO USING DCICUTILS INSTEAD
+    #       fdnDCIC WILL BE DELETED JUNE 2018""")
     def set_award(self, lab, dontPrompt=True):
         '''Sets the award for the connection for use in import_data
            if dontPrompt is False will ask the User to choose if there
@@ -173,6 +177,9 @@ def format_to_json(input_data):
 
 
 def get_FDN(obj_id, connection, frame="object", url_addon=None):
+    # print("""SUBMIT4DN TOOLS ARE DEPRECIATED
+    #       PLEASE SWITCH TO USING DCICUTILS INSTEAD
+    #       fdnDCIC WILL BE DELETED JUNE 2018""")
     '''GET an FDN object, collection or search result as JSON and
         return as dict or list of dicts for objects, and collection
         or search, respectively.
@@ -210,11 +217,13 @@ def search_FDN(sheet, field, value, connection):
     return response.json()
 
 
-def patch_FDN(obj_id, connection, patch_input):
+def patch_FDN(obj_id, connection, patch_input, url_addon=None):
     '''PATCH an existing FDN object and return the response JSON
     '''
     json_payload = format_to_json(patch_input)
     url = connection.server + obj_id
+    if url_addon:
+        url = url + url_addon
     response = requests.patch(url, auth=connection.auth, data=json_payload, headers=connection.headers)
     if not response.status_code == 200:  # pragma: no cover
         try:
@@ -237,10 +246,12 @@ def put_FDN(obj_id, connection, put_input):
     return response.json()
 
 
-def new_FDN(connection, collection_name, post_input):
+def new_FDN(connection, collection_name, post_input, url_addon=None):
     '''POST an FDN object as JSON and return the response JSON'''
     json_payload = format_to_json(post_input)
     url = connection.server + collection_name
+    if url_addon:
+        url = url + url_addon
     response = requests.post(url, auth=connection.auth, headers=connection.headers, data=json_payload)
     if not response.status_code == 201:  # pragma: no cover
         try:
@@ -272,127 +283,3 @@ def md5(path):
         for chunk in iter(lambda: f.read(1024*1024), b''):
             md5sum.update(chunk)
     return md5sum.hexdigest()
-
-
-############################################################
-############################################################
-# following part is for ordering fields in the created excel
-# and also populating it with the existing fields for common
-# items.
-# use the following order to process the sheets
-# if name is not here, will not be processed during ordering
-############################################################
-############################################################
-sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct", "TreatmentRnai",
-    "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
-    "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileFasta",
-    "FileProcessed", "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
-    "MicroscopeSettingD1", "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
-    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
-    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
-    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
-    ]
-
-# Most fields are covered by "exclude_from:submit4dn" tag for removal
-# do_not_use list can be populated if there are additional fields that nneds to be taken out
-# do_not_use = ["filesets", "status"]
-
-
-# def filter_and_sort(list_names):
-# """Filter and sort fields"""
-# useful = []
-# for field in list_names:
-#     if field in do_not_use:
-#         pass
-#     else:
-#         useful.append(field)
-# # sort alphabetically
-# useful = sorted(useful)
-# return useful
-
-
-# if object name is in the following list, fetch all current/released items and add to xls
-# if experiment is ever added to this list, experiment set related fields might cause some problems
-fetch_items = {
-    "Document": "document",
-    "Protocol": "protocol",
-    "Enzyme": "enzyme",
-    "Biosource": "biosource",
-    "Publication": "publication",
-    "Vendor": "vendor"
-    }
-
-
-def sort_item_list(item_list, item_id, field):
-    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginning."""
-    # sort all items based on the key
-    sorted_list = sorted(item_list, key=lambda k: ("" if k.get(field) is None else k.get(field)))
-    # move the item_id ones to the front
-    move_list = [i for i in sorted_list if i.get(field) == item_id]
-    move_list.reverse()
-    for move_item in move_list:
-        try:
-            sorted_list.remove(move_item)
-            sorted_list.insert(0, move_item)
-        except:  # pragma: no cover
-            pass
-    return sorted_list
-
-
-def fetch_all_items(sheet, field_list, connection):
-    """For a given sheet, get all released items"""
-    all_items = []
-    if sheet in fetch_items.keys():
-        # Search all items, get uuids, get them one by one
-        obj_id = "search/?type=" + fetch_items[sheet]
-        resp = get_FDN(obj_id, connection)
-        items_uuids = [i["uuid"] for i in resp['@graph']]
-        items_list = []
-        for item_uuid in items_uuids:
-            items_list.append(get_FDN(item_uuid, connection))
-
-        # order items with lab and user
-        # the date ordering is already in place through search result (resp)
-        # 1) order by dcic lab
-        items_list = sort_item_list(items_list, '/lab/dcic-lab/', 'lab')
-        # 2) sort by submitters lab
-        items_list = sort_item_list(items_list, connection.lab, 'lab')
-        # 3) sort by submitters user
-        items_list = sort_item_list(items_list, connection.user, 'submitted_by')
-        # 4) If biosurce, also sort by tier
-        if sheet == "Biosource":
-            items_list = sort_item_list(items_list, 'Tier 1', 'cell_line_tier')
-
-        # filter for fields that exist on the excel sheet
-        for item in items_list:
-            item_info = []
-            for field in field_list:
-                # required fields will have a star
-                field = field.strip('*')
-                # add # to skip existing items during submission
-                if field == "#Field Name:":
-                    item_info.append("#")
-                # the attachment field returns a dictionary
-                elif field == "attachment":
-                    try:
-                        item_info.append(item.get(field)['download'])
-                    except:
-                        item_info.append("")
-                else:
-                    # when writing values, check for the lists and turn them into string
-                    write_value = item.get(field, '')
-                    if isinstance(write_value, list):
-                        write_value = ','.join(write_value)
-                    item_info.append(write_value)
-            all_items.append(item_info)
-        return all_items
-    else:  # pragma: no cover
-        return
-
-############################################################
-############################################################
-############################################################
-############################################################
