@@ -1,4 +1,4 @@
-import wranglertools.fdnDCIC as fdnDCIC
+import dcicutils.submit_utils as submit_utils
 import os
 
 
@@ -7,21 +7,21 @@ def run(keypairs_file, schema_name):
     assert os.path.isfile(str(keypairs_file))
 
     try:
-        key = fdnDCIC.FDN_Key(keypairs_file, "default")
+        key = submit_utils.FDN_Key(keypairs_file, "default")
     except Exception as e:
         print(e)
         print("key error")
         raise e
     try:
-        connection = fdnDCIC.FDN_Connection(key)
+        connection = submit_utils.FDN_Connection(key)
     except Exception as e:
         print(e)
         print("connection error")
         raise e
     try:
-        # response = fdnDCIC.get_FDN("/profiles/file_reference.json", connection, frame="object")
-        response = fdnDCIC.get_FDN("/" + schema_name, connection, frame=None)
-        # response = fdnDCIC.get_FDN("/search/?type=FileReference", connection, frame=None)
+        # response = submit_utils.get_FDN("/profiles/file_reference.json", connection, frame="object")
+        response = submit_utils.get_FDN("/" + schema_name, connection, frame=None)
+        # response = submit_utils.get_FDN("/search/?type=FileReference", connection, frame=None)
     except Exception as e:
         print(e)
         print("post error")

@@ -10,6 +10,12 @@ def test_attachment_from_ftp():
 
 
 @pytest.mark.file_operation
+def test_md5():
+    md5_keypairs = imp.md5('./tests/data_files/keypairs.json')
+    assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
+
+
+@pytest.mark.file_operation
 def test_attachment_image():
     attach = imp.attachment("./tests/data_files/test.jpg")
     assert attach['height'] == 1080
@@ -177,7 +183,7 @@ def test_get_existing_uuid(connection, mocker, returned_vendor_existing_item):
                   {'aliases': ['some_acc']},
                   {'@id': 'some_@id'}]
     for post_json in post_jsons:
-        with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_existing_item):
+        with mocker.patch('dcicutils.submit_utils.requests.get', return_value=returned_vendor_existing_item):
             response = imp.get_existing(post_json, connection)
             assert response == returned_vendor_existing_item.json()
 
@@ -302,7 +308,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #                  'url': 'https://www.sample_vendor.com/',
 #                  'aliases': ['dcic:sample_vendor']}
 #     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set)
+#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
 #         args = imp.get_existing.call_args
 #         assert args[0][0] == post_json
 #         out = capsys.readouterr()[0]
@@ -325,7 +331,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #                  'aliases': ['dcic:sample_vendor']}
 #     existing_vendor = {'uuid': 'sample_uuid'}
 #     with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
-#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set)
+#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
 #         args = imp.get_existing.call_args
 #         assert args[0][0] == post_json
 #         out = capsys.readouterr()[0]
@@ -348,10 +354,10 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
         # mock upload file and skip
         with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
             # mock posting new items
-            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set, True)
-                args = imp.fdnDCIC.new_FDN.call_args
+                args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
                 post_json_arg = args[0][2]
@@ -376,7 +382,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
         # mock upload file and skip
         with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
             # mock posting new items
-            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set, True)
                 out = capsys.readouterr()[0]
@@ -401,10 +407,10 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
         # mock upload file and skip
         with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
             # mock posting new items
-            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, all_aliases,
                                  dict_load, dict_rep, dict_set, True)
-                args = imp.fdnDCIC.new_FDN.call_args
+                args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
                 post_json_arg = args[0][2]
@@ -435,13 +441,13 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
         # mock upload file and skip
         with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
             # mock posting new items
-            with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
+            with mocker.patch('dcicutils.submit_utils.patch_FDN', return_value=e):
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
                     imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, all_aliases,
                                      dict_load, dict_rep, dict_set, True)
                     # check for md5sum
-                    args = imp.fdnDCIC.patch_FDN.call_args
+                    args = imp.submit_utils.patch_FDN.call_args
                     post_json_arg = args[0][2]
                     assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
                     # check for cred getting updated (from old_creds to new_creds)
@@ -471,10 +477,10 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock posting new items
-        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+        with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'FileFastq', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set, True)
-            args = imp.fdnDCIC.new_FDN.call_args
+            args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             print([i for i in args])
             assert message == out.strip()
@@ -496,10 +502,10 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
-        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+        with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set, True)
-            args = imp.fdnDCIC.new_FDN.call_args
+            args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
             assert args[0][2] == final_post
@@ -519,10 +525,10 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
-        with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+        with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False, all_aliases,
                              dict_load, dict_rep, dict_set, True)
-            args = imp.fdnDCIC.new_FDN.call_args
+            args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
             print(args[0][2])
@@ -587,9 +593,9 @@ def test_user_workflow_reader_wfr_post(capsys, mocker, connection):
                                'workflow_argument_name': 'filtered_pairs', 'object_key': '4DNFIGOJW3XZ.pairs.gz',
                                'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71'}
                             ]):
-            with mocker.patch('wranglertools.fdnDCIC.new_FDN', return_value=e):
+            with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.user_workflow_reader(test_insert, sheet_name, connection)
-                args = imp.fdnDCIC.new_FDN.call_args
+                args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 print([i for i in args])
                 assert message == out.strip()
@@ -618,7 +624,7 @@ def test_loadxl_cycle(capsys, mocker, connection):
     patch_list = {'Experiment': [{"uuid": "some_uuid"}]}
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
     message = "EXPERIMENT(phase2): 1 items patched."
-    with mocker.patch('wranglertools.fdnDCIC.patch_FDN', return_value=e):
+    with mocker.patch('dcicutils.submit_utils.patch_FDN', return_value=e):
         imp.loadxl_cycle(patch_list, connection)
         out = capsys.readouterr()[0]
         assert message == out.strip()
@@ -756,7 +762,7 @@ def test_validate_multiple_items_in_alias_dict_incorrect_type(alias_dict, connec
 
 def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection):
     item = 'test:alias1'
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       return_value={'@type': ['Biosource']}):
         msg = imp.validate_item([item], 'Biosource', {}, connection)
         assert not msg
@@ -764,7 +770,7 @@ def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection):
 
 def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection):
     item = '/labs/test-lab'
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       return_value={'@type': ['Lab']}):
         msg = imp.validate_item([item], 'Lab', {}, connection)
         assert not msg
@@ -772,7 +778,7 @@ def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection
 
 def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection):
     item = 'test:alias1'
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       return_value={'@type': ['HTTPNotFound']}):
         msg = imp.validate_item([item], 'Biosource', {}, connection)
         assert msg.startswith("ERROR")
@@ -780,7 +786,7 @@ def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection):
 
 def test_validate_item_one_in_one_not_in_db(mocker, connection):
     items = ['test:alias1', 'test:alias2']
-    with mocker.patch('wranglertools.fdnDCIC.get_FDN',
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
                       side_effect=[{'@type': ['HTTPNotFound']},
                                    {'@type': ['Biosource', 'Item']}]):
         msg = imp.validate_item(items, 'Biosource', {}, connection)
