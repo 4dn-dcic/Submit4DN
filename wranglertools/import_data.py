@@ -815,17 +815,14 @@ def check_file_pairing(fastq_row):
     files = {}
     errors = {}
     for row in fastq_row:
-        file_info = {}
         if row[0].startswith("#"):
             continue
         row.pop(0)  # to make indexes same
-        #rint(row)
         alias = row[alias_idx]
         paired_end = row[pair_idx]
         saw_pair = False
         for i, fld in enumerate(row):
             if fld.strip() == 'paired with':
-                #import pdb; pdb.set_trace()
                 if saw_pair:
                     err = 'single row with multiple paired_with values'
                     errors = _add_e_to_edict(alias, err, errors)
