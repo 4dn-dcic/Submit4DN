@@ -810,8 +810,12 @@ def check_file_pairing(fastq_row):
     """checks consistency between file pair info within sheet"""
     fields = next(fastq_row)
     fields.pop(0)
+    if 'aliases' not in fields:
+        return
     alias_idx = fields.index("aliases")
-    pair_idx = fields.index("paired_end")
+    pair_idx = None
+    if 'paired_end' in fields:
+        pair_idx = fields.index("paired_end")
     files = {}
     errors = {}
     for row in fastq_row:
