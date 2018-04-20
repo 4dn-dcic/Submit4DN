@@ -318,7 +318,7 @@ def build_field(field, field_data, field_type):
 
 
 def fix_attribution(sheet, post_json, connection):
-    if sheet.lower() not in ['lab', 'award', 'user', 'organism']:
+    if sheet.lower() not in ['lab', 'award', 'user', 'organism', 'ontologyterm']:
         if not post_json.get('lab'):
             post_json['lab'] = connection.lab
         if not post_json.get('award'):
