@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-from wranglertools import fdnDCIC
+from dcicutils import submit_utils
 import attr
 import xlwt
 import sys
@@ -79,10 +79,6 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
-#    parser.add_argument('--order',
-#                       default=True,
-#                       action='store_true',
-#                       help="A reference file is used for ordering and filtering fields")
     parser.add_argument('--remote',
                         default=False,
                         action='store_true',
@@ -108,6 +104,97 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3
                     # FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
                     #          'Grouping for non-replicate experiments')
                     ]
+
+
+fetch_items = {
+    "Document": "document",
+    "Protocol": "protocol",
+    "Enzyme": "enzyme",
+    "Biosource": "biosource",
+    "Publication": "publication",
+    "Vendor": "vendor"
+    }
+
+
+sheet_order = [
+    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
+    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct", "TreatmentRnai",
+    "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
+    "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileFasta",
+    "FileProcessed", "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
+    "MicroscopeSettingD1", "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
+    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
+    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
+    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
+    ]
+
+
+def sort_item_list(item_list, item_id, field):
+    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginning."""
+    # sort all items based on the key
+    sorted_list = sorted(item_list, key=lambda k: ("" if k.get(field) is None else k.get(field)))
+    # move the item_id ones to the front
+    move_list = [i for i in sorted_list if i.get(field) == item_id]
+    move_list.reverse()
+    for move_item in move_list:
+        try:
+            sorted_list.remove(move_item)
+            sorted_list.insert(0, move_item)
+        except:  # pragma: no cover
+            pass
+    return sorted_list
+
+
+def fetch_all_items(sheet, field_list, connection):
+    """For a given sheet, get all released items"""
+    all_items = []
+    if sheet in fetch_items.keys():
+        # Search all items, get uuids, get them one by one
+        obj_id = "search/?type=" + fetch_items[sheet]
+        resp = submit_utils.get_FDN(obj_id, connection)
+        items_uuids = [i["uuid"] for i in resp['@graph']]
+        items_list = []
+        for item_uuid in items_uuids:
+            items_list.append(submit_utils.get_FDN(item_uuid, connection))
+
+        # order items with lab and user
+        # the date ordering is already in place through search result (resp)
+        # 1) order by dcic lab
+        items_list = sort_item_list(items_list, '/lab/dcic-lab/', 'lab')
+        # 2) sort by submitters lab
+        items_list = sort_item_list(items_list, connection.lab, 'lab')
+        # 3) sort by submitters user
+        items_list = sort_item_list(items_list, connection.user, 'submitted_by')
+        # 4) If biosurce, also sort by tier
+        if sheet == "Biosource":
+            items_list = sort_item_list(items_list, 'Tier 1', 'cell_line_tier')
+
+        # filter for fields that exist on the excel sheet
+        for item in items_list:
+            item_info = []
+            for field in field_list:
+                # required fields will have a star
+                field = field.strip('*')
+                # add # to skip existing items during submission
+                if field == "#Field Name:":
+                    item_info.append("#")
+                # the attachment field returns a dictionary
+                elif field == "attachment":
+                    try:
+                        item_info.append(item.get(field)['download'])
+                    except:
+                        item_info.append("")
+                else:
+                    # when writing values, check for the lists and turn them into string
+                    write_value = item.get(field, '')
+                    if isinstance(write_value, list):
+                        write_value = ','.join(write_value)
+                    item_info.append(write_value)
+            all_items.append(item_info)
+        return all_items
+    else:  # pragma: no cover
+        return
 
 
 def get_field_type(field):
@@ -186,7 +273,7 @@ def get_uploadable_fields(connection, types, include_description=False,
     for name in types:
         schema_name = name + '.json'
         uri = '/profiles/' + schema_name
-        schema_grabber = fdnDCIC.FDN_Schema(connection, uri)
+        schema_grabber = submit_utils.FDN_Schema(connection, uri)
         required_fields = schema_grabber.required
         fields[name] = build_field_list(schema_grabber.properties,
                                         required_fields,
@@ -206,7 +293,7 @@ def create_xls(all_fields, filename):
     '''
     wb = xlwt.Workbook()
     # order sheets
-    sheet_list = [(sheet, all_fields[sheet]) for sheet in fdnDCIC.sheet_order if sheet in all_fields.keys()]
+    sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
         ws = wb.add_sheet(obj_name)
         ws.write(0, 0, "#Field Name:")
@@ -233,10 +320,10 @@ def create_xls(all_fields, filename):
 
 def main():  # pragma: no cover
     args = getArgs()
-    key = fdnDCIC.FDN_Key(args.keyfile, args.key)
+    key = submit_utils.FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
-    connection = fdnDCIC.FDN_Connection(key)
+    connection = submit_utils.FDN_Connection(key)
     # test connection
     if not connection.check:
         print("CONNECTION ERROR: Please check your keys.")
@@ -246,8 +333,7 @@ def main():  # pragma: no cover
         connection.prompt_for_lab_award()
 
     if args.type == ['all']:
-        # import pdb; pdb.set_trace()
-        args.type = [sheet for sheet in fdnDCIC.sheet_order if sheet != 'ExperimentMic_Path']
+        args.type = [sheet for sheet in sheet_order if sheet != 'ExperimentMic_Path']
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
@@ -261,8 +347,7 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-#       if args.order:
-#           fdnDCIC.order_FDN(file_name, connection)
+
 
 if __name__ == '__main__':
     main()

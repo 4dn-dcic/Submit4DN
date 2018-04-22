@@ -94,7 +94,7 @@ def test_build_field_list_embeds_with_dots(embed_properties):
 
 
 def test_get_uploadable_fields_mock(connection, mocker, returned_vendor_schema):
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
+    with mocker.patch('dcicutils.submit_utils.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         for field in field_dict['Vendor']:
             assert field.name is not None
@@ -139,7 +139,7 @@ def test_create_xls_vendor(connection, mocker, returned_vendor_schema):
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
+    with mocker.patch('dcicutils.submit_utils.requests.get', return_value=returned_vendor_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
@@ -159,7 +159,7 @@ def test_create_xls_lookup_order(connection, mocker, returned_vendor_schema_l):
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema_l):
+    with mocker.patch('dcicutils.submit_utils.requests.get', return_value=returned_vendor_schema_l):
         field_dict = gfi.get_uploadable_fields(connection, ['Vendor'])
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
@@ -179,7 +179,7 @@ def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_s
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_experiment_set_schema):
+    with mocker.patch('dcicutils.submit_utils.requests.get', return_value=returned_experiment_set_schema):
         field_dict = gfi.get_uploadable_fields(connection, ['ExperimentSet'], True, True, True)
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
@@ -188,3 +188,45 @@ def test_create_xls_experiment_set(connection, mocker, returned_experiment_set_s
         os.remove(xls_file)
     except OSError:
         pass
+
+
+def test_sort_item_list():
+    test_list = [{"lab": "dcic", "submitted_by": "koray", "no": 1},
+                 {"lab": "mlab", "submitted_by": "us1", "no": 2},
+                 {"lab": "dcic", "submitted_by": "andy", "no": 3},
+                 {"lab": "mlab", "submitted_by": "us4", "no": 4},
+                 {"lab": "dcic", "submitted_by": "koray", "no": 5},
+                 {"lab": "mlab", "submitted_by": "us2", "no": 6},
+                 {"lab": "dcic", "submitted_by": "andy", "no": 7},
+                 {"lab": "mlab", "submitted_by": "us3", "no": 8},
+                 {"lab": "dcic", "submitted_by": "jeremy", "no": 9}
+                 ]
+    test_list = gfi.sort_item_list(test_list, "mlab", "lab")
+    test_list = gfi.sort_item_list(test_list, "koray", "submitted_by")
+
+    result_list = [{'submitted_by': 'koray', 'lab': 'dcic', 'no': 1},
+                   {'submitted_by': 'koray', 'lab': 'dcic', 'no': 5},
+                   {'submitted_by': 'andy', 'lab': 'dcic', 'no': 3},
+                   {'submitted_by': 'andy', 'lab': 'dcic', 'no': 7},
+                   {'submitted_by': 'jeremy', 'lab': 'dcic', 'no': 9},
+                   {'submitted_by': 'us1', 'lab': 'mlab', 'no': 2},
+                   {'submitted_by': 'us2', 'lab': 'mlab', 'no': 6},
+                   {'submitted_by': 'us3', 'lab': 'mlab', 'no': 8},
+                   {'submitted_by': 'us4', 'lab': 'mlab', 'no': 4}]
+    assert test_list == result_list
+
+
+def test_fetch_all_items_mock(connection, mocker, returned_vendor_items,
+                              returned_vendor_item1, returned_vendor_item2, returned_vendor_item3):
+    fields = ['#Field Name:', 'aliases', 'name', '*title', 'description', 'lab', 'award', 'url']
+    with mocker.patch('dcicutils.submit_utils.requests.get', side_effect=[returned_vendor_items,
+                                                                          returned_vendor_item1,
+                                                                          returned_vendor_item2,
+                                                                          returned_vendor_item3]):
+        connection.lab = 'test'
+        connection.user = 'test'
+        all_vendor_items = gfi.fetch_all_items('Vendor', fields, connection)
+        for vendor in all_vendor_items:
+            assert len(vendor) == len(fields)
+            print(vendor)
+            assert vendor[0].startswith("#")
