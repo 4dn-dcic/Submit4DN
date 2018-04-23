@@ -782,7 +782,8 @@ def remove_deleted(post_json):
 
 def _add_e_to_edict(alias, err, errors):
     if alias in errors:
-        errors[alias].append(err)
+        if err not in errors[alias]:
+            errors[alias].append(err)
     else:
         errors[alias] = [err]
     return errors
@@ -811,7 +812,7 @@ def check_file_pairing(fastq_row):
     fields = next(fastq_row)
     fields.pop(0)
     if 'aliases' not in fields:
-        return
+        return {'NO GO': 'Can only check file pairing by aliases'}
     alias_idx = fields.index("aliases")
     pair_idx = None
     if 'paired_end' in fields:
@@ -819,10 +820,16 @@ def check_file_pairing(fastq_row):
     files = {}
     errors = {}
     for row in fastq_row:
+        # import pdb
+        # pdb.set_trace()
         if row[0].startswith("#"):
             continue
         row.pop(0)  # to make indexes same
         alias = row[alias_idx]
+        if not alias:
+            err = "alias missing - can't check file pairing"
+            errors = _add_e_to_edict('unaliased', err, errors)
+            continue
         paired_end = row[pair_idx]
         saw_pair = False
         for i, fld in enumerate(row):
@@ -840,15 +847,18 @@ def check_file_pairing(fastq_row):
                     files[alias] = {'end': paired_end, 'pair': file}
         if not saw_pair and paired_end:
             files[alias] = {'end': paired_end}
-
-    for f, info in files.items():
+    for f, info in sorted(files.items()):  # sorted purely for testing
         if info.get('pair'):
             fp = info.get('pair')
             if fp not in files:
-                err = "paired_with missing %s" % fp
+                err = "paired with not found %s" % fp
                 errors = _add_e_to_edict(f, err, errors)
             else:
-                files[fp]['pair'] = f
+                if files[fp].get('pair') and files[fp]['pair'] != f:
+                    err = 'attempting to alter existing pair %s\t%s' % (fp, files[fp]['pair'])
+                    errors = _add_e_to_edict(f, err, errors)
+                else:
+                    files[fp]['pair'] = f
 
     return _pairing_consistency_check(files, errors)
 
@@ -1136,6 +1146,7 @@ def user_workflow_reader(datafile, sheet, connection):
                 post += 1
             else:
                 print('can not post the workflow run {}'.format(post_json['wfr_meta']['aliases'][0]))
+                print(e)  # to give a little more info even if not that informative
                 error += 1
         else:
             error += 1

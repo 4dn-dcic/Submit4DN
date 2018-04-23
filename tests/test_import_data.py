@@ -864,3 +864,83 @@ def test_pre_validate_json(mocker, json2post, fields2type, alias_dict, connectio
     with mocker.patch('wranglertools.import_data.validate_field',
                       side_effect=['', '']):
         assert not imp.pre_validate_json(json2post, fields2type, alias_dict, connection)
+
+
+@pytest.fixture
+def fastq_sheet():
+    return [
+        ['#Field Name:', 'aliases', 'description', '*file_format', 'paired_end', 'related_files.relationship_type',
+         'related_files.file', 'read_length', 'instrument'],
+        ['', 'test:file1', '', 'fastq', '1', '', '', '75', ''],
+        ['', 'test:file2', '', 'fastq', '2', 'paired with', 'test:file1', '75', ''],
+        ['', 'test:file3', '', 'fastq', '1', 'paired with', 'test:file4', '75', ''],
+        ['', 'test:file4', '', 'fastq', '2', '', '', '75', ''],
+        ['', 'test:file5', '', 'fastq', '1', 'paired with', 'test:file4', '75', ''],
+        ['', 'test:file6', '', 'fastq', '1', '', '', '75', ''],
+        ['', 'test:file7', '', 'fastq', '', 'paired with', 'test:file6', '75', ''],
+        ['', 'test:file8', '', 'fastq', '1', '', '', '75', ''],
+        ['', 'test:file9', '', 'fastq', '2', 'paired with', '44DNFIYI7YMVU', '75', ''],
+        ['', 'test:file10', '', 'fastq', '2', 'paired with', 'test:file8', 'paired with', 'test:file7', '75', ''],
+        ['', '', 'File with no alias', 'fastq', '1', '', '', '75', ''],
+        ['', '', 'Another File with no alias', 'fastq', '1', '', '', '75', '']
+    ]
+
+
+def test_file_pair_chk_good_pairs(fastq_sheet):
+    rows = iter(fastq_sheet[0:5])
+    report = imp.check_file_pairing(rows)
+    assert not report
+
+
+def test_file_pair_chk_mulitple_pairing(fastq_sheet):
+    tochk = fastq_sheet[3:6]
+    tochk.insert(0, fastq_sheet[0])
+    rows = iter(tochk)
+    report = imp.check_file_pairing(rows)
+    assert 'test:file5' in report
+    assert 'MISMATCH' in report
+    assert 'attempting to alter existing pair' in report['test:file5'][0]
+
+
+def test_file_pair_chk_2_paired_with(fastq_sheet):
+    rows = iter([fastq_sheet[0], fastq_sheet[10]])
+    report = imp.check_file_pairing(rows)
+    assert 'test:file10' in report
+    assert 'single row with multiple paired_with values' in report['test:file10']
+
+
+def test_file_pair_chk_pairing_w_no_paired_end(fastq_sheet):
+    tochk = fastq_sheet[6:8]
+    tochk.insert(0, fastq_sheet[0])
+    rows = iter(tochk)
+    report = imp.check_file_pairing(rows)
+    assert 'test:file7' in report
+    assert 'missing paired_end number' in report['test:file7']
+
+
+def test_file_pair_chk_pairing_w_paired_file_not_alias(fastq_sheet):
+    tochk = fastq_sheet[8:10]
+    tochk.insert(0, fastq_sheet[0])
+    rows = iter(tochk)
+    report = imp.check_file_pairing(rows)
+    assert 'test:file8' in report
+    assert 'no paired file but paired_end = 1' in report['test:file8']
+    assert 'test:file9' in report
+    assert 'paired with not found 44DNFIYI7YMVU' in report['test:file9']
+
+
+def test_file_pair_chk_pairing_w_no_alias(fastq_sheet):
+    rows = iter([fastq_sheet[0], fastq_sheet[11], fastq_sheet[12]])
+    report = imp.check_file_pairing(rows)
+    assert 'unaliased' in report
+    assert len(report['unaliased']) == 1
+    assert "alias missing - can't check file pairing" in report['unaliased']
+
+
+def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
+    rows = iter([['#Field Name:', '*file_format', 'paired_end',
+                 'related_files.relationship_type', 'related_files.file'],
+                ['', 'fastq', '1', 'paired with', 'test:file2']])
+    report = imp.check_file_pairing(rows)
+    assert 'NO GO' in report
+    assert report['NO GO'] == 'Can only check file pairing by aliases'
