@@ -126,7 +126,7 @@ sheet_order = [
     "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
     ]
 
 
@@ -333,7 +333,8 @@ def main():  # pragma: no cover
         connection.prompt_for_lab_award()
 
     if args.type == ['all']:
-        args.type = [sheet for sheet in sheet_order if sheet != 'ExperimentMic_Path']
+        args.type = [sheet for sheet in sheet_order if sheet not in [
+                    'ExperimentMic_Path', 'OntologyTerm']]
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,

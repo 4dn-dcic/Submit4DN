@@ -17,6 +17,7 @@ def get_random_line_in_gist(url):
     listing = requests.get(url)
     return random.choice(listing.text.split("\n"))
 
+
 @task
 def play(ctx, positive=False):
     type_url = POSITIVE if positive else NEGATIVE
