@@ -371,6 +371,14 @@ def main():  # pragma: no cover
             "Image", "FileFasta", "FileProcessed", "MicroscopeSettingA1", "FileMicroscopy",
             "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
             ]
+    elif args.type.upper() == ['SPT']:
+        args.type = [
+            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
+            "Vendor", "Construct", "TreatmentRnai", "TreatmentChemical", "GenomicRegion",
+            "Target", "Antibody", "Modification", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFasta", "FileProcessed", "MicroscopeSettingA2", "FileMicroscopy",
+            "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
+            ]
 
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
