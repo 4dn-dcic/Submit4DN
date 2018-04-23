@@ -347,7 +347,7 @@ def main():  # pragma: no cover
             "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
             "ExperimentHiC", "ExperimentSetReplicate",
             ]
-    elif args.type.lower() == ['chip-seq']:
+    elif args.type == ['Chip-Seq']:
         args.type == [
             "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
             "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
@@ -355,7 +355,7 @@ def main():  # pragma: no cover
             "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
             "ExperimentSeq", "ExperimentSetReplicate",
             ]
-    elif args.type.lower() == ['repliseq']:
+    elif args.type == ['Repliseq']:
         args.type == [
             "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
             "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
@@ -363,7 +363,7 @@ def main():  # pragma: no cover
             "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
             "ExperimentRepliseq", "ExperimentSetReplicate",
             ]
-    elif args.type.upper() == ['FISH']:
+    elif args.type == ['FISH']:
         args.type = [
             "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
             "Vendor", "Construct", "TreatmentRnai", "TreatmentChemical", "GenomicRegion",
@@ -371,7 +371,7 @@ def main():  # pragma: no cover
             "Image", "FileFasta", "FileProcessed", "MicroscopeSettingA1", "FileMicroscopy",
             "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
             ]
-    elif args.type.upper() == ['SPT']:
+    elif args.type == ['SPT']:
         args.type = [
             "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
             "Vendor", "Construct", "TreatmentRnai", "TreatmentChemical", "GenomicRegion",
