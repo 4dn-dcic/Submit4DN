@@ -606,7 +606,7 @@ def test_order_sorter(capsys):
     test_list = ["ExperimentHiC", "BiosampleCellCulture", "Biosource", "Document", "Modification",
                  "IndividualMouse", "Biosample", "Lab", "User", "Trouble"]
     ordered_list = ['User', 'Lab', 'Document', 'IndividualMouse', 'Modification', 'Biosource',
-                    'Biosample', 'BiosampleCellCulture', 'ExperimentHiC']
+                    'BiosampleCellCulture', 'Biosample', 'ExperimentHiC']
     message0 = "WARNING! Trouble sheet(s) are not loaded"
     message1 = '''WARNING! Check the sheet names and the reference list "sheet_order"'''
     assert ordered_list == imp.order_sorter(test_list)
