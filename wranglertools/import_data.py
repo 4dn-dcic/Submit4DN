@@ -839,12 +839,12 @@ def check_file_pairing(fastq_row):
                     errors = _add_e_to_edict(alias, err, errors)
                     continue
                 else:
-                    file = row[i + 1]
+                    pfile = row[i + 1]
                     saw_pair = True
                     if not paired_end:
                         err = 'missing paired_end number'
                         errors = _add_e_to_edict(alias, err, errors)
-                    files[alias] = {'end': paired_end, 'pair': file}
+                    files[alias] = {'end': paired_end, 'pair': pfile}
         if not saw_pair and paired_end:
             files[alias] = {'end': paired_end}
     for f, info in sorted(files.items()):  # sorted purely for testing
