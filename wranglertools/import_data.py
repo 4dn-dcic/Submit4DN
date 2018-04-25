@@ -22,7 +22,8 @@ import os
 import time
 import subprocess
 import shutil
-from collections import OrderedDict
+import re
+from collections import OrderedDict, Counter
 try:
     import urllib2
 except:
@@ -99,8 +100,13 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="will skip attribution prompt \
                         needed for automated submissions")
+    parser.add_argument('--novalidate',
+                        default=False,
+                        action='store_true',
+                        help="Will skip pre-validation of workbook")
     args = parser.parse_args()
     return args
+
 
 # list of [sheet, [fields]] that need to be patched as a second step
 # should be in sync with loadxl.py in fourfront
@@ -309,6 +315,8 @@ def build_field(field, field_data, field_type):
     patch_field_name = get_field_name(field)
     if not field_type:
         field_type = get_field_type(field)
+    if 'array' in field_type:
+        field_type = 'array'
     if is_embedded_field(field):
         sub_field = get_sub_field(field)
         return build_field(sub_field, field_data, 'string')
@@ -363,21 +371,109 @@ def get_existing(post_json, connection):
         return
 
 
+def get_f_type(field, fields2types):
+    return fields2types.get(field, None)
+
+
+def add_to_mistype_message(item='', itype='', ftype='', msg=''):
+    toadd = "ERROR: '%s' is " % item
+    if 'HTTPNotFound' in itype:
+        toadd += 'NOT FOUND '
+    else:
+        toadd += 'TYPE %s ' % itype
+    return msg + toadd + '- THE REQUIRED TYPE IS %s\n' % ftype
+
+
+def validate_item(itemlist, typeinfield, alias_dict, connection):
+    msg = ''
+    # import pdb; pdb.set_trace()
+    pattern = re.compile(r"/(\w+)/\w")
+    for item in itemlist:
+        if item in alias_dict:
+            # import pdb; pdb.set_trace()
+            itemtype = alias_dict[item]
+            if typeinfield not in itemtype:
+                # need special cases for FileSet and ExperimentSet?
+                msg = add_to_mistype_message(item, itemtype, typeinfield, msg)
+        else:
+            # check for fully qualified path i.e. /labs/4dn-dcic-lab/
+            match = pattern.match(item)
+            if not item.startswith('/'):
+                item = '/' + item
+            match = pattern.match(item)
+            if match is None:
+                item = '/' + typeinfield + item
+            res = submit_utils.get_FDN(item, connection)
+            itemtypes = res.get('@type')
+            if itemtypes:
+                if typeinfield not in itemtypes:
+                    msg = add_to_mistype_message(item, itemtypes[0], typeinfield, msg)
+    return msg.rstrip()
+
+
+def validate_string(strings, alias_dict):
+    msg = ''
+    for s in strings:
+        if alias_dict.get(s, None) is not None:
+            msg = msg + "WARNING: ALIAS %s USED IN string Field\n" % s
+    return msg.rstrip()
+
+
+def _convert_to_array(s, is_array):
+    if is_array:
+        return [i.strip() for i in s.split(',')]
+    return [s.strip()]
+
+
+def validate_field(field_data, field_type, aliases_by_type, connection):
+    # import pdb; pdb.set_trace()
+    to_trim = 'array of embedded objects, '
+    is_array = False
+    msg = None
+    if field_type.startswith(to_trim):
+        field_type = field_type.replace(to_trim, '')
+    if 'array' in field_type:
+        is_array = True
+    if 'Item:' in field_type:
+        _, itemtype = field_type.rsplit(':', 1)
+        items = _convert_to_array(field_data, is_array)
+        msg = validate_item(items, itemtype, aliases_by_type, connection)
+    elif 'string' in field_type:
+        strings = _convert_to_array(field_data, is_array)
+        msg = validate_string(strings, aliases_by_type)
+    return msg
+
+
+def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
+    # import pdb; pdb.set_trace()
+    report = []
+    for field, field_data in post_json.items():
+        # ignore commented out fields
+        if field.startswith('#'):
+            continue
+        # ignore empty fields
+        if not field_data:
+            continue
+        # ignore aliases field as this was validated before
+        if field == 'aliases':
+            continue
+
+        field_type = get_f_type(field, fields2types)
+        msg = validate_field(field_data, field_type, aliases_by_type, connection)
+        if msg:
+            report.append(msg)
+    return report
+
+
 def build_patch_json(fields, fields2types):
     """Create the data entry dictionary from the fields."""
-    # convert array types to array
-    for field, ftype in fields2types.items():
-        if 'array' in ftype:
-            fields2types[field] = 'array'
-
     patch_data = {}
     for field, field_data in fields.items():
         # ignore commented out rows
         if field.startswith('#'):
             continue
-        field_type = None
-        if fields2types is not None:
-            field_type = fields2types[field]
+        field_type = get_f_type(field, fields2types)
+
         patch_field = build_field(field, field_data, field_type)
         if patch_field is not None:
             if is_embedded_field(field):
@@ -399,15 +495,14 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet):
+def populate_post_json(post_json, connection, sheet):  # , existing_data):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
     if post_json.get("attachment"):
         attach = attachment(post_json["attachment"])
         post_json["attachment"] = attach
-    # Get existing data if available
-    existing_data = get_existing(post_json, connection)
 
+    existing_data = get_existing(post_json, connection)
     # Combine aliases
     if post_json.get('aliases') != ['*delete*']:
         if post_json.get('aliases') and existing_data.get('aliases'):
@@ -685,9 +780,95 @@ def remove_deleted(post_json):
     return post_json
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets):
+def _add_e_to_edict(alias, err, errors):
+    if alias in errors:
+        if err not in errors[alias]:
+            errors[alias].append(err)
+    else:
+        errors[alias] = [err]
+    return errors
+
+
+def _pairing_consistency_check(files, errors):
+    """checks the datastructure for consistency"""
+    file_list = sorted([f for f in files])
+    pair_list = []
+    for f, info in files.items():
+        pair = info.get('pair')
+        if not pair:
+            err = 'no paired file but paired_end = ' + info.get('end')
+            errors = _add_e_to_edict(f, err, errors)
+        else:
+            pair_list.append(pair)
+    paircnts = Counter(pair_list)
+    if len(file_list) != len(paircnts):
+        err = str(len(file_list)) + " FILES paired with " + str(len(paircnts))
+        errors = _add_e_to_edict('MISMATCH', err, errors)
+    return errors
+
+
+def check_file_pairing(fastq_row):
+    """checks consistency between file pair info within sheet"""
+    fields = next(fastq_row)
+    fields.pop(0)
+    if 'aliases' not in fields:
+        return {'NO GO': 'Can only check file pairing by aliases'}
+    alias_idx = fields.index("aliases")
+    pair_idx = None
+    if 'paired_end' in fields:
+        pair_idx = fields.index("paired_end")
+    files = {}
+    errors = {}
+    for row in fastq_row:
+        # import pdb
+        # pdb.set_trace()
+        if row[0].startswith("#"):
+            continue
+        row.pop(0)  # to make indexes same
+        alias = row[alias_idx]
+        if not alias:
+            err = "alias missing - can't check file pairing"
+            errors = _add_e_to_edict('unaliased', err, errors)
+            continue
+        paired_end = row[pair_idx]
+        saw_pair = False
+        for i, fld in enumerate(row):
+            if fld.strip() == 'paired with':
+                if saw_pair:
+                    err = 'single row with multiple paired_with values'
+                    errors = _add_e_to_edict(alias, err, errors)
+                    continue
+                else:
+                    pfile = row[i + 1]
+                    saw_pair = True
+                    if not paired_end:
+                        err = 'missing paired_end number'
+                        errors = _add_e_to_edict(alias, err, errors)
+                    files[alias] = {'end': paired_end, 'pair': pfile}
+        if not saw_pair and paired_end:
+            files[alias] = {'end': paired_end}
+    for f, info in sorted(files.items()):  # sorted purely for testing
+        if info.get('pair'):
+            fp = info.get('pair')
+            if fp not in files:
+                err = "paired with not found %s" % fp
+                errors = _add_e_to_edict(f, err, errors)
+            else:
+                if files[fp].get('pair') and files[fp]['pair'] != f:
+                    err = 'attempting to alter existing pair %s\t%s' % (fp, files[fp]['pair'])
+                    errors = _add_e_to_edict(f, err, errors)
+                else:
+                    files[fp]['pair'] = f
+
+    return _pairing_consistency_check(files, errors)
+
+
+def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
     """takes an excel sheet and post or patched the data in."""
+    # determine right from the top if dry run
+    dryrun = not(update or patchall)
+    all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
@@ -706,6 +887,16 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
     patch = 0
     not_patched = 0
     not_posted = 0
+    pre_validate_errors = []
+    invalid = False
+
+    if sheet == "FileFastq" and not novalidate:
+        # check for consistent file pairing of fastqs in the sheet
+        pair_errs = check_file_pairing(reader(datafile, sheetname=sheet))
+        for f, err in sorted(pair_errs.items()):
+            for e in err:
+                print('WARNING: ', f, '\t', e)
+
     # iterate over the rows
     for values in row:
         # Rows that start with # are skipped
@@ -716,9 +907,26 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
         total += 1
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
+        # Get existing data if available
+        # existing_data = get_existing(post_json, connection)
+
+        # pre-validate the row by fields and data_types
+        if not novalidate:
+            row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+            if row_errors:
+                # if existing_data.get("uuid"):
+                #    not_patched += 1
+                # else:
+                #    not_posted += 1
+                error += 1
+                pre_validate_errors.extend(row_errors)
+                invalid = True
+                continue
+
+        # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
+        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)  # , existing_data)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -770,7 +978,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                 post += 1
 
         # dryrun option
-        if not patchall and not update:
+        if dryrun:
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
@@ -816,11 +1024,14 @@ def excel_reader(datafile, sheet, update, connection, patchall, all_aliases,
                                 dict_exp_sets[exp_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
-    if patch_loadxl:
+    if patch_loadxl and not invalid:
         dict_patch_loadxl[sheet] = patch_loadxl
 
+    if pre_validate_errors:
+        for l in pre_validate_errors:
+            print(l)
     # dryrun report
-    if not patchall and not update:
+    if dryrun:
         print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
     {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
               .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
@@ -877,14 +1088,14 @@ def build_tibanna_json(keys, types, values, connection):
     if not post_json.get('submitted_by'):
         post_json['submitted_by'] = connection.user
     template = {
-                 "config": {},
-                 "args": {},
-                 "parameters": {},
-                 "wfr_meta": {},
-                 "input_files": [],
-                 "metadata_only": True,
-                 "output_files": []
-                }
+        "config": {},
+        "args": {},
+        "parameters": {},
+        "wfr_meta": {},
+        "input_files": [],
+        "metadata_only": True,
+        "output_files": []
+    }
     # sorting only needed for the mock lists in tests to work - not cool
     for param in sorted(post_json.keys()):
         # insert wf uuid and app_name
@@ -935,6 +1146,7 @@ def user_workflow_reader(datafile, sheet, connection):
                 post += 1
             else:
                 print('can not post the workflow run {}'.format(post_json['wfr_meta']['aliases'][0]))
+                print(e)  # to give a little more info even if not that informative
                 error += 1
         else:
             error += 1
@@ -1070,8 +1282,10 @@ def get_collections(connection):
 def get_all_aliases(workbook, sheets):
     """Extracts all aliases existing in the workbook to later check object connections
        Checks for same aliases that are used for different items and gives warning."""
-    all_aliases = []
+    aliases_by_type = {}
     for sheet in sheets:
+        if sheet == 'ExperimentMic_Path':
+            continue
         alias_col = ""
         rows = reader(workbook, sheetname=sheet)
         keys = next(rows)  # grab the first row of headers
@@ -1087,13 +1301,13 @@ def get_all_aliases(workbook, sheets):
             my_aliases = [x.strip() for x in my_alias.split(",")]
             my_aliases = list(filter(None, my_aliases))
             if my_aliases:
-                all_aliases.extend(my_aliases)
-    import collections
-    non_unique_aliases = [item for item, count in collections.Counter(all_aliases).items() if count > 1]
-    if non_unique_aliases:
-        print("\nWARNING! NON-UNIQUE ALIASES", ", ".join(non_unique_aliases))
-        print("WARNING! These aliases are used more than once,use a unique alias for each item\n")
-    return list(filter(None, all_aliases))
+                for a in my_aliases:
+                    if aliases_by_type.get(a):
+                        print("WARNING! NON-UNIQUE ALIAS: ", a)
+                        print("\tused for TYPE ", aliases_by_type[a], "and ", sheet)
+                    else:
+                        aliases_by_type[a] = sheet
+    return aliases_by_type
 
 
 def main():  # pragma: no cover
@@ -1116,8 +1330,8 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-
-    all_aliases = get_all_aliases(args.infile, sorted_names)
+    aliases_by_type = get_all_aliases(args.infile, sorted_names)
+    # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
     dict_replicates = {}
@@ -1126,11 +1340,11 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets)
+            excel_reader(args.infile, n, args.update, connection, args.patchall, aliases_by_type,
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
         elif n.lower() == "experimentmic_path":
-            excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, all_aliases,
-                         dict_loadxl, dict_replicates, dict_exp_sets)
+            excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(args.infile, n, connection)
@@ -1149,6 +1363,7 @@ def main():  # pragma: no cover
             print('Following items are not posted')
             print('make sure they are on {} sheet'.format(dict_sheet))
             print(remains)
+
 
 if __name__ == '__main__':
         main()

@@ -285,10 +285,11 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases, dict_load, dict_rep, dict_set)
-        args = imp.get_existing.call_args
+    all_aliases = {}
+    with mocker.patch('wranglertools.import_data.remove_deleted', return_value={}):
+        imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases,
+                         dict_load, dict_rep, dict_set, True)
+        args = imp.remove_deleted.call_args
         attach = args[0][0]['attachment']
         assert attach['href'].startswith('data:image/jpeg;base64')
 
@@ -307,7 +308,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #                  'url': 'https://www.sample_vendor.com/',
 #                  'aliases': ['dcic:sample_vendor']}
 #     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set)
+#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
 #         args = imp.get_existing.call_args
 #         assert args[0][0] == post_json
 #         out = capsys.readouterr()[0]
@@ -330,7 +331,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #                  'aliases': ['dcic:sample_vendor']}
 #     existing_vendor = {'uuid': 'sample_uuid'}
 #     with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
-#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set)
+#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
 #         args = imp.get_existing.call_args
 #         assert args[0][0] == post_json
 #         out = capsys.readouterr()[0]
@@ -343,7 +344,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0_1 = "INFO: Attempting to download file from this url to your computer before upload "
     message0_2 = "ftp://speedtest.tele2.net/1KB.zip"
     message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
@@ -355,7 +356,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
             # mock posting new items
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
-                                 dict_load, dict_rep, dict_set)
+                                 dict_load, dict_rep, dict_set, True)
                 args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
@@ -371,7 +372,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0 = "WARNING: File not uploaded"
     message1 = "Please add original md5 values of the files"
     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
@@ -383,7 +384,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
             # mock posting new items
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
-                                 dict_load, dict_rep, dict_set)
+                                 dict_load, dict_rep, dict_set, True)
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
                 assert message0 == outlist[0]
@@ -397,7 +398,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
@@ -408,7 +409,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
             # mock posting new items
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, all_aliases,
-                                 dict_load, dict_rep, dict_set)
+                                 dict_load, dict_rep, dict_set, True)
                 args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
@@ -426,7 +427,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
     message1 = "EXPERIMENTHIC(1)           :  0 posted / 0 not posted       1 patched / 0 not patched, 0 errors"
     existing_exp = {'uuid': 'sample_uuid', 'status': "uploading"}
@@ -444,7 +445,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
                     imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, all_aliases,
-                                     dict_load, dict_rep, dict_set)
+                                     dict_load, dict_rep, dict_set, True)
                     # check for md5sum
                     args = imp.submit_utils.patch_FDN.call_args
                     post_json_arg = args[0][2]
@@ -466,7 +467,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message = "FILEFASTQ(1)               :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     final_post = {'aliases': ['dcic:test_alias'],
@@ -478,7 +479,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
         # mock posting new items
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'FileFastq', True, connection, False, all_aliases,
-                             dict_load, dict_rep, dict_set)
+                             dict_load, dict_rep, dict_set, True)
             args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             print([i for i in args])
@@ -492,7 +493,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
     dict_load = {}
     dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
     dict_set = {}
-    all_aliases = []
+    all_aliases = {}
     message = "EXPERIMENTSETREPLICATE(1)  :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'sample_repset', '@id': 'sample_repset'}]}
     final_post = {'aliases': ['sample_repset'],
@@ -503,7 +504,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
         # mock upload file and skip
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False, all_aliases,
-                             dict_load, dict_rep, dict_set)
+                             dict_load, dict_rep, dict_set, True)
             args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
@@ -516,7 +517,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
     dict_load = {}
     dict_rep = {}
     dict_set = {'sample_expset': ['awesome_uuid']}
-    all_aliases = []
+    all_aliases = {}
     message = "EXPERIMENTSET(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'sample_expset', '@id': 'sample_expset'}]}
     final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid'],
@@ -526,7 +527,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
         # mock upload file and skip
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False, all_aliases,
-                             dict_load, dict_rep, dict_set)
+                             dict_load, dict_rep, dict_set, True)
             args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
@@ -662,6 +663,284 @@ def test_get_collections(connection_public):
 def test_get_all_aliases():
     wb = "./tests/data_files/Exp_Set_insert.xls"
     sheet = ["ExperimentSet"]
-    my_aliases = ['sample_expset']
+    my_aliases = {'sample_expset': 'ExperimentSet'}
     all_aliases = imp.get_all_aliases(wb, sheet)
     assert my_aliases == all_aliases
+
+
+@pytest.fixture
+def fields2type():
+    return {
+        'biosource': 'array of Item:Biosource',
+        'biosample': 'Item:Biosample',
+        'description': 'string',
+        'biosample_quantity': 'number',
+        'experiment_relations.relationship_type': 'string',
+        'experiment_relations.experiment': 'Item:Experiment',
+        'average_fragment_size': 'integer',
+        'aliases': 'array of string'
+    }
+
+
+@pytest.fixture
+def json2post():
+    return {
+        'biosource': 'dcic:imr90',
+        '#biosample': 'dcic:biosamp',
+        'description': '',
+        'biosample_quantity': 1,
+        'aliases': 'dcic:test'
+    }
+
+
+@pytest.fixture
+def alias_dict():
+    return {
+        'test:alias1': 'Biosource',
+        'test:alias2': 'Biosource',
+    }
+
+
+def test_get_f_type(fields2type):
+    fields = fields2type.keys()
+    for f in fields:
+        assert imp.get_f_type(f, fields2type) == fields2type[f]
+    assert not imp.get_f_type('nonexistent field', fields2type)
+
+
+def test_add_to_mistype_message_3_words():
+    words = ['eeny', 'meeny', 'moe']
+    msg = imp.add_to_mistype_message(*words, msg='')
+    assert msg == "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS moe\n"
+
+
+def test_add_to_mistype_message_w_msg():
+    words = ['eeny', 'meeny', 'moe']
+    msg1 = "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS moe\n"
+    msg2 = imp.add_to_mistype_message(*words, msg=msg1)
+    assert msg2 == msg1 * 2
+
+
+def test_add_to_mistype_message_2_words():
+    words = ['eeny', 'meeny', '']
+    msg = imp.add_to_mistype_message(*words, msg='')
+    assert msg == "ERROR: 'eeny' is TYPE meeny - THE REQUIRED TYPE IS \n"
+
+
+def test_add_to_mistype_message_not_found():
+    words = ['eeny', 'HTTPNotFound', 'moe']
+    msg = imp.add_to_mistype_message(*words, msg='')
+    assert msg == "ERROR: 'eeny' is NOT FOUND - THE REQUIRED TYPE IS moe\n"
+
+
+def test_validate_item_in_alias_dict_correct_type(alias_dict, connection):
+    item = 'test:alias1'
+    msg = imp.validate_item([item], 'Biosource', alias_dict, connection)
+    assert not msg
+
+
+def test_validate_item_in_alias_dict_incorrect_type(alias_dict, connection):
+    item = 'test:alias1'
+    msg = imp.validate_item([item], 'Biosample', alias_dict, connection)
+    assert msg.startswith("ERROR")
+
+
+def test_validate_multiple_items_in_alias_dict_correct_type(alias_dict, connection):
+    items = ['test:alias1', 'test:alias2']
+    msg = imp.validate_item(items, 'Biosource', alias_dict, connection)
+    assert not msg
+
+
+def test_validate_multiple_items_in_alias_dict_incorrect_type(alias_dict, connection):
+    items = ['test:alias1', 'test:alias2']
+    msg = imp.validate_item(items, 'Biosample', alias_dict, connection)
+    lns = msg.split('\n')
+    assert len(lns) == 2
+    for l in lns:
+        assert l.startswith("ERROR")
+
+
+def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection):
+    item = 'test:alias1'
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
+                      return_value={'@type': ['Biosource']}):
+        msg = imp.validate_item([item], 'Biosource', {}, connection)
+        assert not msg
+
+
+def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection):
+    item = '/labs/test-lab'
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
+                      return_value={'@type': ['Lab']}):
+        msg = imp.validate_item([item], 'Lab', {}, connection)
+        assert not msg
+
+
+def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection):
+    item = 'test:alias1'
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
+                      return_value={'@type': ['HTTPNotFound']}):
+        msg = imp.validate_item([item], 'Biosource', {}, connection)
+        assert msg.startswith("ERROR")
+
+
+def test_validate_item_one_in_one_not_in_db(mocker, connection):
+    items = ['test:alias1', 'test:alias2']
+    with mocker.patch('dcicutils.submit_utils.get_FDN',
+                      side_effect=[{'@type': ['HTTPNotFound']},
+                                   {'@type': ['Biosource', 'Item']}]):
+        msg = imp.validate_item(items, 'Biosource', {}, connection)
+        assert msg.startswith("ERROR")
+        assert 'test:alias1' in msg
+        assert 'test:alias2' not in msg
+
+
+def test_validate_string_are_strings_not_alias(alias_dict):
+    s = ['test_string', 'test_string2']
+    msg = imp.validate_string(s, alias_dict)
+    assert not msg
+
+
+def test_validate_string_one_string_is_alias(alias_dict):
+    s = ['test:alias1', 'test_string2']
+    msg = imp.validate_string(s, alias_dict)
+    assert msg == 'WARNING: ALIAS test:alias1 USED IN string Field'
+
+
+def test_convert_to_array_is_array():
+    arrstr = 'eeny, meeny,moe'
+    result = imp._convert_to_array(arrstr, True)
+    assert len(result) == 3
+
+
+def test_convert_to_array_is_string():
+    s = ' whatsup,! '
+    result = imp._convert_to_array(s, False)
+    assert len(result) == 1
+    assert result[0] == s.strip()
+
+
+def test_validate_field_single_string(mocker, connection, alias_dict):
+    fdata = 'test_string'
+    ftype = 'string'
+    with mocker.patch('wranglertools.import_data.validate_string',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_array_of_string(mocker, connection, alias_dict):
+    fdata = 'test_string'
+    ftype = 'array of string'
+    with mocker.patch('wranglertools.import_data.validate_string',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_single_item(mocker, connection, alias_dict):
+    fdata = 'test_item'
+    ftype = 'Item:Biosource'
+    with mocker.patch('wranglertools.import_data.validate_item',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_array_of_items(mocker, connection, alias_dict):
+    fdata = 'test_item'
+    ftype = 'array of Item:Biosource'
+    with mocker.patch('wranglertools.import_data.validate_item',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_validate_field_array_of_embedded_objects(mocker, connection, alias_dict):
+    fdata = 'test_item'
+    ftype = 'array of embedded objects, Item:File'
+    with mocker.patch('wranglertools.import_data.validate_item',
+                      return_value=''):
+        assert not imp.validate_field(fdata, ftype, alias_dict, connection)
+
+
+def test_pre_validate_json(mocker, json2post, fields2type, alias_dict, connection):
+    with mocker.patch('wranglertools.import_data.validate_field',
+                      side_effect=['', '']):
+        assert not imp.pre_validate_json(json2post, fields2type, alias_dict, connection)
+
+
+@pytest.fixture
+def fastq_sheet():
+    return [
+        ['#Field Name:', 'aliases', 'description', '*file_format', 'paired_end', 'related_files.relationship_type',
+         'related_files.file', 'read_length', 'instrument'],
+        ['', 'test:file1', '', 'fastq', '1', '', '', '75', ''],
+        ['', 'test:file2', '', 'fastq', '2', 'paired with', 'test:file1', '75', ''],
+        ['', 'test:file3', '', 'fastq', '1', 'paired with', 'test:file4', '75', ''],
+        ['', 'test:file4', '', 'fastq', '2', '', '', '75', ''],
+        ['', 'test:file5', '', 'fastq', '1', 'paired with', 'test:file4', '75', ''],
+        ['', 'test:file6', '', 'fastq', '1', '', '', '75', ''],
+        ['', 'test:file7', '', 'fastq', '', 'paired with', 'test:file6', '75', ''],
+        ['', 'test:file8', '', 'fastq', '1', '', '', '75', ''],
+        ['', 'test:file9', '', 'fastq', '2', 'paired with', '44DNFIYI7YMVU', '75', ''],
+        ['', 'test:file10', '', 'fastq', '2', 'paired with', 'test:file8', 'paired with', 'test:file7', '75', ''],
+        ['', '', 'File with no alias', 'fastq', '1', '', '', '75', ''],
+        ['', '', 'Another File with no alias', 'fastq', '1', '', '', '75', '']
+    ]
+
+
+def test_file_pair_chk_good_pairs(fastq_sheet):
+    rows = iter(fastq_sheet[0:5])
+    report = imp.check_file_pairing(rows)
+    assert not report
+
+
+def test_file_pair_chk_mulitple_pairing(fastq_sheet):
+    tochk = fastq_sheet[3:6]
+    tochk.insert(0, fastq_sheet[0])
+    rows = iter(tochk)
+    report = imp.check_file_pairing(rows)
+    assert 'test:file5' in report
+    assert 'MISMATCH' in report
+    assert 'attempting to alter existing pair' in report['test:file5'][0]
+
+
+def test_file_pair_chk_2_paired_with(fastq_sheet):
+    rows = iter([fastq_sheet[0], fastq_sheet[10]])
+    report = imp.check_file_pairing(rows)
+    assert 'test:file10' in report
+    assert 'single row with multiple paired_with values' in report['test:file10']
+
+
+def test_file_pair_chk_pairing_w_no_paired_end(fastq_sheet):
+    tochk = fastq_sheet[6:8]
+    tochk.insert(0, fastq_sheet[0])
+    rows = iter(tochk)
+    report = imp.check_file_pairing(rows)
+    assert 'test:file7' in report
+    assert 'missing paired_end number' in report['test:file7']
+
+
+def test_file_pair_chk_pairing_w_paired_file_not_alias(fastq_sheet):
+    tochk = fastq_sheet[8:10]
+    tochk.insert(0, fastq_sheet[0])
+    rows = iter(tochk)
+    report = imp.check_file_pairing(rows)
+    assert 'test:file8' in report
+    assert 'no paired file but paired_end = 1' in report['test:file8']
+    assert 'test:file9' in report
+    assert 'paired with not found 44DNFIYI7YMVU' in report['test:file9']
+
+
+def test_file_pair_chk_pairing_w_no_alias(fastq_sheet):
+    rows = iter([fastq_sheet[0], fastq_sheet[11], fastq_sheet[12]])
+    report = imp.check_file_pairing(rows)
+    assert 'unaliased' in report
+    assert len(report['unaliased']) == 1
+    assert "alias missing - can't check file pairing" in report['unaliased']
+
+
+def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
+    rows = iter([['#Field Name:', '*file_format', 'paired_end',
+                 'related_files.relationship_type', 'related_files.file'],
+                ['', 'fastq', '1', 'paired with', 'test:file2']])
+    report = imp.check_file_pairing(rows)
+    assert 'NO GO' in report
+    assert report['NO GO'] == 'Can only check file pairing by aliases'
