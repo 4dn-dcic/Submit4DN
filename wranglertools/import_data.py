@@ -872,7 +872,9 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
     # dict for acumulating cycle patch data
     patch_loadxl = []
     row = reader(datafile, sheetname=sheet)
+    skip_dryrun = False
     if sheet == "ExperimentMic_Path":
+        skip_dryrun = True
         sheet = "ExperimentMic"
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
@@ -899,6 +901,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
     # iterate over the rows
     for values in row:
+        # Delete trailing commas and spaces
+        values = [item.strip(', ') for item in values]
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
@@ -979,6 +983,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
         # dryrun option
         if dryrun:
+            if skip_dryrun:
+                continue
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
@@ -1032,10 +1038,14 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             print(l)
     # dryrun report
     if dryrun:
-        print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
-    {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
-              .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
-                      error=error, patch=patch, not_patched=not_patched))
+        if skip_dryrun:
+            print("{sheet:<27}: PATH connections are not tested in DRYRUN - Skipping"
+                  .format(sheet=sheet.upper()+"("+str(total)+")"))
+        else:
+            print("{sheet:<27}: {post:>2} posted /{not_posted:>2} not posted  \
+        {patch:>2} patched /{not_patched:>2} not patched,{error:>2} errors"
+                  .format(sheet=sheet.upper()+"("+str(total)+")", post=post, not_posted=not_posted,
+                          error=error, patch=patch, not_patched=not_patched))
     # submission report
     else:
         # print final report, and if there are not patched entries, add to report
