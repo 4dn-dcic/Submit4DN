@@ -901,6 +901,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
     # iterate over the rows
     for values in row:
+        # Delete trailing commas and spaces
+        values = [item.strip(', ') for item in values]
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
