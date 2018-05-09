@@ -122,7 +122,6 @@ list_of_loadxl_fields = [
     ['ExperimentCaptureC', ['experiment_relation']],
     ['ExperimentRepliseq', ['experiment_relation']],
     ['FileFastq', ['related_files']],
-    ['FileFasta', ['related_files']],
     ['FileReference', ['related_files']],
     ['FileCalibration', ['related_files']],
     ['FileMicroscopy', ['related_files']],
