@@ -77,7 +77,7 @@ class FDN_Connection(object):
             else:
                 self.award = None
         except:
-            if not self.award:  # only reset if not already set
+            if not hasattr(self, 'award') or not self.award:  # only reset if not already set
                 self.award = None
 
     def __init__(self, key):
