@@ -1185,11 +1185,14 @@ def upload_file(metadata_post_response, path):  # pragma: no cover
     ####################
     # POST file to S3
     env = os.environ.copy()  # pragma: no cover
-    env.update({
-        'AWS_ACCESS_KEY_ID': creds['access_key'],
-        'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
-        'AWS_SECURITY_TOKEN': creds['session_token'],
-    })
+    try:
+        env.update({
+            'AWS_ACCESS_KEY_ID': creds['AccessKeyId'],
+            'AWS_SECRET_ACCESS_KEY': creds['SecretAccessKey'],
+            'AWS_SECURITY_TOKEN': creds['SessionToken'],
+        })
+    except Exception as e:
+        raise("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
