@@ -834,7 +834,7 @@ def check_file_pairing(fastq_row):
             err = "alias missing - can't check file pairing"
             errors = _add_e_to_edict('unaliased', err, errors)
             continue
-        paired_end = row[pair_idx]
+        paired_end = row[pair_idx] if pair_idx else None
         saw_pair = False
         for i, fld in enumerate(row):
             if fld.strip() == 'paired with':
