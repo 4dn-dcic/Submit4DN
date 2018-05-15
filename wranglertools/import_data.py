@@ -708,6 +708,8 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
         post_json['md5sum'] = md5(filename_to_post)
     e = submit_utils.new_FDN(connection, sheet, post_json)
     if file_to_upload:
+        if e.get('status') == 'error':
+            return e
         # upload the file
         upload_file(e, filename_to_post)
         if ftp_download:
@@ -975,6 +977,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 # error += 1
                 if e.get('detail').startswith("Keys conflict: [('alias', 'md5:"):
                     print("Upload failure - md5 of file matches another item in database.")
+                    print(error_rep)
                 else:
                     print(error_rep)
             # if error is a weird one
