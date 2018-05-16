@@ -683,6 +683,9 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
         post_json['md5sum'] = md5(filename_to_post)
     e = submit_utils.patch_FDN(existing_data["uuid"], connection, post_json)
     if file_to_upload:
+        if e.get('status') == 'error':
+            # print(e['detail'])
+            return e
         # get s3 credentials
         creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
         e['@graph'][0]['upload_credentials'] = creds
@@ -705,6 +708,8 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
         post_json['md5sum'] = md5(filename_to_post)
     e = submit_utils.new_FDN(connection, sheet, post_json)
     if file_to_upload:
+        if e.get('status') == 'error':
+            return e
         # upload the file
         upload_file(e, filename_to_post)
         if ftp_download:
@@ -829,7 +834,7 @@ def check_file_pairing(fastq_row):
             err = "alias missing - can't check file pairing"
             errors = _add_e_to_edict('unaliased', err, errors)
             continue
-        paired_end = row[pair_idx]
+        paired_end = row[pair_idx] if pair_idx else None
         saw_pair = False
         for i, fld in enumerate(row):
             if fld.strip() == 'paired with':
@@ -967,13 +972,18 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # add to success/error counters
         if e.get("status") == "error":  # pragma: no cover
             error_rep = error_report(e, sheet, all_aliases, connection)
+            error += 1
             if error_rep:
-                error += 1
-                print(error_rep)
+                # error += 1
+                if e.get('detail').startswith("Keys conflict: [('alias', 'md5:"):
+                    print("Upload failure - md5 of file matches another item in database.")
+                    print(error_rep)
+                else:
+                    print(error_rep)
+            # if error is a weird one
             else:
-                # if error is a weird one
                 print(e)
-                error += 1
+                # error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
                 patch += 1
