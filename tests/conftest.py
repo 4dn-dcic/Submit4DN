@@ -243,14 +243,14 @@ def file_metadata_type():
             'instrument': 'string',
             'lab': 'string',
             'paired_end': 'string',
-            'related_files.file': 'array',
-            'related_files.relationship_type': 'array',
-            'experiment_relation.experiment': 'array',
-            'experiment_relation.relationship_type': 'array',
-            'experiment_relation.experiment-1': 'array',
-            'experiment_relation.relationship_type-1': 'array',
-            'experiment_relation.experiment-2': 'array',
-            'experiment_relation.relationship_type-2': 'array',
+            'related_files.file': 'array of embedded objects, Item:File',
+            'related_files.relationship_type': 'array of embedded objects, string',
+            'experiment_relation.experiment': 'array of embedded objects, Item:Experiment',
+            'experiment_relation.relationship_type': 'array of embedded objects, string',
+            'experiment_relation.experiment-1': 'array of embedded objects, Item:Experiment',
+            'experiment_relation.relationship_type-1': 'array of embedded objects, string',
+            'experiment_relation.experiment-2': 'array of embedded objects, Item:Experiment',
+            'experiment_relation.relationship_type-2': 'array of embedded objects, string',
             'status': 'string'}
 
 
