@@ -314,11 +314,13 @@ def build_field(field, field_data, field_type):
     patch_field_name = get_field_name(field)
     if not field_type:
         field_type = get_field_type(field)
+    if ',' in field_type:
+        field_type, subfield_type = [s.strip() for s in field_type.split(",")]
     if 'array' in field_type:
         field_type = 'array'
     if is_embedded_field(field):
         sub_field = get_sub_field(field)
-        return build_field(sub_field, field_data, 'string')
+        return build_field(sub_field, field_data, subfield_type)
     else:
         patch_field_data = data_formatter(field_data, field_type, field)
     return {patch_field_name: patch_field_data}
