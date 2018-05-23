@@ -977,7 +977,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             error += 1
             if error_rep:
                 # error += 1
-                if e.get('detail').startswith("Keys conflict: [('alias', 'md5:"):
+                if e.get('detail') and e.get('detail').startswith("Keys conflict: [('alias', 'md5:"):
                     print("Upload failure - md5 of file matches another item in database.")
                     print(error_rep)
                 else:
