@@ -348,7 +348,7 @@ def main():  # pragma: no cover
             "ExperimentHiC", "ExperimentSetReplicate",
             ]
     elif args.type == ['Chip-Seq']:
-        args.type == [
+        args.type = [
             "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
             "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
             "GenomicRegion", "Target", "Antibody", "Modification", "Biosource",
@@ -356,12 +356,40 @@ def main():  # pragma: no cover
             "ExperimentSeq", "ExperimentSetReplicate",
             ]
     elif args.type == ['Repliseq']:
-        args.type == [
+        args.type = [
             "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
             "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
             "GenomicRegion", "Target", "Antibody", "Modification", "Biosource",
             "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
             "ExperimentRepliseq", "ExperimentSetReplicate",
+            ]
+    elif args.type == ['Atacseq']:
+        args.type = [
+            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
+            "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
+            "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
+            "FileProcessed", "ExperimentAtacseq", "ExperimentSetReplicate",
+            ]
+    elif args.type == ['DamID']:
+        args.type = [
+            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
+            "TreatmentChemical", "Target", "Modification", "Biosource", "Biosample",
+            "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
+            "ExperimentDamid", "ExperimentSetReplicate",
+            ]
+    elif args.type == ['ChiaPet']:
+        args.type = [
+            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
+            "TreatmentChemical", "Target", "Antibody", "Modification",
+            "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
+            "FileProcessed", "ExperimentChiapet", "ExperimentSetReplicate",
+            ]
+    elif args.type == ['CaptureC']:
+        args.type = [
+            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
+            "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
+            "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
+            "FileProcessed", "ExperimentCaptureC", "ExperimentSetReplicate",
             ]
     elif args.type == ['FISH']:
         args.type = [
