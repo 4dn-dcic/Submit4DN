@@ -118,10 +118,11 @@ fetch_items = {
 
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct", "TreatmentRnai",
-    "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",  "Image",
-    "Biosource", "BiosampleCellCulture", "Biosample",  "FileFastq",
-    "FileProcessed", "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
+    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct",
+    "TreatmentRnai", "TreatmentChemical", "TreatmentAgentbased", "GenomicRegion",
+    "Target", "Antibody", "Modification",  "Image", "Biosource",
+    "BiosampleCellCulture", "Biosample",  "FileFastq", "FileProcessed",
+    "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
     "MicroscopeSettingD1", "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
     "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
     "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
