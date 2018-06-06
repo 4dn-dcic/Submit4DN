@@ -282,6 +282,12 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         include_enums)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
+        if name == 'FileProcessed':
+            fpfields = fields[name][:]
+            # import pdb; pdb.set_trace()
+            fields[name] = [fp for fp in fpfields if not (
+                fp.name == 'related_files.relationship_type' or fp.name == 'related_files.file')]
+            fields[name].append(FieldInfo('produced_from', 'array of Item:File', 35, 'Files that were used to produce this file'))
     return fields
 
 
