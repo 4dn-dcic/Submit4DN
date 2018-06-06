@@ -950,7 +950,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
         # deal with FileProcessed produced_from relationships
         if sheet == "FileProcessed":
-            import pdb; pdb.set_trace()
             if post_json.get('produced_from') is not None:
                 post_json, fields2types = build_processed_file_parents(post_json, fields2types)
 

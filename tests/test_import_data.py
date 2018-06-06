@@ -967,10 +967,14 @@ def pf_fields2types():
 def test_build_processed_file_parents_one_to_one(pf_post_json, pf_fields2types):
     pjson, f2t = imp.build_processed_file_parents(pf_post_json, pf_fields2types)
     assert 'produced_from' not in pjson
-    rt_pre = 'related_files.relationship_type-'
-    rf_pre = 'related_files.file-'
-    for i in range(1, 3):
-        assert pjson[rt_pre + str(i)] == 'derived from'
-        assert pjson[rf_pre + str(i)] == 'dcic:test_fastq' + str(i)
-        assert f2t[rt_pre + str(i)] == 'array of embedded objects, string'
-        assert f2t[rf_pre + str(i)] == 'array of embedded objects, Item:File'
+    rt_pre = 'related_files.relationship_type'
+    rf_pre = 'related_files.file'
+    faddon = ''
+    for i in range(0, 2):
+        if i != 0:
+            faddon = '-' + str(i)
+        vaddon = str(i + 1)
+        assert pjson[rt_pre + faddon] == 'derived from'
+        assert pjson[rf_pre + faddon] == 'dcic:test_fastq' + vaddon
+        assert f2t[rt_pre + faddon] == 'array of embedded objects, string'
+        assert f2t[rf_pre + faddon] == 'array of embedded objects, Item:File'
