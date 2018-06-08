@@ -125,7 +125,7 @@ list_of_loadxl_fields = [
     ['FileReference', ['related_files']],
     ['FileCalibration', ['related_files']],
     ['FileMicroscopy', ['related_files']],
-    ['FileProcessed', ['related_files']],
+    ['FileProcessed', ['related_files', 'produced_from']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
