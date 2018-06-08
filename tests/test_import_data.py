@@ -944,3 +944,37 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
     report = imp.check_file_pairing(rows)
     assert 'NO GO' in report
     assert report['NO GO'] == 'Can only check file pairing by aliases'
+
+
+@pytest.fixture
+def pf_post_json():
+    return {
+        'aliases': 'dcic:test_pf_alias',
+        'file_type': 'bam alignment',
+        'produced_from': 'dcic:test_fastq1, dcic:test_fastq2'
+    }
+
+
+@pytest.fixture
+def pf_fields2types():
+    return {
+        'aliases': 'array of string',
+        'file_type': 'string',
+        'produced_from': 'array of Item:File'
+    }
+
+
+def test_build_processed_file_parents_one_to_one(pf_post_json, pf_fields2types):
+    pjson, f2t = imp.build_processed_file_parents(pf_post_json, pf_fields2types)
+    assert 'produced_from' not in pjson
+    rt_pre = 'related_files.relationship_type'
+    rf_pre = 'related_files.file'
+    faddon = ''
+    for i in range(0, 2):
+        if i != 0:
+            faddon = '-' + str(i)
+        vaddon = str(i + 1)
+        assert pjson[rt_pre + faddon] == 'derived from'
+        assert pjson[rf_pre + faddon] == 'dcic:test_fastq' + vaddon
+        assert f2t[rt_pre + faddon] == 'array of embedded objects, string'
+        assert f2t[rf_pre + faddon] == 'array of embedded objects, Item:File'

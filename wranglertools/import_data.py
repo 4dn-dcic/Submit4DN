@@ -869,6 +869,27 @@ def check_file_pairing(fastq_row):
     return _pairing_consistency_check(files, errors)
 
 
+def build_processed_file_parents(post_json, fields2types):
+    """reformats the 'produced_from' fields in FileProcessed sheet to
+       the related_files fields in post_json
+    """
+    relvalue = 'derived from'
+    parents = post_json.get('produced_from')
+    parents = data_formatter(parents, 'list')
+    del post_json['produced_from']
+    relfield = 'related_files.relationship_type'
+    filefield = 'related_files.file'
+    for i, pf in enumerate(parents):
+        if i != 0:
+            relfield = relfield + '-' + str(i)
+            filefield = filefield + '-' + str(i)
+        post_json[relfield] = relvalue
+        post_json[filefield] = pf
+        fields2types[relfield] = 'array of embedded objects, string'
+        fields2types[filefield] = 'array of embedded objects, Item:File'
+    return post_json, fields2types
+
+
 def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                  dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
     """takes an excel sheet and post or patched the data in."""
@@ -917,21 +938,20 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         total += 1
         # build post_json and get existing if available
         post_json = OrderedDict(zip(keys, values))
-        # Get existing data if available
-        # existing_data = get_existing(post_json, connection)
 
         # pre-validate the row by fields and data_types
         if not novalidate:
             row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
             if row_errors:
-                # if existing_data.get("uuid"):
-                #    not_patched += 1
-                # else:
-                #    not_posted += 1
                 error += 1
                 pre_validate_errors.extend(row_errors)
                 invalid = True
                 continue
+
+        # deal with FileProcessed produced_from relationships
+        if sheet == "FileProcessed":
+            if post_json.get('produced_from') is not None:
+                post_json, fields2types = build_processed_file_parents(post_json, fields2types)
 
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
@@ -1161,6 +1181,7 @@ def user_workflow_reader(datafile, sheet, connection):
             error += 1
             continue
         if post_json:
+            # import pdb; pdb.set_trace()
             # do the magic
             e = submit_utils.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
             if e.get("status") == "SUCCEEDED":
