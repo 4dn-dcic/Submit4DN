@@ -455,8 +455,9 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
         # ignore empty fields
         if not field_data:
             continue
-        # ignore aliases field as this was validated before
-        if field == 'aliases':
+        # ignore certain fields - aliases validated before
+        # source_experiments and produced_from hold strings of aliases by design
+        if field in ['aliases', 'produced_from', 'source_experiments']:
             continue
 
         field_type = get_f_type(field, fields2types)
