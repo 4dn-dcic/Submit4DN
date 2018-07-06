@@ -7,6 +7,7 @@ import attr
 import xlwt
 import sys
 import json
+import sys
 
 
 EPILOG = '''
@@ -120,14 +121,16 @@ class FDN_Connection(object):
         # TODO: we should not need try/except, since if me page fails, there is
         # no need to proggress, but the test are failing without this Part
         # make mocked connections and remove try/except
+        # is public connection using submit4dn a realistic case?
         try:
             me_page = ff_utils.get_metadata('me', key=self.key)
             self.user = me_page['@id']
             self.email = me_page['email']
             self.check = True
         except:
+            print('Can not establish connection, please check your keys')
             me_page = {}
-            pass
+            #sys.exit(1)
         if me_page.get('submits_for') is not None:
             # get all the labs that the user making the connection submits_for
             self.labs = [l['link_id'].replace("~", "/") for l in me_page['submits_for']]
@@ -147,7 +150,7 @@ class FDN_Connection(object):
            the first award for the lab will be used
         '''
         self.award = None
-        labjson = ff_utils.get_metadata(lab, auth=self.key)
+        labjson = ff_utils.get_metadata(lab, key=self.key)
         if labjson.get('awards') is not None:
             awards = labjson.get('awards')
             # if don't prompt is active take first lab
