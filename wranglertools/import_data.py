@@ -342,14 +342,14 @@ def get_existing(post_json, connection):
     # look if post_json has these 3 identifiers
     for identifier in ["uuid", "accession", "@id"]:
         if post_json.get(identifier):
-            temp = ff_utils.get_metadata(post_json[identifier], key=connection.key, frame='object')
+            temp = ff_utils.get_metadata(post_json[identifier], key=connection.key, add_on="frame=object")
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
     # also look for all aliases
     if post_json.get("aliases"):
         # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
         for an_alias in post_json.get("aliases"):
-            temp = ff_utils.get_metadata(an_alias, key=connection.key, frame='object')
+            temp = ff_utils.get_metadata(an_alias, key=connection.key, add_on="frame=object")
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
 
@@ -360,7 +360,7 @@ def get_existing(post_json, connection):
         return {}
     # if everything is as expected
     elif len(unique_uuids) == 1:
-        temp = ff_utils.get_metadata(unique_uuids[0], key=connection.key, frame='object')
+        temp = ff_utils.get_metadata(unique_uuids[0], key=connection.key, add_on="frame=object")
         return temp
     # funky business not allowed, if identifiers point to different objects
     else:  # pragma: no cover
@@ -402,7 +402,7 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
             match = pattern.match(item)
             if match is None:
                 item = '/' + typeinfield + item
-            res = ff_utils.get_metadata(item, key=connection.key, frame='object')
+            res = ff_utils.get_metadata(item, key=connection.key, add_on="frame=object")
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
@@ -751,7 +751,7 @@ def delete_fields(post_json, connection, existing_data):
     if not fields_to_be_removed:
         return post_json
     # Use the url argument delete_fields for deletion
-    del_add_on = '/?delete_fields='+','.join(fields_to_be_removed)
+    del_add_on = 'delete_fields='+','.join(fields_to_be_removed)
     ff_utils.patch_metadata({}, existing_data["uuid"], key=connection.key, add_on=del_add_on)
     # Remove them also from the post_json
     for rm_key in fields_to_be_removed:
@@ -985,10 +985,10 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
                 e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key,
-                                            add_on="/?check_only=True")
+                                            add_on="check_only=True")
             else:
                 post_json = remove_deleted(post_json)
-                e = ff_utils.post_metadata(post_json, sheet, key=connection.key, add_on="/?check_only=True")
+                e = ff_utils.post_metadata(post_json, sheet, key=connection.key, add_on="check_only=True")
             # check simulation status
             if e['status'] == 'success':
                 pass
@@ -1065,14 +1065,14 @@ def format_file(param, files, connection):
         object_key = []
         uuid = []
         for a_file in files:
-            resp = ff_utils.get_metadata(a_file, key=connection.key, frame='object')
+            resp = ff_utils.get_metadata(a_file, key=connection.key, add_on="frame=object")
             object_key.append(resp['display_title'])
             uuid.append(resp['uuid'])
         template['object_key'] = object_key
         template['uuid'] = uuid
     # if it is not a list of files
     else:
-        resp = ff_utils.get_metadata(files, key=connection.key, frame='object')
+        resp = ff_utils.get_metadata(files, key=connection.key, add_on="frame=object")
         template['object_key'] = resp['display_title']
         template['uuid'] = resp['uuid']
     # find the bucket from the last used response
@@ -1108,7 +1108,7 @@ def build_tibanna_json(keys, types, values, connection):
         # insert wf uuid and app_name
         if param == 'workflow_uuid':
             template['workflow_uuid'] = post_json['workflow_uuid']
-            workflow_resp = ff_utils.get_metadata(post_json['workflow_uuid'], key=connection.key, frame='object')
+            workflow_resp = ff_utils.get_metadata(post_json['workflow_uuid'], key=connection.key, add_on="frame=object")
             template['app_name'] = workflow_resp.get('app_name')
         elif param.startswith('input--'):
             template["input_files"].append(format_file(param, post_json[param], connection))
@@ -1278,7 +1278,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 
 def get_collections(connection):
     """Get a list of all the data_types in the system."""
-    profiles = ff_utils.get_metadata("/profiles/", key=connection.key, frame='object')
+    profiles = ff_utils.get_metadata("/profiles/", key=connection.key, add_on="frame=object")
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     return supported_collections
