@@ -1,4 +1,5 @@
-import dcicutils.submit_utils as submit_utils
+from dcicutils import ff_utils
+from wranglertools.import_data import FDN_Key, FDN_Connection
 import os
 import json
 
@@ -8,14 +9,14 @@ def run(keypairs_file, post_json_file, schema_name):
     assert os.path.isfile(keypairs_file)
 
     try:
-        key = submit_utils.FDN_Key(keypairs_file, "default")
+        key = FDN_Key(keypairs_file, "default")
     except Exception as e:
         print(e)
         print("key error")
         raise e
 
     try:
-        connection = submit_utils.FDN_Connection(key)
+        connection = FDN_Connection(key)
     except Exception as e:
         print(e)
         print("connection error")
@@ -24,7 +25,7 @@ def run(keypairs_file, post_json_file, schema_name):
     try:
         with open(post_json_file, 'r') as f:
             post_item = json.load(f)
-            response = submit_utils.new_FDN(connection, schema_name, post_item)
+            response = ff_utils.post_metadata(post_item, schema_name, key=connection.key)
     except Exception as e:
         print(e)
         print("post error")
