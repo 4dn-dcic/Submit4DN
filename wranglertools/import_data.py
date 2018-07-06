@@ -655,7 +655,9 @@ def conflict_error_report(error_dic, sheet, connection):
             error_value = conflict[1]
             try:
                 # let's see if the user has access to conflicting item
-                search = "search/?type={sheet}&{field}={value}".format(sheet, error_field, error_value)
+                search = "search/?type={sheet}&{field}={value}".format(sheet=sheet,
+                                                                       field=error_field,
+                                                                       value=error_value)
                 existing_item = ff_utils.search_metadata(search, key=connection.key)
                 link_id = existing_item.get('link_id').replace("~", "/")
                 add_text = "please use " + link_id
