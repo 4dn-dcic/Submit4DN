@@ -2,11 +2,11 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-from wranglertools.import_data import FDN_Key, FDN_Connection
 from dcicutils import ff_utils
 import attr
 import xlwt
 import sys
+import json
 
 
 EPILOG = '''
@@ -87,6 +87,104 @@ def getArgs():  # pragma: no cover
                         needed for automated submissions")
     args = parser.parse_args()
     return args
+
+
+class FDN_Key:
+    def __init__(self, keyfile, keyname):
+        self.error = False
+        # is the keyfile a dictionary
+        if isinstance(keyfile, dict):
+            keys = keyfile
+        # is the keyfile a file (the expected case)
+        elif os.path.isfile(str(keyfile)):
+            keys_f = open(keyfile, 'r')
+            keys_json_string = keys_f.read()
+            keys_f.close()
+            keys = json.loads(keys_json_string)
+        # if both fail, the file does not exist
+        else:
+            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
+            self.error = True
+            return
+        self.con_key = keys[keyname]
+        if not self.con_key['server'].endswith("/"):
+            self.con_key['server'] += "/"
+
+
+class FDN_Connection(object):
+    def __init__(self, key4dn):
+        # passed key object stores the key dict in con_key
+        self.check = False
+        self.key = key4dn.con_key
+        # check connection and find user uuid
+        me_page = ff_utils.get_metadata('me', key=self.key)
+        self.user = me_page['@id']
+        self.email = me_page['email']
+        if me_page.get('submits_for') is not None:
+            # get all the labs that the user making the connection submits_for
+            self.labs = [l['link_id'].replace("~", "/") for l in me_page['submits_for']]
+            # take the first one as default value for the connection - reset in
+            # import_data if needed by calling set_lab_award
+            self.lab = self.labs[0]
+            self.set_award(self.lab)  # set as default first
+        else:
+            self.labs = None
+            self.lab = None
+            self.award = None
+
+    def set_award(self, lab, dontPrompt=True):
+        '''Sets the award for the connection for use in import_data
+           if dontPrompt is False will ask the User to choose if there
+           are more than one award for the connection.lab otherwise
+           the first award for the lab will be used
+        '''
+        self.award = None
+        labjson = ff_utils.get_metadata(lab, auth=self.key)
+        if labjson.get('awards') is not None:
+            awards = labjson.get('awards')
+            # if don't prompt is active take first lab
+            if dontPrompt:
+                self.award = awards[0]['@id']
+                return
+            # if there is one lab return it as lab
+            if len(awards) == 1:
+                self.award = awards[0]['@id']
+                return
+            # if there are multiple labs
+            achoices = []
+            print("Multiple awards for {labname}:".format(labname=lab))
+            for i, awd in enumerate(awards):
+                ch = str(i + 1)
+                achoices.append(ch)
+                print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
+            # re try the input until a valid choice is input
+            awd_resp = ''
+            while awd_resp not in achoices:
+                awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
+            self.award = awards[int(awd_resp) - 1]['@id']
+            return
+
+    def prompt_for_lab_award(self):
+        '''Check to see if user submits_for multiple labs or the lab
+            has multiple awards and if so prompts for the one to set
+            for the connection
+        '''
+        if self.labs:
+            if len(self.labs) > 1:
+                lchoices = []
+                print("Submitting for multiple labs:")
+                for i, lab in enumerate(self.labs):
+                    ch = str(i + 1)
+                    lchoices.append(ch)
+                    print("  ({choice}) {labname}".format(choice=ch, labname=lab))
+                lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
+                if lab_resp not in lchoices:
+                    print("Not a valid choice - using {default}".format(default=self.lab))
+                    return
+                else:
+                    self.lab = self.labs[int(lab_resp) - 1]
+
+        self.set_award(self.lab, False)
 
 
 @attr.s

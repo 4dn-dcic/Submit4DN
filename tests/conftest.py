@@ -1,6 +1,6 @@
 # flake8: noqa
 import pytest
-from wranglertools.import_data import FDN_Key, FDN_Connection
+from wranglertools.get_field_info import FDN_Key, FDN_Connection
 
 class MockedResponse(object):
     def __init__(self, json, status):

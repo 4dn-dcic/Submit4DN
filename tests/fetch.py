@@ -1,5 +1,5 @@
 from dcicutils import ff_utils
-from wranglertools.import_data import FDN_Key, FDN_Connection
+from wranglertools.get_field_info import FDN_Key, FDN_Connection
 import os
 
 
