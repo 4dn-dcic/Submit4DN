@@ -6,7 +6,7 @@ import argparse
 import os.path
 import hashlib
 from wranglertools.get_field_info import sheet_order
-from dcicutils import submit_utils
+from dcicutils import ff_utils
 import xlrd
 import datetime
 import sys
@@ -106,6 +106,104 @@ def getArgs():  # pragma: no cover
                         help="Will skip pre-validation of workbook")
     args = parser.parse_args()
     return args
+
+
+class FDN_Key:
+    def __init__(self, keyfile, keyname):
+        self.error = False
+        # is the keyfile a dictionary
+        if isinstance(keyfile, dict):
+            keys = keyfile
+        # is the keyfile a file (the expected case)
+        elif os.path.isfile(str(keyfile)):
+            keys_f = open(keyfile, 'r')
+            keys_json_string = keys_f.read()
+            keys_f.close()
+            keys = json.loads(keys_json_string)
+        # if both fail, the file does not exist
+        else:
+            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
+            self.error = True
+            return
+        self.con_key = keys[keyname]
+        if not self.con_key['server'].endswith("/"):
+            self.con_key['server'] += "/"
+
+
+class FDN_Connection(object):
+    def __init__(self, key4dn):
+        # passed key object stores the key dict in con_key
+        self.check = False
+        self.key = key4dn.con_key
+        # check connection and find user uuid
+        me_page = ff_utils.get_metadata('me', key=self.key)
+        self.user = me_page['@id']
+        self.email = me_page['email']
+        if me_page.get('submits_for') is not None:
+            # get all the labs that the user making the connection submits_for
+            self.labs = [l['link_id'].replace("~", "/") for l in me_page['submits_for']]
+            # take the first one as default value for the connection - reset in
+            # import_data if needed by calling set_lab_award
+            self.lab = self.labs[0]
+            self.set_award(self.lab)  # set as default first
+        else:
+            self.labs = None
+            self.lab = None
+            self.award = None
+
+    def set_award(self, lab, dontPrompt=True):
+        '''Sets the award for the connection for use in import_data
+           if dontPrompt is False will ask the User to choose if there
+           are more than one award for the connection.lab otherwise
+           the first award for the lab will be used
+        '''
+        self.award = None
+        labjson = ff_utils.get_metadata(lab, auth=self.key)
+        if labjson.get('awards') is not None:
+            awards = labjson.get('awards')
+            # if don't prompt is active take first lab
+            if dontPrompt:
+                self.award = awards[0]['@id']
+                return
+            # if there is one lab return it as lab
+            if len(awards) == 1:
+                self.award = awards[0]['@id']
+                return
+            # if there are multiple labs
+            achoices = []
+            print("Multiple awards for {labname}:".format(labname=lab))
+            for i, awd in enumerate(awards):
+                ch = str(i + 1)
+                achoices.append(ch)
+                print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
+            # re try the input until a valid choice is input
+            awd_resp = ''
+            while awd_resp not in achoices:
+                awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
+            self.award = awards[int(awd_resp) - 1]['@id']
+            return
+
+    def prompt_for_lab_award(self):
+        '''Check to see if user submits_for multiple labs or the lab
+            has multiple awards and if so prompts for the one to set
+            for the connection
+        '''
+        if self.labs:
+            if len(self.labs) > 1:
+                lchoices = []
+                print("Submitting for multiple labs:")
+                for i, lab in enumerate(self.labs):
+                    ch = str(i + 1)
+                    lchoices.append(ch)
+                    print("  ({choice}) {labname}".format(choice=ch, labname=lab))
+                lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
+                if lab_resp not in lchoices:
+                    print("Not a valid choice - using {default}".format(default=self.lab))
+                    return
+                else:
+                    self.lab = self.labs[int(lab_resp) - 1]
+
+        self.set_award(self.lab, False)
 
 
 # list of [sheet, [fields]] that need to be patched as a second step
@@ -342,16 +440,14 @@ def get_existing(post_json, connection):
     # look if post_json has these 3 identifiers
     for identifier in ["uuid", "accession", "@id"]:
         if post_json.get(identifier):
-            temp = {}
-            temp = submit_utils.get_FDN(post_json[identifier], connection)
+            temp = ff_utils.get_metadata(post_json[identifier], key=connection.key, frame='object')
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
     # also look for all aliases
     if post_json.get("aliases"):
         # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
         for an_alias in post_json.get("aliases"):
-            temp = {}
-            temp = submit_utils.get_FDN(an_alias, connection)
+            temp = ff_utils.get_metadata(an_alias, key=connection.key, frame='object')
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
 
@@ -362,7 +458,7 @@ def get_existing(post_json, connection):
         return {}
     # if everything is as expected
     elif len(unique_uuids) == 1:
-        temp = submit_utils.get_FDN(unique_uuids[0], connection)
+        temp = ff_utils.get_metadata(unique_uuids[0], key=connection.key, frame='object')
         return temp
     # funky business not allowed, if identifiers point to different objects
     else:  # pragma: no cover
@@ -404,7 +500,7 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
             match = pattern.match(item)
             if match is None:
                 item = '/' + typeinfield + item
-            res = submit_utils.get_FDN(item, connection)
+            res = ff_utils.get_metadata(item, key=connection.key, frame='object')
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
@@ -413,6 +509,7 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
 
 
 def validate_string(strings, alias_dict):
+    """check if the string value is in the aliases list."""
     msg = ''
     for s in strings:
         if alias_dict.get(s, None) is not None:
@@ -427,7 +524,6 @@ def _convert_to_array(s, is_array):
 
 
 def validate_field(field_data, field_type, aliases_by_type, connection):
-    # import pdb; pdb.set_trace()
     to_trim = 'array of embedded objects, '
     is_array = False
     msg = None
@@ -446,7 +542,6 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
 
 
 def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
-    # import pdb; pdb.set_trace()
     report = []
     for field, field_data in post_json.items():
         # ignore commented out fields
@@ -459,7 +554,6 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
         # source_experiments and produced_from hold strings of aliases by design
         if field in ['aliases', 'produced_from', 'source_experiments']:
             continue
-
         field_type = get_f_type(field, fields2types)
         msg = validate_field(field_data, field_type, aliases_by_type, connection)
         if msg:
@@ -659,7 +753,8 @@ def conflict_error_report(error_dic, sheet, connection):
             error_value = conflict[1]
             try:
                 # let's see if the user has access to conflicting item
-                existing_item = submit_utils.search_FDN(sheet, error_field, error_value, connection)[0]
+                search = "search/?type={sheet}&{field}={value}".format(sheet, error_field, error_value)
+                existing_item = ff_utils.search_metadata(search, key=connection.key)
                 link_id = existing_item.get('link_id').replace("~", "/")
                 add_text = "please use " + link_id
             except:
@@ -684,7 +779,7 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = submit_utils.patch_FDN(existing_data["uuid"], connection, post_json)
+    e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key)
     if file_to_upload:
         if e.get('status') == 'error':
             # print(e['detail'])
@@ -709,7 +804,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = submit_utils.new_FDN(connection, sheet, post_json)
+    e = ff_utils.post_metadata(post_json, sheet, key=connection.key)
     if file_to_upload:
         if e.get('status') == 'error':
             return e
@@ -744,17 +839,7 @@ def ftp_copy(filename_to_post, post_json):
 
 
 def delete_fields(post_json, connection, existing_data):
-    """Does a put to delete fields with the keyword '*delete*'."""
-    my_uuid = existing_data.get("uuid")
-    my_accesssion = existing_data.get("accession")
-    raw_json = submit_utils.get_FDN(my_uuid, connection, frame="raw")
-    # check if the uuid is in the raw_json
-    if not raw_json.get("uuid"):
-        raw_json["uuid"] = my_uuid
-    # if there is an accession, add it to raw so it does not created again
-    if my_accesssion:
-        if not raw_json.get("accession"):
-            raw_json["accession"] = my_accesssion
+    """Deletes fields with the value '*delete*'."""
     # find fields to be removed
     fields_to_be_removed = []
     for key, value in post_json.items():
@@ -763,12 +848,9 @@ def delete_fields(post_json, connection, existing_data):
     # if there are no delete fields, move along sir
     if not fields_to_be_removed:
         return post_json
-    # remove the fields from the raw_json that will be PUT
-    for rm_key in fields_to_be_removed:
-        if raw_json.get(rm_key):
-            del raw_json[rm_key]
-    # Do the put with raw_json
-    submit_utils.put_FDN(my_uuid, connection, raw_json)
+    # Use the url argument delete_fields for deletion
+    del_add_on = '/?delete_fields='+','.join(fields_to_be_removed)
+    ff_utils.patch_metadata({}, existing_data["uuid"], key=connection.key, add_on=del_add_on)
     # Remove them also from the post_json
     for rm_key in fields_to_be_removed:
         del post_json[rm_key]
@@ -1000,10 +1082,11 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
-                e = submit_utils.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key,
+                                            add_on="/?check_only=True")
             else:
                 post_json = remove_deleted(post_json)
-                e = submit_utils.new_FDN_check(connection, sheet, post_json)
+                e = ff_utils.post_metadata(post_json, sheet, key=connection.key, add_on="/?check_only=True")
             # check simulation status
             if e['status'] == 'success':
                 pass
@@ -1080,14 +1163,14 @@ def format_file(param, files, connection):
         object_key = []
         uuid = []
         for a_file in files:
-            resp = submit_utils.get_FDN(a_file, connection)
+            resp = ff_utils.get_metadata(a_file, key=connection.key, frame='object')
             object_key.append(resp['display_title'])
             uuid.append(resp['uuid'])
         template['object_key'] = object_key
         template['uuid'] = uuid
     # if it is not a list of files
     else:
-        resp = submit_utils.get_FDN(files, connection)
+        resp = ff_utils.get_metadata(files, key=connection.key, frame='object')
         template['object_key'] = resp['display_title']
         template['uuid'] = resp['uuid']
     # find the bucket from the last used response
@@ -1123,7 +1206,8 @@ def build_tibanna_json(keys, types, values, connection):
         # insert wf uuid and app_name
         if param == 'workflow_uuid':
             template['workflow_uuid'] = post_json['workflow_uuid']
-            template['app_name'] = submit_utils.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
+            workflow_resp = ff_utils.get_metadata(post_json['workflow_uuid'], key=connection.key, frame='object')
+            template['app_name'] = workflow_resp.get('app_name')
         elif param.startswith('input--'):
             template["input_files"].append(format_file(param, post_json[param], connection))
         elif param.startswith('output--'):
@@ -1163,7 +1247,7 @@ def user_workflow_reader(datafile, sheet, connection):
             continue
         if post_json:
             # do the magic
-            e = submit_utils.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            e = ff_utils.post_metadata(post_json, '/WorkflowRun/pseudo-run', key=connection.key)
             if e.get("status") == "SUCCEEDED":
                 post += 1
             else:
@@ -1247,7 +1331,7 @@ def loadxl_cycle(patch_list, connection):
             entry = delete_fields(entry, connection, entry)
             if entry != {}:
                 total = total + 1
-                e = submit_utils.patch_FDN(entry["uuid"], connection, entry)
+                e = ff_utils.patch_metadata(entry, entry["uuid"], key=connection.key)
                 if e.get("status") == "error":  # pragma: no cover
                     error_rep = error_report(e, n.upper(), [], connection)
                     if error_rep:
@@ -1260,13 +1344,7 @@ def loadxl_cycle(patch_list, connection):
 
 def cabin_cross_check(connection, patchall, update, infile, remote):
     """Set of check for connection, file, dryrun, and prompt."""
-    print("Running on:       {server}".format(server=connection.server))
-    # test connection
-    if not connection.check:
-        print("CONNECTION ERROR: Please check your keys.")
-        sys.exit(1)
-        return
-
+    print("Running on:       {server}".format(server=connection.key['server']))
     # check input file (xls)
     if not os.path.isfile(infile):
         print("File {filename} not found!".format(filename=infile))
@@ -1276,9 +1354,9 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     if not remote:
         connection.prompt_for_lab_award()
 
-    print("Submitting User:  {server}".format(server=connection.email))
-    print("Submitting Lab:   {server}".format(server=connection.lab))
-    print("Submitting Award: {server}".format(server=connection.award))
+    print("Submitting User:  {}".format(connection.email))
+    print("Submitting Lab:   {}".format(connection.lab))
+    print("Submitting Award: {}".format(connection.award))
 
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:
@@ -1298,7 +1376,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 
 def get_collections(connection):
     """Get a list of all the data_types in the system."""
-    profiles = submit_utils.get_FDN("/profiles/", connection)
+    profiles = ff_utils.get_metadata("/profiles/", key=connection.key, frame='object')
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     return supported_collections
@@ -1337,12 +1415,12 @@ def get_all_aliases(workbook, sheets):
 
 def main():  # pragma: no cover
     args = getArgs()
-    key = submit_utils.FDN_Key(args.keyfile, args.key)
+    key = FDN_Key(args.keyfile, args.key)
     # check if key has error
     if key.error:
         sys.exit(1)
     # establish connection and run checks
-    connection = submit_utils.FDN_Connection(key)
+    connection = FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
