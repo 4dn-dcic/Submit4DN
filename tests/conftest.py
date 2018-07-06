@@ -1,7 +1,6 @@
 # flake8: noqa
 import pytest
-import dcicutils.submit_utils as submit_utils
-
+from wranglertools.import_data import FDN_Key, FDN_Connection
 
 class MockedResponse(object):
     def __init__(self, json, status):
@@ -21,8 +20,8 @@ def connection():
                  "secret": "testsecret"
                  }
                 }
-    key = submit_utils.FDN_Key(keypairs, "default")
-    connection = submit_utils.FDN_Connection(key)
+    key = FDN_Key(keypairs, "default")
+    connection = FDN_Connection(key)
     connection.lab = 'test_lab'
     connection.user = 'test_user'
     connection.award = 'test_award'
@@ -38,8 +37,8 @@ def connection_public():
                  "secret": ""
                  }
                 }
-    key2 = submit_utils.FDN_Key(keypairs, "default")
-    connection = submit_utils.FDN_Connection(key2)
+    key2 = FDN_Key(keypairs, "default")
+    connection = FDN_Connection(key2)
     connection.lab = 'test_lab'
     connection.user = 'test_user'
     connection.award = 'test_award'
@@ -55,8 +54,8 @@ def connection_fake():
                  "secret": ""
                  }
                 }
-    key2 = submit_utils.FDN_Key(keypairs, "default")
-    connection = submit_utils.FDN_Connection(key2)
+    key2 = FDN_Key(keypairs, "default")
+    connection = FDN_Connection(key2)
     connection.lab = 'test_lab'
     connection.user = 'test_user'
     connection.award = 'test_award'
