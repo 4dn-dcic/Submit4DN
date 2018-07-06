@@ -625,7 +625,7 @@ def test_loadxl_cycle(capsys, mocker, connection):
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
     message = "EXPERIMENT(phase2): 1 items patched."
     with mocker.patch('dcicutils.submit_utils.patch_FDN', return_value=e):
-        imp.loadxl_cycle(patch_list, connection)
+        imp.loadxl_cycle(patch_list, connection, [])
         out = capsys.readouterr()[0]
         assert message == out.strip()
 
