@@ -636,6 +636,7 @@ def test_loadxl_cycle(capsys, mocker, connection):
 
 
 # Disabled - public account is not compatible with the connection object at the moment
+# # TODO: use a mocked connection object
 # def test_get_collections(connection_public):
 #     all_cols = imp.get_collections(connection_public)
 #     assert len(all_cols) > 10
