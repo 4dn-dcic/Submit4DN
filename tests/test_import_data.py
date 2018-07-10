@@ -288,7 +288,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     all_aliases = {}
     with mocker.patch('wranglertools.import_data.remove_deleted', return_value={}):
         imp.excel_reader(test_insert, 'Document', False, connection, False, all_aliases,
-                         dict_load, dict_rep, dict_set, True)
+                         dict_load, dict_rep, dict_set, True, ['attachment'])
         args = imp.remove_deleted.call_args
         attach = args[0][0]['attachment']
         assert attach['href'].startswith('data:image/jpeg;base64')
@@ -356,7 +356,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection):
             # mock posting new items
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, [])
                 args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
@@ -384,7 +384,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection):
             # mock posting new items
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, [])
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
                 assert message0 == outlist[0]
@@ -409,7 +409,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
             # mock posting new items
             with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, [])
                 args = imp.submit_utils.new_FDN.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
@@ -445,7 +445,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
                     imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, all_aliases,
-                                     dict_load, dict_rep, dict_set, True)
+                                     dict_load, dict_rep, dict_set, True, [])
                     # check for md5sum
                     args = imp.submit_utils.patch_FDN.call_args
                     post_json_arg = args[0][2]
@@ -479,7 +479,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection):
         # mock posting new items
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'FileFastq', True, connection, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True)
+                             dict_load, dict_rep, dict_set, True, [])
             args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             print([i for i in args])
@@ -504,7 +504,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection):
         # mock upload file and skip
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True)
+                             dict_load, dict_rep, dict_set, True, [])
             args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
@@ -527,7 +527,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection)
         # mock upload file and skip
         with mocker.patch('dcicutils.submit_utils.new_FDN', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True)
+                             dict_load, dict_rep, dict_set, True, [])
             args = imp.submit_utils.new_FDN.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
