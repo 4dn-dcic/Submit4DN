@@ -18,6 +18,7 @@ import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
 import attr
+import ast
 import os
 import time
 import subprocess
@@ -335,21 +336,47 @@ def fix_attribution(sheet, post_json, connection):
     return post_json
 
 
+def parse_exception(e):
+    """ff_utils functions raise an exception when the expected code is not returned.
+    This response is a pre-formatted text, and this function will get the resonse json
+    out of it."""
+    try:
+        # try parsing the exception
+        text = e.args[0]
+        index = text.index('Reason: ')
+        resp_text = text[index+8:]
+        resp_dict = ast.literal_eval(resp_text)
+        return resp_dict
+    # if failed, reaise it
+    except:
+        raise e
+
+
 def get_existing(post_json, connection):
     """Get the entry that will be patched from the server."""
-    temp = {}
-    uuids = []
-    # look if post_json has these 3 identifiers
+    # get all possible identifier from the json
+    all_ids = []
     for identifier in ["uuid", "accession", "@id"]:
         if post_json.get(identifier):
-            temp = ff_utils.get_metadata(post_json[identifier], key=connection.key, add_on="frame=object")
-            if temp.get("uuid"):
-                uuids.append(temp.get("uuid"))
+            all_ids.append(post_json[identifier])
     # also look for all aliases
     if post_json.get("aliases"):
         # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
-        for an_alias in post_json.get("aliases"):
-            temp = ff_utils.get_metadata(an_alias, key=connection.key, add_on="frame=object")
+        all_ids.extend(post_json['aliases'])
+    # look if post_json has these 3 identifier
+    temp = {}
+    uuids = []
+    for an_id in all_ids:
+            try:
+                temp = ff_utils.get_metadata(an_id, key=connection.key, add_on="frame=object")
+            except Exception as e:
+                exc = parse_exception(e)
+                # if the item does not exist get_metadata will raise an exceptions
+                # see if the exception message has 404, then continue, if not throw that exception
+                if exc['code'] == 404:
+                    temp = {}
+                else:
+                    raise e
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
 
@@ -683,7 +710,10 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key)
+    try:
+        e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key)
+    except Exception as problem:
+        e = parse_exception(problem)
     if file_to_upload:
         if e.get('status') == 'error':
             # print(e['detail'])
@@ -708,7 +738,10 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = ff_utils.post_metadata(post_json, sheet, key=connection.key)
+    try:
+        e = ff_utils.post_metadata(post_json, sheet, key=connection.key)
+    except Exception as problem:
+        e = parse_exception(problem)
     if file_to_upload:
         if e.get('status') == 'error':
             return e
@@ -986,11 +1019,17 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
-                e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key,
-                                            add_on="check_only=True")
+                try:
+                    e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key,
+                                                add_on="check_only=True")
+                except Exception as problem:
+                    e = parse_exception(e)
             else:
                 post_json = remove_deleted(post_json)
-                e = ff_utils.post_metadata(post_json, sheet, key=connection.key, add_on="check_only=True")
+                try:
+                    e = ff_utils.post_metadata(post_json, sheet, key=connection.key, add_on="check_only=True")
+                except Exception as problem:
+                    e = parse_exception(problem)
             # check simulation status
             if e['status'] == 'success':
                 pass
@@ -1151,7 +1190,10 @@ def user_workflow_reader(datafile, sheet, connection):
             continue
         if post_json:
             # do the magic
-            e = ff_utils.post_metadata(post_json, '/WorkflowRun/pseudo-run', key=connection.key)
+            try:
+                e = ff_utils.post_metadata(post_json, '/WorkflowRun/pseudo-run', key=connection.key)
+            except Exception as problem:
+                e = parse_exception(problem)
             if e.get("status") == "SUCCEEDED":
                 post += 1
             else:
@@ -1235,7 +1277,10 @@ def loadxl_cycle(patch_list, connection, alias_dict):
             entry = delete_fields(entry, connection, entry)
             if entry != {}:
                 total = total + 1
-                e = ff_utils.patch_metadata(entry, entry["uuid"], key=connection.key)
+                try:
+                    e = ff_utils.patch_metadata(entry, entry["uuid"], key=connection.key)
+                except Exception as problem:
+                    e = parse_exception(problem)
                 if e.get("status") == "error":  # pragma: no cover
                     error_rep = error_report(e, n.upper(), [k for k in alias_dict], connection)
                     if error_rep:
