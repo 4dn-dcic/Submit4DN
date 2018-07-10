@@ -1228,7 +1228,7 @@ def order_sorter(list_of_names):
     return ret_list
 
 
-def loadxl_cycle(patch_list, connection):
+def loadxl_cycle(patch_list, connection, alias_dict):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
@@ -1237,7 +1237,7 @@ def loadxl_cycle(patch_list, connection):
                 total = total + 1
                 e = ff_utils.patch_metadata(entry, entry["uuid"], key=connection.key)
                 if e.get("status") == "error":  # pragma: no cover
-                    error_rep = error_report(e, n.upper(), [], connection)
+                    error_rep = error_report(e, n.upper(), [k for k in alias_dict], connection)
                     if error_rep:
                         print(error_rep)
                     else:
@@ -1359,7 +1359,7 @@ def main():  # pragma: no cover
                 print('user workflow sheets will only be processed with the --update argument')
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
-    loadxl_cycle(dict_loadxl, connection)
+    loadxl_cycle(dict_loadxl, connection, aliases_by_type)
     # if any item left in the following dictionaries
     # it means that this items are not posted/patched
     # because they are not on the exp_set file_set sheets
