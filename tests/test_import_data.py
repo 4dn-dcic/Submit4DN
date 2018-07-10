@@ -635,20 +635,6 @@ def test_loadxl_cycle(capsys, mocker, connection_mock):
         assert message == out.strip()
 
 
-def bad_connection_will_exit():
-    with pytest.raises(SystemExit) as excinfo:
-        keypairs = {
-                    "default":
-                    {"server": "https://data.4dnucleome.org/",
-                     "key": "testkey",
-                     "secret": "testsecret"
-                     }
-                    }
-        key = imp.FDN_Key(keypairs, "default")
-        imp.FDN_Connection(key)
-    assert str(excinfo.value) == "1"
-
-
 @pytest.mark.file_operation
 def test_cabin_cross_check_dryrun(connection_mock, capsys):
     imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/Exp_Set_insert.xls', False)

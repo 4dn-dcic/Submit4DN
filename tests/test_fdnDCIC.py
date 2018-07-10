@@ -243,9 +243,9 @@ def test_get_FDN_mock(mocker, returned_award_schema):
         assert award_schema['properties'].get('description')
 
 
-def test_schema_mock(mocker, returned_vendor_schema_FDN):
+def test_schema_mock(mocker, returned_vendor_schema):
     connection = public_connection()
-    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema_FDN):
+    with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         vendor_schema = fdnDCIC.FDN_Schema(connection, "/profiles/vendor.json")
         assert vendor_schema.uri == "/profiles/vendor.json"
         assert vendor_schema.server == connection.server

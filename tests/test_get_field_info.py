@@ -255,7 +255,7 @@ def test_build_field_list_embeds_with_dots(embed_properties):
 
 
 def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_schema):
-    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema):
+    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json()):
         field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
         for field in field_dict['Vendor']:
             assert field.name is not None
@@ -300,7 +300,7 @@ def test_create_xls_vendor(connection_mock, mocker, returned_vendor_schema):
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema):
+    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json()):
         field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
         gfi.create_xls(field_dict, xls_file)
         assert os.path.isfile(xls_file)
