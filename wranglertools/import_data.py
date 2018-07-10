@@ -181,8 +181,9 @@ def attachment(path):
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
-                         'text/html', 'application/zip'):
+        if mime_type in ('application/pdf', "application/zip", 'text/plain',
+                         'text/tab-separated-values', 'text/html', 'application/msword',
+                         'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             # XXX Should use chardet to detect charset for text files here.
             pass
         elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
