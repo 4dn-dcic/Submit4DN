@@ -11,6 +11,38 @@ class MockedResponse(object):
         return self._json
 
 
+class MockedConnection(object):
+    def __init__(self, key4dn):
+        self.key = key4dn.con_key
+        self.lab = 'test_lab'
+        self.user = 'test_user'
+        self.award = 'test_award'
+        self.labs = ['test_lab']
+        self.email = 'test@test.test'
+
+    def set_award(self):
+        self.award = 'test_award'
+        return
+
+    def prompt_for_lab_award(self):
+        self.lab = 'test_lab'
+        return
+
+
+@pytest.fixture
+def connection_mock():
+    keypairs = {
+                "default":
+                {"server": "https://data.4dnucleome.org/",
+                 "key": "testkey",
+                 "secret": "testsecret"
+                 }
+                }
+    key = FDN_Key(keypairs, "default")
+    connection = MockedConnection(key)
+    return connection
+
+
 @pytest.fixture
 def connection():
     keypairs = {

@@ -130,7 +130,8 @@ class FDN_Connection(object):
         except:
             print('Can not establish connection, please check your keys')
             me_page = {}
-            # sys.exit(1)
+        if not me_page:
+            sys.exit(1)
         if me_page.get('submits_for') is not None:
             # get all the labs that the user making the connection submits_for
             self.labs = [l['link_id'].replace("~", "/") for l in me_page['submits_for']]
