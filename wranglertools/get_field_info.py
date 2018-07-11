@@ -134,7 +134,7 @@ class FDN_Connection(object):
             sys.exit(1)
         if me_page.get('submits_for') is not None:
             # get all the labs that the user making the connection submits_for
-            self.labs = [l['link_id'].replace("~", "/") for l in me_page['submits_for']]
+            self.labs = [l['@id'] for l in me_page['submits_for']]
             # take the first one as default value for the connection - reset in
             # import_data if needed by calling set_lab_award
             self.lab = self.labs[0]
