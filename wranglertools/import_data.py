@@ -689,8 +689,8 @@ def conflict_error_report(error_dic, sheet, connection):
                                                                        field=error_field,
                                                                        value=error_value)
                 existing_item = ff_utils.search_metadata(search, key=connection.key)
-                link_id = existing_item.get('link_id').replace("~", "/")
-                add_text = "please use " + link_id
+                at_id = existing_item.get('@id')
+                add_text = "please use " + at_id
             except:
                 # if there is a conflicting item, but it is not viewable by the user,
                 # we should release the item to the project/public
