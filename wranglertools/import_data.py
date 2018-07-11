@@ -429,7 +429,10 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
             match = pattern.match(item)
             if match is None:
                 item = '/' + typeinfield + item
-            res = ff_utils.get_metadata(item, key=connection.key, add_on="frame=object")
+            try:
+                res = ff_utils.get_metadata(item, key=connection.key, add_on="frame=object")
+            except Exception as problem:
+                res = parse_exception(problem)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
