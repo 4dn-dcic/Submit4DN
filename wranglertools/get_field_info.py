@@ -406,11 +406,10 @@ def get_uploadable_fields(connection, types, include_description=False,
     return fields
 
 
-def add_xls_rows(input_xls, connection):
+def add_xls_rows(wb, filename, connection):
     """Adds empty rows or fetched items"""
-    bookread = xlrd.open_workbook(input_xls)
     book_w = xlwt.Workbook()
-    Sheets_read = bookread.sheet_names()
+    Sheets_read = wb.sheet_names()
     Sheets = []
     # text styling for all columns
     style = xlwt.XFStyle()
@@ -424,7 +423,7 @@ def add_xls_rows(input_xls, connection):
         print(Sheets_read, "not in sheet_order list, please update")
         Sheets.extend(Sheets_read)
     for sheet in Sheets:
-        active_sheet = bookread.sheet_by_name(sheet)
+        active_sheet = wb.sheet_by_name(sheet)
         first_row_values = active_sheet.row_values(rowx=0)
         # fetch all items for common objects
         all_items = fetch_all_items(sheet, first_row_values, connection)
@@ -448,10 +447,10 @@ def add_xls_rows(input_xls, connection):
             for ix in range(len(first_row_values)):
                 write_column_index_III = write_column_index_II+1+i
                 new_sheet.write(write_column_index_III, ix, '', style)
-    book_w.save(input_xls)
+    book_w.save(filename)
 
 
-def create_xls(all_fields, filename):
+def create_xls(all_fields, filename, connection):
     '''
     fields being a dictionary of sheet -> FieldInfo(objects)
     create one sheet per dictionary item, with three columns of fields
@@ -481,7 +480,7 @@ def create_xls(all_fields, filename):
             if not field.comm and not field.enum:
                 add_info = "-"
             ws.write(3, col+1, add_info)
-    wb.save(filename)
+    add_xls_rows(wb, filename, connection)
 
 
 def main():  # pragma: no cover
@@ -506,6 +505,7 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
+
 
 
 if __name__ == '__main__':
