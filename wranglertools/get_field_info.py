@@ -7,7 +7,6 @@ import attr
 import xlwt
 import sys
 import json
-import xlrd
 # import sys
 
 
@@ -505,7 +504,6 @@ def main():  # pragma: no cover
     if args.writexls:
         file_name = args.outfile
         create_xls(fields, file_name)
-
 
 
 if __name__ == '__main__':
