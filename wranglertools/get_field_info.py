@@ -7,6 +7,7 @@ import attr
 import xlwt
 import sys
 import json
+import xlrd
 # import sys
 
 
@@ -403,6 +404,51 @@ def get_uploadable_fields(connection, types, include_description=False,
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
     return fields
+
+
+def add_xls_rows(input_xls, connection):
+    """Adds empty rows or fetched items"""
+    bookread = xlrd.open_workbook(input_xls)
+    book_w = xlwt.Workbook()
+    Sheets_read = bookread.sheet_names()
+    Sheets = []
+    # text styling for all columns
+    style = xlwt.XFStyle()
+    style.num_format_str = "@"
+    # reorder sheets based on sheet_order list and report if there are missing one from this list
+    for sh in sheet_order:
+        if sh in Sheets_read:
+            Sheets.append(sh)
+            Sheets_read.remove(sh)
+    if Sheets_read:  # pragma: no cover
+        print(Sheets_read, "not in sheet_order list, please update")
+        Sheets.extend(Sheets_read)
+    for sheet in Sheets:
+        active_sheet = bookread.sheet_by_name(sheet)
+        first_row_values = active_sheet.row_values(rowx=0)
+        # fetch all items for common objects
+        all_items = fetch_all_items(sheet, first_row_values, connection)
+        # create a new sheet and write the data
+        new_sheet = book_w.add_sheet(sheet)
+        for write_row_index, write_item in enumerate(first_row_values):
+            read_col_ind = first_row_values.index(write_item)
+            column_val = active_sheet.col_values(read_col_ind)
+            for write_column_index, cell_value in enumerate(column_val):
+                new_sheet.write(write_column_index, write_row_index, cell_value, style)
+        # write common objects
+        if all_items:
+            for i, item in enumerate(all_items):
+                for ix in range(len(first_row_values)):
+                    write_column_index_II = write_column_index+1+i
+                    new_sheet.write(write_column_index_II, ix, str(item[ix]), style)
+        else:
+            write_column_index_II = write_column_index
+        # write 50 empty lines with text formatting
+        for i in range(100):
+            for ix in range(len(first_row_values)):
+                write_column_index_III = write_column_index_II+1+i
+                new_sheet.write(write_column_index_III, ix, '', style)
+    book_w.save(input_xls)
 
 
 def create_xls(all_fields, filename):
