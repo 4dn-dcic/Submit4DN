@@ -383,7 +383,7 @@ def returned_user_me_submit_for_one_lab():
         '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
         'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current',
         'submits_for': [
-            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~'}
+            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', '@id': '/labs/bing-ren-lab/'}
         ]
     }
     return MockedResponse(data, 307)
@@ -397,8 +397,8 @@ def returned_user_me_submit_for_two_labs():
         '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
         'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current',
         'submits_for': [
-            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~'},
-            {'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~'}
+            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', '@id': '/labs/bing-ren-lab/'},
+            {'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~', '@id': '/labs/ben-ring-lab/'}
         ]
     }
     return MockedResponse(data, 307)
