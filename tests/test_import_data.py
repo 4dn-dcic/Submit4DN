@@ -944,3 +944,63 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
     report = imp.check_file_pairing(rows)
     assert 'NO GO' in report
     assert report['NO GO'] == 'Can only check file pairing by aliases'
+
+
+@pytest.fixture
+def mock_profiles():
+    return {
+        "FileProcessed": {
+            "title": "Processed file from workflow runs",
+            "type": "object",
+            "properties": {
+                "higlass_uid": {"type": "string"},
+                "file_format": {"type": "string"}
+            }
+        },
+        "Document": {
+            "title": "Document",
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "type": "object",
+                    "description": "File attached to this Item.",
+                    "attachment": True,
+                    "properties": {
+                        "download": {"type": "string"},
+                        "href": {"type": "string"},
+                        "type": {"type": "string"},
+                        "md5sum": {"type": "string", "format": "md5sum"},
+                        "size": {"type": "integer"},
+                        "width": {"type": "integer"},
+                        "height": {"type": "integer"},
+                        "blob_id": {"type": "string"}
+                    }
+                },
+                "description": {"type": "string"},
+                "references": {
+                    "type": "array",
+                    "items": {"type": "string", "linkTo": "Publication"}
+                }
+            }
+        }
+    }
+
+
+def test_get_profiles(mocker, mock_profiles, connection_mock):
+    '''just using a simple mock profiles dictionary'''
+    with mocker.patch('wranglertools.import_data.ff_utils.get_metadata',
+                      return_value=mock_profiles):
+        profiles = imp.get_profiles(connection_mock)
+        assert profiles == mock_profiles
+
+
+def test_get_attachment_fields(mock_profiles):
+    afields = imp.get_attachment_fields(mock_profiles)
+    assert len(afields) == 1
+    assert 'attachment' in afields
+
+
+def test_get_collections(mock_profiles):
+    colls = imp.get_collections(mock_profiles)
+    for c in mock_profiles.keys():
+        assert c.lower() in colls
