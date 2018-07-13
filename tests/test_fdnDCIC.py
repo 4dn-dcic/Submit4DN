@@ -54,6 +54,32 @@ def test_connection():
     assert(connection.server)
 
 
+def public_connection():
+    keypairs = {
+                "default":
+                {"server": "https://data.4dnucleome.org/",
+                 "key": "",
+                 "secret": ""
+                 }
+                }
+    key2 = fdnDCIC.FDN_Key(keypairs, "default")
+    connection = fdnDCIC.FDN_Connection(key2)
+    return connection
+
+
+def my_connection():
+    keypairs = {
+                "default":
+                {"server": "https://data.4dnucleome.org/",
+                 "key": "testkey",
+                 "secret": "testsecret"
+                 }
+                }
+    key = fdnDCIC.FDN_Key(keypairs, "default")
+    connection = fdnDCIC.FDN_Connection(key)
+    return connection
+
+
 def test_test_connection_fail():
     key = fdnDCIC.FDN_Key(keypairs, "default")
     connection = fdnDCIC.FDN_Connection(key)
@@ -194,27 +220,31 @@ def test_md5():
 
 
 @pytest.mark.webtest
-def test_get_FDN(connection_public):
+def test_get_FDN():
     # test the schema retrival with public connection
-    award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection_public, frame="object")
+    connection = public_connection()
+    award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection, frame="object")
     assert award_schema['title'] == 'Grant'
     assert award_schema['properties'].get('description')
 
 
 @pytest.mark.webtest
-def test_search_FDN(connection_public):
-    my_award = fdnDCIC.search_FDN("Award", 'name', '1U01CA200059-01', connection_public)
+def test_search_FDN():
+    connection = public_connection()
+    my_award = fdnDCIC.search_FDN("Award", 'name', '1U01CA200059-01', connection)
     assert my_award[0]['uuid']
 
 
-def test_get_FDN_mock(connection, mocker, returned_award_schema):
+def test_get_FDN_mock(mocker, returned_award_schema):
+    connection = public_connection()
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_award_schema):
         award_schema = fdnDCIC.get_FDN("/profiles/award.json", connection, frame="object")
         assert award_schema['title'] == 'Grant'
         assert award_schema['properties'].get('description')
 
 
-def test_schema_mock(connection, mocker, returned_vendor_schema):
+def test_schema_mock(mocker, returned_vendor_schema):
+    connection = public_connection()
     with mocker.patch('wranglertools.fdnDCIC.requests.get', return_value=returned_vendor_schema):
         vendor_schema = fdnDCIC.FDN_Schema(connection, "/profiles/vendor.json")
         assert vendor_schema.uri == "/profiles/vendor.json"
@@ -226,7 +256,8 @@ def test_schema_mock(connection, mocker, returned_vendor_schema):
         assert vendor_schema.required == ["title"]
 
 
-def test_new_FDN_mock_post_item_dict(connection, mocker, returned_post_new_vendor):
+def test_new_FDN_mock_post_item_dict(mocker, returned_post_new_vendor):
+    connection = my_connection()
     post_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description', 'title': 'Test Vendor',
                  'url': 'http://www.test_vendor.com'}
     with mocker.patch('wranglertools.fdnDCIC.requests.post', return_value=returned_post_new_vendor):
@@ -242,7 +273,8 @@ def test_new_FDN_mock_post_item_dict(connection, mocker, returned_post_new_vendo
         assert args[1]['data'] == data
 
 
-def test_new_FDN_mock_post_item_str(connection, mocker, returned_post_new_vendor):
+def test_new_FDN_mock_post_item_str(mocker, returned_post_new_vendor):
+    connection = my_connection()
     post_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description', 'title': 'Test Vendor',
                  'url': 'http://www.test_vendor.com'}
     data = json.dumps(post_item)
@@ -259,7 +291,8 @@ def test_new_FDN_mock_post_item_str(connection, mocker, returned_post_new_vendor
         assert args[1]['data'] == data
 
 
-def test_patch_FDN_mock_post_item_dict(connection, mocker, returned__patch_vendor):
+def test_patch_FDN_mock_post_item_dict(mocker, returned__patch_vendor):
+    connection = my_connection()
     patch_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description new'}
     obj_id = 'some_uuid'
     with mocker.patch('wranglertools.fdnDCIC.requests.patch', return_value=returned__patch_vendor):
@@ -275,7 +308,8 @@ def test_patch_FDN_mock_post_item_dict(connection, mocker, returned__patch_vendo
         assert args[1]['data'] == data
 
 
-def test_patch_FDN_mock_post_item_str(connection, mocker, returned__patch_vendor):
+def test_patch_FDN_mock_post_item_str(mocker, returned__patch_vendor):
+    connection = my_connection()
     patch_item = {'aliases': ['dcic:vendor_test'], 'description': 'test description new'}
     data = json.dumps(patch_item)
     obj_id = 'some_uuid'
