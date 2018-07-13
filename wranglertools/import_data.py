@@ -58,10 +58,10 @@ Ex: award, lab, target, etc.
 To upload objects with attachments, use the column titled "attachment"
 containing the full path to the file you wish to attach
 
+To delete a field, use the keyword "*delete*" as the value.
+
 For more details:
 please see README.rst
-
-To delete a field, use the keyword "*delete*" as the value.
 '''
 
 
@@ -676,7 +676,6 @@ def conflict_error_report(error_dic, sheet, connection):
     # To make sure we get all cases reported, I put a try/except
     all_conflicts = []
     try:
-        import ast
         # list is reported as string, turned into list again
         conflict_str = error_dic.get('detail').replace("Keys conflict:", "").strip()
         conflict_list = ast.literal_eval(conflict_str)
