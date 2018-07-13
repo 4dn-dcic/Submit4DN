@@ -292,7 +292,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
             # mocking the test post line
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'}):
                 imp.excel_reader(test_insert, 'Document', False, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True, [])
+                                 dict_load, dict_rep, dict_set, True, ['attachment'])
                 args = imp.remove_deleted.call_args
                 attach = args[0][0]['attachment']
                 assert attach['href'].startswith('data:image/jpeg;base64')
@@ -448,7 +448,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
             with mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e):
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
-                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection, True, all_aliases,
+                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection_mock, True, all_aliases,
                                      dict_load, dict_rep, dict_set, True, [])
                     # check for md5sum
                     args = imp.ff_utils.patch_metadata.call_args

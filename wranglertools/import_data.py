@@ -185,7 +185,8 @@ def attachment(path):
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
         if mime_type in ('application/pdf', "application/zip", 'text/plain',
                          'text/tab-separated-values', 'text/html', 'application/msword',
-                         'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+                         'application/vnd.ms-excel',
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             # XXX Should use chardet to detect charset for text files here.
             pass
         elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
@@ -961,7 +962,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet, attach_fields)  # , existing_data)
+        post_json, existing_data, file_to_upload = populate_post_json(
+            post_json, connection, sheet, attach_fields)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -1329,7 +1331,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 
 
 def get_profiles(connection):
-    return submit_utils.get_FDN("/profiles/", connection)
+    return ff_utils.get_metadata("/profiles/", key=connection.key, add_on="frame=object")
 
 
 def get_attachment_fields(profiles):
