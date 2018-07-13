@@ -449,7 +449,7 @@ def add_xls_rows(wb, filename, connection):
     book_w.save(filename)
 
 
-def create_xls(all_fields, filename, connection):
+def create_xls(all_fields, filename):
     '''
     fields being a dictionary of sheet -> FieldInfo(objects)
     create one sheet per dictionary item, with three columns of fields
@@ -479,7 +479,8 @@ def create_xls(all_fields, filename, connection):
             if not field.comm and not field.enum:
                 add_info = "-"
             ws.write(3, col+1, add_info)
-    add_xls_rows(wb, filename, connection)
+    # add_xls_rows(wb, filename, connection)
+    wb.save(filename)
 
 
 def main():  # pragma: no cover
