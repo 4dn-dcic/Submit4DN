@@ -116,6 +116,7 @@ list_of_loadxl_fields = [
     ['Experiment', ['experiment_relation']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentSeq', ['experiment_relation']],
+    ['ExperimentTsaseq', ['experiment_relation']],
     ['ExperimentDamid', ['experiment_relation']],
     ['ExperimentChiapet', ['experiment_relation']],
     ['ExperimentAtacseq', ['experiment_relation']],
