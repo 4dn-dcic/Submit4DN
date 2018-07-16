@@ -356,7 +356,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False, all_aliases,
@@ -384,7 +384,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_moc
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False, all_aliases,
@@ -409,7 +409,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection_mock, False, all_aliases,
@@ -443,7 +443,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     # mock fetching existing info, return None
     with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_exp):
         # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file', return_value={}):
+        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e):
                 # mock get upload creds
@@ -455,7 +455,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                     post_json_arg = args[0][0]
                     assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
                     # check for cred getting updated (from old_creds to new_creds)
-                    args_upload = imp.upload_file.call_args
+                    args_upload = imp.upload_file_item.call_args
                     updated_post = args_upload[0][0]
                     assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
                     # check for output message
@@ -944,3 +944,133 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
     report = imp.check_file_pairing(rows)
     assert 'NO GO' in report
     assert report['NO GO'] == 'Can only check file pairing by aliases'
+
+
+@pytest.fixture
+def profile_fffe():
+    '''fixture to test the file_format_file_extention schema info'''
+    return {
+        "file_format_file_extension": {
+            "bam": ".bam",
+            "bai": ".bam.bai",
+            "pairs": ".pairs.gz",
+            "pairsam": ".sam.pairs.gz",
+            "pairs_px2": ".pairs.gz.px2",
+            "pairsam_px2": ".sam.pairs.gz.px2",
+            "cool": ".cool",
+            "mcool": ".mcool",
+            "hic": ".hic",
+            "normvector_juicerformat": ".normvector.juicerformat.gz",
+            "zip": ".zip",
+            "bg": ".bedGraph.gz",
+            "bg_px2": ".bedGraph.gz.px2",
+            "bw": ".bw",
+            "bed": ".bed.gz",
+            "txt": ".txt.gz",
+            "csv": ".csv",
+            "other": "",
+            "barcode_file": ".txt",
+            "compressed_fasta": ".fasta.gz",
+            "fasta": ".fasta",
+            "juicer_format_restriction_site_file": ".txt",
+        }
+    }
+
+
+def test_get_extrafile_format_from_filename_good_filename(profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    format = imp.get_extrafile_format_from_filename(fn, profile_fffe)
+    assert format == 'pairs_px2'
+
+
+def test_get_extrafile_format_from_filename_bad_filename(profile_fffe, capsys):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.pxxx2'
+    format = imp.get_extrafile_format_from_filename(fn, profile_fffe)
+    out = capsys.readouterr()[0]
+    assert not format
+    assert 'No file_format found for .pairs.gz.pxxx2' in out
+
+
+def test_get_extrafile_format_from_filename_bad_fileext(profile_fffe, capsys):
+    fn = '/test/path/to/file/test_juicer_file.txt'
+    format = imp.get_extrafile_format_from_filename(fn, profile_fffe)
+    out = capsys.readouterr()[0]
+    assert not format
+    assert 'More than one format can have the .txt extension' in out
+
+
+def test_get_extra_file_meta_w_filename_new_file(mocker, profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
+                      return_value=ff):
+        result, seen = imp.get_extra_file_meta(fn, [], [], profile_fffe)
+        assert result['file_format'] == ff
+        assert result['filepath'] == fn
+        assert ff in seen
+
+
+def test_get_extra_file_meta_w_filename_bad_filename(mocker, profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.pxxx2'
+    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
+                      return_value=None):
+        result, seen = imp.get_extra_file_meta(fn, [], [], profile_fffe)
+        assert not result
+        assert not seen
+
+
+def test_get_extra_file_meta_w_filename_seen_format(mocker, capsys, profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
+                      return_value='pairs_px2'):
+        result, seen = imp.get_extra_file_meta(fn, ['pairs_px2'], [], profile_fffe)
+        out = capsys.readouterr()[0]
+        assert not result
+        assert 'pairs_px2' in seen
+        assert 'Each file in extra_files must have unique file_format' in out
+
+
+def test_get_extra_file_meta_w_filename_existing_format(mocker, capsys, profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
+                      return_value='pairs_px2'):
+        result, seen = imp.get_extra_file_meta(fn, [], ['pairs_px2'], profile_fffe)
+        out = capsys.readouterr()[0]
+        assert result['file_format'] == ff
+        assert result['filepath'] == fn
+        assert 'pairs_px2' in seen
+        assert 'An extrafile with pairs_px2 format exists - will attempt to patch' in out
+
+
+def test_get_extra_file_meta_w_file_format_new_w_format(profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    efile = {'file_format': ff, 'filename': fn}
+    result, seen = imp.get_extra_file_meta(efile, [], [], profile_fffe)
+    assert result['file_format'] == ff
+    assert result['filepath'] == fn
+    assert 'pairs_px2' in seen
+
+
+def test_get_extra_file_meta_w_file_format_new_no_format(mocker, profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    efile = {'file_format': ff, 'filename': fn}
+    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
+                      return_value='pairs_px2'):
+        result, seen = imp.get_extra_file_meta(efile, [], [], profile_fffe)
+        assert result['file_format'] == ff
+        assert result['filepath'] == fn
+        assert 'pairs_px2' in seen
+
+
+def test_get_extra_file_meta_w_file_format_malformed(capsys, profile_fffe):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    efile = [ff, fn]
+    result, seen = imp.get_extra_file_meta(efile, [], [], profile_fffe)
+    out = capsys.readouterr()[0]
+    assert not result
+    assert not seen
+    assert 'Malformed extrafile field formatting' in out

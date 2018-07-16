@@ -5,7 +5,7 @@ import json
 import argparse
 import os.path
 import hashlib
-from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
+from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection, FDN_Schema
 from dcicutils import ff_utils
 import xlrd
 import datetime
@@ -523,6 +523,57 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
+def get_extrafile_format_from_filename(filename, schema):
+    ext2format_map = {}
+    for k, v in schema.get('file_format_file_extension').items():
+        ext2format_map.setdefault(v, []).append(k)
+    just_filename = filename.split('/')[-1]
+    full_extension = '.' + just_filename.split('.', 1)[1]
+    fformat = ext2format_map.get(full_extension)
+    if fformat:
+        if len(fformat) == 1:
+            return fformat[0]
+        print('More than one format can have the %s extension - you need to explicitly pass in format' % full_extension)
+    print('No file_format found for %s' % full_extension)
+    return None
+
+
+def get_extra_file_meta(ef_info, seen_formats, existing_formats, schema):
+    isdict = False
+    if isinstance(ef_info, str):
+        # typical case of passing in path to file to upload
+        filename = ef_info
+        ef_format = get_extrafile_format_from_filename(filename, schema)
+    else:
+        # uncommon case of passing in subobject info directly
+        try:
+            ef_format = ef_info.get('file_format')
+        except AttributeError:
+            print('Malformed extrafile field formatting ', ef_info)
+            ef_format = None
+        else:
+            filename = ef_info.get('filename')
+            isdict = True
+            if not ef_format:
+                ef_format = get_extrafile_format_from_filename(filename)
+    if not ef_format:
+        result = None
+    elif ef_format in seen_formats:
+        print("Each file in extra_files must have unique file_format")
+        result = None
+    else:
+        if ef_format in existing_formats:
+            print("An extrafile with %s format exists - will attempt to patch" % ef_format)
+        result = {'file_format': ef_format, 'filepath': filename}
+        if isdict:
+            # add additionally provided dict key, values
+            for k, v in ef_info.items():
+                if k not in ['file_format', 'filepath']:
+                    result[k] = v
+        seen_formats.append(ef_format)
+    return result, seen_formats
+
+
 def populate_post_json(post_json, connection, sheet):  # , existing_data):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
@@ -556,6 +607,23 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
         else:
             # if not uploading a file, do not post the filename
             del post_json['filename']
+
+    # deal with extrafiles
+    extrafiles = post_json.get('extra_files')
+    if extrafiles:
+        # in sheet these will be file paths need to both poopulate the extrafiles properties
+        # in post or patch as well as upload the file if not already there
+        existing_formats = []
+        extrafile_meta = []
+        if existing_data:
+            if existing_data.get('extra_files'):
+                extrafile_meta = existing_data.get('extra_files')  # to include existing
+                existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')
+                                    if ef.get('file_format') is not None]
+        schema = FDN_Schema(connection, '/profiles/' + sheet + '.json')
+        seen_formats = []
+        for extfile in extrafiles:
+            ext_meta, seen_formats = get_extra_file_meta(extfile, seen_formats, existing_formats, schema)
 
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
@@ -724,7 +792,7 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
         creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
         e['@graph'][0]['upload_credentials'] = creds
         # upload
-        upload_file(e, filename_to_post)
+        upload_file_item(e, filename_to_post)
         if ftp_download:
             os.remove(filename_to_post)
     return e
@@ -748,7 +816,7 @@ def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
         if e.get('status') == 'error':
             return e
         # upload the file
-        upload_file(e, filename_to_post)
+        upload_file_item(e, filename_to_post)
         if ftp_download:
             os.remove(filename_to_post)
     return e
@@ -946,10 +1014,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         if not novalidate:
             row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
             if row_errors:
-                # if existing_data.get("uuid"):
-                #    not_patched += 1
-                # else:
-                #    not_posted += 1
                 error += 1
                 pre_validate_errors.extend(row_errors)
                 invalid = True
@@ -958,7 +1022,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)  # , existing_data)
+        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -1220,13 +1284,24 @@ def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
     return req.json()['@graph'][0]['upload_credentials']
 
 
-def upload_file(metadata_post_response, path):  # pragma: no cover
+def upload_file_item(metadata_post_response, path):
     try:
         item = metadata_post_response['@graph'][0]
         creds = item['upload_credentials']
     except Exception as e:
         print(e)
         return
+    upload_file(creds, path)
+
+
+def upload_extra_file(efobj, path):
+    # figure out if we should get the upload creds here or before
+    creds = {}
+    upload_file(creds, path)
+
+
+def upload_file(creds, path):  # pragma: no cover
+
     ####################
     # POST file to S3
     env = os.environ.copy()  # pragma: no cover
