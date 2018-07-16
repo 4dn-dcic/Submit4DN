@@ -240,72 +240,6 @@ sheet_order = [
     ]
 
 
-def sort_item_list(item_list, item_id, field):
-    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginning."""
-    # sort all items based on the key
-    sorted_list = sorted(item_list, key=lambda k: ("" if k.get(field) is None else k.get(field)))
-    # move the item_id ones to the front
-    move_list = [i for i in sorted_list if i.get(field) == item_id]
-    move_list.reverse()
-    for move_item in move_list:
-        try:
-            sorted_list.remove(move_item)
-            sorted_list.insert(0, move_item)
-        except:  # pragma: no cover
-            pass
-    return sorted_list
-
-
-def fetch_all_items(sheet, field_list, connection):
-    """For a given sheet, get all released items"""
-    all_items = []
-    if sheet in fetch_items.keys():
-        # Search all items, get uuids, get them one by one
-        obj_id = "search/?type=" + fetch_items[sheet]
-        resp = ff_utils.get_metadata(obj_id, key=connection.key, add_on='frame=object')
-        items_uuids = [i["uuid"] for i in resp['@graph']]
-        items_list = []
-        for item_uuid in items_uuids:
-            items_list.append(ff_utils.get_metadata(item_uuid, key=connection.key, add_on='frame=object'))
-        # order items with lab and user
-        # the date ordering is already in place through search result (resp)
-        # 1) order by dcic lab
-        items_list = sort_item_list(items_list, '/lab/dcic-lab/', 'lab')
-        # 2) sort by submitters lab
-        items_list = sort_item_list(items_list, connection.lab, 'lab')
-        # 3) sort by submitters user
-        items_list = sort_item_list(items_list, connection.user, 'submitted_by')
-        # 4) If biosurce, also sort by tier
-        if sheet == "Biosource":
-            items_list = sort_item_list(items_list, 'Tier 1', 'cell_line_tier')
-
-        # filter for fields that exist on the excel sheet
-        for item in items_list:
-            item_info = []
-            for field in field_list:
-                # required fields will have a star
-                field = field.strip('*')
-                # add # to skip existing items during submission
-                if field == "#Field Name:":
-                    item_info.append("#")
-                # the attachment field returns a dictionary
-                elif field == "attachment":
-                    try:
-                        item_info.append(item.get(field)['download'])
-                    except:
-                        item_info.append("")
-                else:
-                    # when writing values, check for the lists and turn them into string
-                    write_value = item.get(field, '')
-                    if isinstance(write_value, list):
-                        write_value = ','.join(write_value)
-                    item_info.append(write_value)
-            all_items.append(item_info)
-        return all_items
-    else:  # pragma: no cover
-        return
-
-
 def get_field_type(field):
     field_type = field.get('type', '')
     if field_type == 'string':
@@ -405,50 +339,6 @@ def get_uploadable_fields(connection, types, include_description=False,
     return fields
 
 
-def add_xls_rows(wb, filename, connection):
-    """Adds empty rows or fetched items"""
-    book_w = xlwt.Workbook()
-    Sheets_read = wb.sheet_names()
-    Sheets = []
-    # text styling for all columns
-    style = xlwt.XFStyle()
-    style.num_format_str = "@"
-    # reorder sheets based on sheet_order list and report if there are missing one from this list
-    for sh in sheet_order:
-        if sh in Sheets_read:
-            Sheets.append(sh)
-            Sheets_read.remove(sh)
-    if Sheets_read:  # pragma: no cover
-        print(Sheets_read, "not in sheet_order list, please update")
-        Sheets.extend(Sheets_read)
-    for sheet in Sheets:
-        active_sheet = wb.sheet_by_name(sheet)
-        first_row_values = active_sheet.row_values(rowx=0)
-        # fetch all items for common objects
-        all_items = fetch_all_items(sheet, first_row_values, connection)
-        # create a new sheet and write the data
-        new_sheet = book_w.add_sheet(sheet)
-        for write_row_index, write_item in enumerate(first_row_values):
-            read_col_ind = first_row_values.index(write_item)
-            column_val = active_sheet.col_values(read_col_ind)
-            for write_column_index, cell_value in enumerate(column_val):
-                new_sheet.write(write_column_index, write_row_index, cell_value, style)
-        # write common objects
-        if all_items:
-            for i, item in enumerate(all_items):
-                for ix in range(len(first_row_values)):
-                    write_column_index_II = write_column_index+1+i
-                    new_sheet.write(write_column_index_II, ix, str(item[ix]), style)
-        else:
-            write_column_index_II = write_column_index
-        # write 50 empty lines with text formatting
-        for i in range(100):
-            for ix in range(len(first_row_values)):
-                write_column_index_III = write_column_index_II+1+i
-                new_sheet.write(write_column_index_III, ix, '', style)
-    book_w.save(filename)
-
-
 def create_xls(all_fields, filename):
     '''
     fields being a dictionary of sheet -> FieldInfo(objects)
@@ -456,6 +346,9 @@ def create_xls(all_fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
+    # text styling for all columns
+    style = xlwt.XFStyle()
+    style.num_format_str = "@"
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
@@ -464,12 +357,15 @@ def create_xls(all_fields, filename):
         ws.write(1, 0, "#Field Type:")
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
+        # add empty formatting for first column
+        for i in range(100):
+            ws.write(4+i, 0, '', style)
         # order fields in sheet based on lookup numbers, then alphabetically
         for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
-            ws.write(0, col+1, str(field.name))
-            ws.write(1, col+1, str(field.ftype))
+            ws.write(0, col+1, str(field.name), style)
+            ws.write(1, col+1, str(field.ftype), style)
             if field.desc:
-                ws.write(2, col+1, str(field.desc))
+                ws.write(2, col+1, str(field.desc), style)
             # combine comments and Enum
             add_info = ''
             if field.comm:
@@ -478,8 +374,10 @@ def create_xls(all_fields, filename):
                 add_info += "Choices:" + str(field.enum)
             if not field.comm and not field.enum:
                 add_info = "-"
-            ws.write(3, col+1, add_info)
-    # add_xls_rows(wb, filename, connection)
+            ws.write(3, col+1, add_info, style)
+            # add empty formatting for all columns
+            for i in range(100):
+                ws.write(4+i, col+1, '', style)
     wb.save(filename)
 
 
