@@ -346,6 +346,9 @@ def create_xls(all_fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
+    # text styling for all columns
+    style = xlwt.XFStyle()
+    style.num_format_str = "@"
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
@@ -354,12 +357,15 @@ def create_xls(all_fields, filename):
         ws.write(1, 0, "#Field Type:")
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
+        # add empty formatting for first column
+        for i in range(100):
+            ws.write(4+i, 0, '', style)
         # order fields in sheet based on lookup numbers, then alphabetically
         for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
-            ws.write(0, col+1, str(field.name))
-            ws.write(1, col+1, str(field.ftype))
+            ws.write(0, col+1, str(field.name), style)
+            ws.write(1, col+1, str(field.ftype), style)
             if field.desc:
-                ws.write(2, col+1, str(field.desc))
+                ws.write(2, col+1, str(field.desc), style)
             # combine comments and Enum
             add_info = ''
             if field.comm:
@@ -368,7 +374,10 @@ def create_xls(all_fields, filename):
                 add_info += "Choices:" + str(field.enum)
             if not field.comm and not field.enum:
                 add_info = "-"
-            ws.write(3, col+1, add_info)
+            ws.write(3, col+1, add_info, style)
+            # add empty formatting for all columns
+            for i in range(100):
+                ws.write(4+i, col+1, '', style)
     wb.save(filename)
 
 

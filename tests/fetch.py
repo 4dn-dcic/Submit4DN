@@ -20,9 +20,7 @@ def run(keypairs_file, schema_name):
         print("connection error")
         raise e
     try:
-        # response = submit_utils.get_FDN("/profiles/file_reference.json", connection, frame="object")
         response = ff_utils.get_metadata("/" + schema_name, key=connection.key, frame=None)
-        # response = submit_utils.get_FDN("/search/?type=FileReference", connection, frame=None)
     except Exception as e:
         print(e)
         print("post error")
