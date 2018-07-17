@@ -183,7 +183,7 @@ def test_get_existing_uuid(connection_mock, mocker, returned_vendor_existing_ite
                   {'aliases': ['some_acc']},
                   {'@id': 'some_@id'}]
     for post_json in post_jsons:
-        with mocker.patch('dcicutils.submit_utils.requests.get', return_value=returned_vendor_existing_item):
+        with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_existing_item.json()):
             response = imp.get_existing(post_json, connection_mock)
             assert response == returned_vendor_existing_item.json()
 
