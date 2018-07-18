@@ -616,6 +616,7 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
 
     # deal with extrafiles
     extrafiles = post_json.get('extra_files')
+    extrafiles2upload = {}
     if extrafiles:
         # import pdb; pdb.set_trace()
         # in sheet these will be file paths need to both poopulate the extrafiles properties
@@ -636,7 +637,6 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
                 extrafile_meta = [ef for ef in extrafile_meta if ef['file_format'] != ext_meta['file_format']]
             extrafile_meta.append(ext_meta)  # add the metadata
         if extrafile_meta:
-            extrafiles2upload = {}
             for efm in extrafile_meta:
                 if efm.get('filepath'):
                     fp = efm['filepath']
@@ -807,7 +807,6 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             raise ValueError('Unrecognized verb - must be POST or PATCH')
     except Exception as problem:
         e = parse_exception(problem)
-    import pdb; pdb.set_trace()
     if e.get('status') == 'error':
         return e
     if file_to_upload:
