@@ -523,11 +523,15 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
+def get_just_filename(path):
+    return path.split('/')[-1]
+
+
 def get_extrafile_format_from_filename(filename, schema):
     ext2format_map = {}
-    for k, v in schema.get('file_format_file_extension').items():
+    for k, v in schema.file_format_file_extension.items():
         ext2format_map.setdefault(v, []).append(k)
-    just_filename = filename.split('/')[-1]
+    just_filename = get_just_filename(filename)
     full_extension = '.' + just_filename.split('.', 1)[1]
     fformat = ext2format_map.get(full_extension)
     if fformat:
@@ -542,8 +546,9 @@ def get_extra_file_meta(ef_info, seen_formats, existing_formats, schema):
     isdict = False
     if isinstance(ef_info, str):
         # typical case of passing in path to file to upload
-        filename = ef_info
-        ef_format = get_extrafile_format_from_filename(filename, schema)
+        filepath = ef_info
+        filename = get_just_filename(filepath)
+        ef_format = get_extrafile_format_from_filename(filepath, schema)
     else:
         # uncommon case of passing in subobject info directly
         try:
@@ -552,10 +557,11 @@ def get_extra_file_meta(ef_info, seen_formats, existing_formats, schema):
             print('Malformed extrafile field formatting ', ef_info)
             ef_format = None
         else:
-            filename = ef_info.get('filename')
+            filepath = ef_info.get('filename')
+            filename = get_just_filename(filepath)
             isdict = True
             if not ef_format:
-                ef_format = get_extrafile_format_from_filename(filename)
+                ef_format = get_extrafile_format_from_filename(filepath)
     if not ef_format:
         result = None
     elif ef_format in seen_formats:
@@ -564,11 +570,11 @@ def get_extra_file_meta(ef_info, seen_formats, existing_formats, schema):
     else:
         if ef_format in existing_formats:
             print("An extrafile with %s format exists - will attempt to patch" % ef_format)
-        result = {'file_format': ef_format, 'filepath': filename}
+        result = {'file_format': ef_format, 'submitted_filename': filename, 'filepath': filepath}
         if isdict:
             # add additionally provided dict key, values
             for k, v in ef_info.items():
-                if k not in ['file_format', 'filepath']:
+                if k not in ['file_format', 'filename']:
                     result[k] = v
         seen_formats.append(ef_format)
     return result, seen_formats
@@ -611,6 +617,7 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
     # deal with extrafiles
     extrafiles = post_json.get('extra_files')
     if extrafiles:
+        # import pdb; pdb.set_trace()
         # in sheet these will be file paths need to both poopulate the extrafiles properties
         # in post or patch as well as upload the file if not already there
         existing_formats = []
@@ -624,11 +631,22 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
         seen_formats = []
         for extfile in extrafiles:
             ext_meta, seen_formats = get_extra_file_meta(extfile, seen_formats, existing_formats, schema)
-
+            if ext_meta is not None:
+                # check to see if any existing ones need replacing
+                extrafile_meta = [ef for ef in extrafile_meta if ef['file_format'] != ext_meta['file_format']]
+            extrafile_meta.append(ext_meta)  # add the metadata
+        if extrafile_meta:
+            extrafiles2upload = {}
+            for efm in extrafile_meta:
+                if efm.get('filepath'):
+                    fp = efm['filepath']
+                    extrafiles2upload[efm['file_format']] = fp
+                    del efm['filepath']
+            post_json['extra_files'] = extrafile_meta
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
-    return post_json, existing_data, file_to_upload
+    return post_json, existing_data, file_to_upload, extrafiles2upload
 
 
 def filter_set_from_exps(post_json):
@@ -770,7 +788,7 @@ def conflict_error_report(error_dic, sheet, connection):
         return
 
 
-def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
+def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, connection, identifier):
     # if FTP, grab the file from ftp
     ftp_download = False
     if file_to_upload and filename_to_post.startswith("ftp://"):
@@ -781,45 +799,41 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
     try:
-        e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key)
+        if verb == 'PATCH':
+            e = ff_utils.patch_metadata(post_json, identifier, key=connection.key)
+        elif verb == 'POST':
+            e = ff_utils.post_metadata(post_json, identifier, key=connection.key)
+        else:
+            raise ValueError('Unrecognized verb - must be POST or PATCH')
     except Exception as problem:
         e = parse_exception(problem)
+    import pdb; pdb.set_trace()
+    if e.get('status') == 'error':
+        return e
     if file_to_upload:
-        if e.get('status') == 'error':
-            # print(e['detail'])
-            return e
         # get s3 credentials
-        creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
+        creds = get_upload_creds(e['@graph'][0]['accession'], connection)
         e['@graph'][0]['upload_credentials'] = creds
         # upload
         upload_file_item(e, filename_to_post)
         if ftp_download:
             os.remove(filename_to_post)
+    if extrafiles:
+        extcreds = e['@graph'][0].get('extra_files_creds')
+        for format, filepath in extrafiles.items():
+            for ecred in extcreds:
+                if format == ecred.get('file_format'):
+                    upload_creds = ecred.get('upload_credentials')
+                    upload_extra_file(upload_creds, filepath)
     return e
 
 
-def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
-    # if FTP, grab the file from ftp
-    ftp_download = False
-    if file_to_upload and filename_to_post.startswith("ftp://"):
-        ftp_download = True
-        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
-    # add the md5
-    if file_to_upload and not post_json.get('md5sum'):
-        print("calculating md5 sum for file %s " % (filename_to_post))
-        post_json['md5sum'] = md5(filename_to_post)
-    try:
-        e = ff_utils.post_metadata(post_json, sheet, key=connection.key)
-    except Exception as problem:
-        e = parse_exception(problem)
-    if file_to_upload:
-        if e.get('status') == 'error':
-            return e
-        # upload the file
-        upload_file_item(e, filename_to_post)
-        if ftp_download:
-            os.remove(filename_to_post)
-    return e
+def patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data):
+    return update_item('PATCH', file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data.get('uuid'))
+
+
+def post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet):
+    return update_item('POST', file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet)
 
 
 def ftp_copy(filename_to_post, post_json):
@@ -856,7 +870,7 @@ def delete_fields(post_json, connection, existing_data):
     if not fields_to_be_removed:
         return post_json
     # Use the url argument delete_fields for deletion
-    del_add_on = 'delete_fields='+','.join(fields_to_be_removed)
+    del_add_on = 'delete_fields=' + ','.join(fields_to_be_removed)
     ff_utils.patch_metadata({}, existing_data["uuid"], key=connection.key, add_on=del_add_on)
     # Remove them also from the post_json
     for rm_key in fields_to_be_removed:
@@ -1022,7 +1036,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)
+        post_json, existing_data, file_to_upload, extrafiles = populate_post_json(post_json, connection, sheet)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -1044,7 +1058,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 # First check for fields to be deleted, and do put
                 post_json = delete_fields(post_json, connection, existing_data)
                 # Do the patch
-                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
+                e = patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data)
             else:
                 not_patched += 1
         # if there is no existing item try posting
@@ -1053,7 +1067,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 # If there are some fields with delete keyword,just ignore them
                 post_json = remove_deleted(post_json)
                 # Do the post
-                e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
+                e = post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet)
             else:
                 not_posted += 1
 
@@ -1275,7 +1289,7 @@ def user_workflow_reader(datafile, sheet, connection):
                   error=error, patch="-", not_patched="-"))
 
 
-def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
+def get_upload_creds(file_id, connection):  # pragma: no cover
     url = "%s%s/upload/" % (connection.server, file_id)
     req = requests.post(url,
                         auth=connection.auth,
@@ -1294,10 +1308,8 @@ def upload_file_item(metadata_post_response, path):
     upload_file(creds, path)
 
 
-def upload_extra_file(efobj, path):
-    # figure out if we should get the upload creds here or before
-    creds = {}
-    upload_file(creds, path)
+def upload_extra_file(ecreds, path):
+    upload_file(ecreds, path)
 
 
 def upload_file(creds, path):  # pragma: no cover

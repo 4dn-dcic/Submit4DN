@@ -319,7 +319,9 @@ class FDN_Schema(object):
         self.required = None
         if 'required' in response:
             self.required = response['required']
-
+        self.file_format_file_extension = None
+        if 'file_format_file_extension' in response:
+            self.file_format_file_extension = response['file_format_file_extension']
 
 def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
