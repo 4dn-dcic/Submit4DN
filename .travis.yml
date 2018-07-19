@@ -13,6 +13,7 @@ deploy:
     secure: SuP/xox0WhHiKaI0KGBfNpAlfMy1qDxW1+EgyUXKAS2tJS413Pe1p9GzKf53iEJfYTQA7go/m3YTxrG4cQCMlrdS6v9q/1uJjW7VdLoSCP2V8e8oMw3XW8SS6Qq4wD+dIJUOKiWxVS3CWZiOui4+DVmnlsR/3YQhMxpLo7Kkmqo/jnqMg76uvNgtNCQcWGlzm10pySK8JQm+gzcQbYmEro6PvE6NLz1NsUJD6fRQC+ymBGGUjXBwj3aGp/gOm7KCdf8uH6QRlfu9aWoEuFmHlkAEEXARsIjQeOZkysev2Zu0NrHs/h5WPvx3qdZ7kHS7UVCRAvjJH0rDnRpbss2IdhrQvjD+xkcLT4Q+MSb+A/+QmRgEz35wQxFmlGm9HTCmzZ3aiqAx5XI2bUeGbzE1YbT09ysDeFl2XrALxbbR/LYckLIUuXdpn20KgVm0M1SJ5FuChihisQJlSE4DpmmOHSYeYJ0O2SOMvxgImEgRQR83wtKmqW0wE/dvgadsTNNgIIRy6SUEIzXdH3yHDCLHk/jcDuScyt2nxbd3Jw5MPz1hRp9uCspuLOHyp0KxexTHFJrxe7X8sontah9XREz5k6Okr3j8rg94ANvoGyrWELoY8khMNt7GFd/an3gsPrhlemE9kmrBr6Hhxkxi5fxNXk+APkfvmrHQlH2uOlGNU8k=
   on:
     tags: true
+    python: '3.5'
   distributions: "sdist bdist_wheel"
 install:
 - pip install six
