@@ -785,6 +785,7 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
     if e.get('status') == 'error':
         return e
     if file_to_upload:
+        import pdb; pdb.set_trace()
         # get s3 credentials
         creds = get_upload_creds(e['@graph'][0]['accession'], connection)
         e['@graph'][0]['upload_credentials'] = creds
@@ -803,7 +804,8 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
 
 
 def patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data):
-    return update_item('PATCH', file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data.get('uuid'))
+    return update_item('PATCH', file_to_upload, post_json, filename_to_post,
+                       extrafiles, connection, existing_data.get('uuid'))
 
 
 def post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet):

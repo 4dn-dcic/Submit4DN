@@ -323,6 +323,7 @@ class FDN_Schema(object):
         if 'file_format_file_extension' in response:
             self.file_format_file_extension = response['file_format_file_extension']
 
+
 def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
