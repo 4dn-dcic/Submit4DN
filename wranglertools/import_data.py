@@ -531,13 +531,16 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
     try:
         ef_format = ef_info.get('file_format')
     except AttributeError:
-        print('Malformed extrafile field formatting ', ef_info)
+        print('Malformed extrafile field formatting', ef_info)
         return None, seen_formats
 
+    if not ef_format:
+        print('extrafiles.file_format is required')
+        return None, seen_formats
     if ef_format in seen_formats:
         print("Each file in extra_files must have unique file_format")
         return None, seen_formats
-    elif ef_format in existing_formats:
+    if ef_format in existing_formats:
         print("An extrafile with %s format exists - will attempt to patch" % ef_format)
 
     filepath = ef_info.get('filename')
@@ -785,10 +788,10 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
     if e.get('status') == 'error':
         return e
     if file_to_upload:
-        import pdb; pdb.set_trace()
         # get s3 credentials
-        creds = get_upload_creds(e['@graph'][0]['accession'], connection)
-        e['@graph'][0]['upload_credentials'] = creds
+        if verb == 'PATCH':
+            creds = get_upload_creds(e['@graph'][0]['accession'], connection)
+            e['@graph'][0]['upload_credentials'] = creds
         # upload
         upload_file_item(e, filename_to_post)
         if ftp_download:

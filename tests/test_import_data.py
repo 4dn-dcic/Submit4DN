@@ -977,100 +977,65 @@ def profile_fffe():
     }
 
 
-def test_get_extrafile_format_from_filename_good_filename(profile_fffe):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
-    format = imp.get_extrafile_format_from_filename(fn, profile_fffe)
-    assert format == 'pairs_px2'
-
-
-def test_get_extrafile_format_from_filename_bad_filename(profile_fffe, capsys):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.pxxx2'
-    format = imp.get_extrafile_format_from_filename(fn, profile_fffe)
-    out = capsys.readouterr()[0]
-    assert not format
-    assert 'No file_format found for .pairs.gz.pxxx2' in out
-
-
-def test_get_extrafile_format_from_filename_bad_fileext(profile_fffe, capsys):
-    fn = '/test/path/to/file/test_juicer_file.txt'
-    format = imp.get_extrafile_format_from_filename(fn, profile_fffe)
-    out = capsys.readouterr()[0]
-    assert not format
-    assert 'More than one format can have the .txt extension' in out
-
-
-def test_get_extra_file_meta_w_filename_new_file(mocker, profile_fffe):
+def test_check_extra_file_meta_w_format_filename_new_file(mocker):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     ff = 'pairs_px2'
-    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
-                      return_value=ff):
-        result, seen = imp.get_extra_file_meta(fn, [], [], profile_fffe)
-        assert result['file_format'] == ff
-        assert result['filepath'] == fn
-        assert ff in seen
+    md5sum = 'mymd5'
+    fsize = 10
+    data = {'file_format': ff, 'filename': fn}
+    with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
+        with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
+            result, seen = imp.check_extra_file_meta(data, [], [])
+            assert result['file_format'] == ff
+            assert result['filename'] == fn
+            assert result['md5sum'] == md5sum
+            assert result['filesize'] == fsize
+            assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+            assert ff in seen
 
 
-def test_get_extra_file_meta_w_filename_bad_filename(mocker, profile_fffe):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.pxxx2'
-    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
-                      return_value=None):
-        result, seen = imp.get_extra_file_meta(fn, [], [], profile_fffe)
-        assert not result
-        assert not seen
-
-
-def test_get_extra_file_meta_w_filename_seen_format(mocker, capsys, profile_fffe):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
-    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
-                      return_value='pairs_px2'):
-        result, seen = imp.get_extra_file_meta(fn, ['pairs_px2'], [], profile_fffe)
-        out = capsys.readouterr()[0]
-        assert not result
-        assert 'pairs_px2' in seen
-        assert 'Each file in extra_files must have unique file_format' in out
-
-
-def test_get_extra_file_meta_w_filename_existing_format(mocker, capsys, profile_fffe):
+def test_check_extra_file_meta_w_filename_seen_format(capsys):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     ff = 'pairs_px2'
-    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
-                      return_value='pairs_px2'):
-        result, seen = imp.get_extra_file_meta(fn, [], ['pairs_px2'], profile_fffe)
-        out = capsys.readouterr()[0]
-        assert result['file_format'] == ff
-        assert result['filepath'] == fn
-        assert 'pairs_px2' in seen
-        assert 'An extrafile with pairs_px2 format exists - will attempt to patch' in out
-
-
-def test_get_extra_file_meta_w_file_format_new_w_format(profile_fffe):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
-    ff = 'pairs_px2'
-    efile = {'file_format': ff, 'filename': fn}
-    result, seen = imp.get_extra_file_meta(efile, [], [], profile_fffe)
-    assert result['file_format'] == ff
-    assert result['filepath'] == fn
-    assert 'pairs_px2' in seen
-
-
-def test_get_extra_file_meta_w_file_format_new_no_format(mocker, profile_fffe):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
-    ff = 'pairs_px2'
-    efile = {'file_format': ff, 'filename': fn}
-    with mocker.patch('wranglertools.import_data.get_extrafile_format_from_filename',
-                      return_value='pairs_px2'):
-        result, seen = imp.get_extra_file_meta(efile, [], [], profile_fffe)
-        assert result['file_format'] == ff
-        assert result['filepath'] == fn
-        assert 'pairs_px2' in seen
-
-
-def test_get_extra_file_meta_w_file_format_malformed(capsys, profile_fffe):
-    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
-    ff = 'pairs_px2'
-    efile = [ff, fn]
-    result, seen = imp.get_extra_file_meta(efile, [], [], profile_fffe)
+    data = {'file_format': ff, 'filename': fn}
+    result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
     out = capsys.readouterr()[0]
     assert not result
-    assert not seen
+    assert 'pairs_px2' in seen
+    assert 'Each file in extra_files must have unique file_format' in out
+
+
+def test_check_extra_file_meta_malformed_data(capsys):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    result, seen = imp.check_extra_file_meta(fn, [], [])
+    out = capsys.readouterr()[0]
+    assert not result
     assert 'Malformed extrafile field formatting' in out
+
+
+def test_check_extra_file_meta_no_file_format(capsys):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    data = {'filename': fn}
+    result, seen = imp.check_extra_file_meta(data, [], [])
+    out = capsys.readouterr()[0]
+    assert not result
+    assert 'extrafiles.file_format is required' in out
+
+
+def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    md5sum = 'mymd5'
+    fsize = 10
+    data = {'file_format': ff, 'filename': fn}
+    with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
+        with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
+            result, seen = imp.check_extra_file_meta(data, [], ['pairs_px2'])
+            out = capsys.readouterr()[0]
+            assert result['file_format'] == ff
+            assert result['filename'] == fn
+            assert result['md5sum'] == md5sum
+            assert result['filesize'] == fsize
+            assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+            assert ff in seen
+            assert 'An extrafile with pairs_px2 format exists - will attempt to patch' in out
