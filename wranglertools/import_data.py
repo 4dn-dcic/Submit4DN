@@ -5,7 +5,7 @@ import json
 import argparse
 import os.path
 import hashlib
-from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection, FDN_Schema
+from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
 from dcicutils import ff_utils
 import xlrd
 import datetime
@@ -527,57 +527,28 @@ def get_just_filename(path):
     return path.split('/')[-1]
 
 
-def get_extrafile_format_from_filename(filename, schema):
-    ext2format_map = {}
-    for k, v in schema.file_format_file_extension.items():
-        ext2format_map.setdefault(v, []).append(k)
-    just_filename = get_just_filename(filename)
-    full_extension = '.' + just_filename.split('.', 1)[1]
-    fformat = ext2format_map.get(full_extension)
-    if fformat:
-        if len(fformat) == 1:
-            return fformat[0]
-        print('More than one format can have the %s extension - you need to explicitly pass in format' % full_extension)
-    print('No file_format found for %s' % full_extension)
-    return None
+def check_extra_file_meta(ef_info, seen_formats, existing_formats):
+    try:
+        ef_format = ef_info.get('file_format')
+    except AttributeError:
+        print('Malformed extrafile field formatting ', ef_info)
+        return None, seen_formats
 
-
-def get_extra_file_meta(ef_info, seen_formats, existing_formats, schema):
-    isdict = False
-    if isinstance(ef_info, str):
-        # typical case of passing in path to file to upload
-        filepath = ef_info
-        filename = get_just_filename(filepath)
-        ef_format = get_extrafile_format_from_filename(filepath, schema)
-    else:
-        # uncommon case of passing in subobject info directly
-        try:
-            ef_format = ef_info.get('file_format')
-        except AttributeError:
-            print('Malformed extrafile field formatting ', ef_info)
-            ef_format = None
-        else:
-            filepath = ef_info.get('filename')
-            filename = get_just_filename(filepath)
-            isdict = True
-            if not ef_format:
-                ef_format = get_extrafile_format_from_filename(filepath)
-    if not ef_format:
-        result = None
-    elif ef_format in seen_formats:
+    if ef_format in seen_formats:
         print("Each file in extra_files must have unique file_format")
-        result = None
-    else:
-        if ef_format in existing_formats:
-            print("An extrafile with %s format exists - will attempt to patch" % ef_format)
-        result = {'file_format': ef_format, 'submitted_filename': filename, 'filepath': filepath}
-        if isdict:
-            # add additionally provided dict key, values
-            for k, v in ef_info.items():
-                if k not in ['file_format', 'filename']:
-                    result[k] = v
-        seen_formats.append(ef_format)
-    return result, seen_formats
+        return None, seen_formats
+    elif ef_format in existing_formats:
+        print("An extrafile with %s format exists - will attempt to patch" % ef_format)
+
+    filepath = ef_info.get('filename')
+    if filepath is not None:
+        sfilename = get_just_filename(filepath)
+        ef_info['submitted_filename'] = sfilename
+        if not ef_info.get('md5sum'):
+            ef_info['md5sum'] = md5(filepath)
+            ef_info['filesize'] = os.path.getsize(filepath)
+    seen_formats.append(ef_format)
+    return ef_info, seen_formats
 
 
 def populate_post_json(post_json, connection, sheet):  # , existing_data):
@@ -601,7 +572,7 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
     filename_to_post = post_json.get('filename')
     if filename_to_post:
         # remove full path from filename
-        just_filename = filename_to_post.split('/')[-1]
+        just_filename = get_just_filename(filename_to_post)
         # if new file
         if not existing_data.get('uuid'):
             post_json['filename'] = just_filename
@@ -628,20 +599,24 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
                 extrafile_meta = existing_data.get('extra_files')  # to include existing
                 existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')
                                     if ef.get('file_format') is not None]
-        schema = FDN_Schema(connection, '/profiles/' + sheet + '.json')
         seen_formats = []
         for extfile in extrafiles:
-            ext_meta, seen_formats = get_extra_file_meta(extfile, seen_formats, existing_formats, schema)
+            ext_meta, seen_formats = check_extra_file_meta(extfile, seen_formats, existing_formats)
             if ext_meta is not None:
-                # check to see if any existing ones need replacing
-                extrafile_meta = [ef for ef in extrafile_meta if ef['file_format'] != ext_meta['file_format']]
-            extrafile_meta.append(ext_meta)  # add the metadata
+                # check to see if any existing ones need updating
+                exists = False
+                for ef in extrafile_meta:
+                    if ef['file_format'] == ext_meta['file_format']:
+                        ef.update(ext_meta)
+                        exists = True
+                if not exists:
+                    extrafile_meta.append(ext_meta)  # if not add the metadata
         if extrafile_meta:
             for efm in extrafile_meta:
-                if efm.get('filepath'):
-                    fp = efm['filepath']
+                if efm.get('filename'):
+                    fp = efm['filename']
                     extrafiles2upload[efm['file_format']] = fp
-                    del efm['filepath']
+                    del efm['filename']
             post_json['extra_files'] = extrafile_meta
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
