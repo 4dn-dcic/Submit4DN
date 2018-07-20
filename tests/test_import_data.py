@@ -1039,3 +1039,256 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
             assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
             assert ff in seen
             assert 'An extrafile with pairs_px2 format exists - will attempt to patch' in out
+
+
+def test_check_extra_file_meta_w_no_filename():
+    ff = 'pairs_px2'
+    data = {'file_format': ff}
+    result, seen = imp.check_extra_file_meta(data, [], [])
+    assert result['file_format'] == ff
+    assert 'filename' not in result
+    assert 'md5sum' not in result
+    assert 'filesize' not in result
+    assert 'subitted_filename' not in result
+    assert ff in seen
+
+
+def test_check_extra_file_meta_w_md5_and_filesize():
+    fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
+    ff = 'pairs_px2'
+    md5sum = 'oldmd5'
+    fsize = 20
+    data = {'file_format': ff, 'filename': fn, 'md5sum': md5sum, 'filesize': fsize}
+    result, seen = imp.check_extra_file_meta(data, [], [])
+    assert result['file_format'] == ff
+    assert result['filename'] == fn
+    assert result['md5sum'] == md5sum
+    assert result['filesize'] == fsize
+    assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+    assert ff in seen
+
+
+@pytest.fixture
+def post_json_w_extf():
+    return {
+        'uuid': 'test_uuid',
+        'extra_files': [
+            {'file_format': 'bai', 'filename': '/test_bai.bam.bai'},
+            {'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2'}
+        ]
+    }
+
+
+def test_populate_post_json_extrafile_no_meta(mocker, connection_mock):
+    pj = {'uuid': 'test_uuid', 'extra_files': ['blah']}
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
+                          return_value=(None, None)):
+            pjson, existing, file2upload, efiles = imp.populate_post_json(
+                pj, connection_mock, 'FileReference')
+            assert 'extra_files' not in pjson
+            assert not efiles
+
+
+def test_populate_post_json_extrafile_2_files_2_filenames(
+        mocker, connection_mock, post_json_w_extf):
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
+                          side_effect=[
+                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+                                'md5sum': 'baimd5'}, ['bai']),
+                              ({'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2',
+                                'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
+                                'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
+                          ]):
+            pjson, existing, file2upload, efiles = imp.populate_post_json(
+                post_json_w_extf, connection_mock, 'FileProcessed')
+            assert len(pjson['extra_files']) == 2
+            assert len(efiles) == 2
+            for ff, fp in efiles.items():
+                assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
+            for ef in pjson['extra_files']:
+                assert 'file_format' in ef
+                assert ef['file_format'] in ['bai', 'pairs_px2']
+                assert 'filename' not in ef
+
+
+def test_populate_post_json_extrafile_w_existing(
+        mocker, connection_mock, post_json_w_extf):
+    with mocker.patch('wranglertools.import_data.get_existing',
+                      return_value={'uuid': 'pfuuid',
+                                    'extra_files': [
+                                        {'file_format': 'pairs_px2', 'filename': '/test2_pairs_index.pairs.gz.px2',
+                                         'submitted_filename': 'test2_pairs_index.pairs.gz.px2', 'filesize': 30,
+                                         'md5sum': 'px22md5', 'another_field': 'value'}
+                                    ]}):
+
+        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
+                          side_effect=[
+                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+                                'md5sum': 'baimd5'}, ['bai']),
+                              ({'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2',
+                                'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
+                                'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
+                          ]):
+            pjson, existing, file2upload, efiles = imp.populate_post_json(
+                post_json_w_extf, connection_mock, 'FileProcessed')
+            assert len(pjson['extra_files']) == 2
+            assert len(efiles) == 2
+            for ff, fp in efiles.items():
+                assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
+            for ef in pjson['extra_files']:
+                if ef['file_format'] == 'pairs_px2':
+                    assert not ef['submitted_filename'].startswith('test2')
+                    assert 'another_field' in ef
+                assert 'filename' not in ef
+
+
+def test_populate_post_json_extrafile_w_existing_no_extra_file(
+        mocker, connection_mock, post_json_w_extf):
+    with mocker.patch('wranglertools.import_data.get_existing',
+                      return_value={'uuid': 'pfuuid'}):
+        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
+                          side_effect=[
+                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+                                'md5sum': 'baimd5'}, ['bai']),
+                              ({'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2',
+                                'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
+                                'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
+                          ]):
+            pjson, existing, file2upload, efiles = imp.populate_post_json(
+                post_json_w_extf, connection_mock, 'FileProcessed')
+            assert len(pjson['extra_files']) == 2
+            assert len(efiles) == 2
+            for ff, fp in efiles.items():
+                assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
+            for ef in pjson['extra_files']:
+                assert 'filename' not in ef
+
+
+def test_populate_post_json_extrafile_2_files_1_filename(
+        mocker, connection_mock, post_json_w_extf):
+    del post_json_w_extf['extra_files'][1]['filename']
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
+                          side_effect=[
+                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+                                'md5sum': 'baimd5'}, ['bai']),
+                              ({'file_format': 'pairs_px2'}, ['bai', 'pairs_px2'])
+                          ]):
+            pjson, existing, file2upload, efiles = imp.populate_post_json(
+                post_json_w_extf, connection_mock, 'FileProcessed')
+            assert len(pjson['extra_files']) == 2
+            assert len(efiles) == 1
+            assert efiles['bai'] == '/test_bai.bam.bai'
+            for ef in pjson['extra_files']:
+                assert 'file_format' in ef
+                assert ef['file_format'] in ['bai', 'pairs_px2']
+                assert 'filename' not in ef
+
+
+class MockedException(Exception):
+    def __init__(self, text):
+        self.args = [text]
+
+
+def test_parse_exception_well_formatted_exception():
+    e = MockedException("blah Reason: {'status': 'error', 'msg': 'peanut'}")
+    resp = imp.parse_exception(e)
+    assert resp['status'] == 'error'
+    assert resp['msg'] == 'peanut'
+
+
+def test_update_item_bad_verb(mocker, connection_mock):
+    with mocker.patch('wranglertools.import_data.parse_exception', return_value={'status': 'error'}):
+        resp = imp.update_item('PUT', False, {}, None, None, connection_mock, 'FileProcessed')
+        assert resp['status'] == 'error'
+
+
+@pytest.fixture
+def pf_w_extfiles_resp():
+    return {
+        '@type': ['result'], 'status': 'success',
+        '@graph': [
+            {
+                'schema_version': '1', 'award': '/awards/1U01CA200059-01/', '@id':
+                '/files-processed/4DNFILBPYFFN/', '@type': ['FileProcessed', 'File', 'Item'],
+                'uuid': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f',
+                'upload_key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.pairs.gz',
+                'file_format': 'pairs', 'status': 'uploading', 'accession': '4DNFILBPYFFN',
+                'extra_files_creds': [
+                    {
+                        'uuid': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f',
+                        'upload_key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.pairs.gz.px2',
+                        'accession': '4DNFILBPYFFN', 'status': 'uploading', 'filename': '4DNFILBPYFFN',
+                        'upload_credentials': {
+                            'key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.pairs.gz.px2',
+                            'SessionToken': 'FQoDYXdzEBoaverylongstringindeed',
+                            'request_id': '3d6acac6-8c3e-11e8-82d3-d1bb69eee884',
+                            'Expiration': '2018-07-21T04:59:18+00:00', 'federated_user_id': '643366669028:4DNFILBPYFFN',
+                            'upload_url': 's3://encoded-4dn-files/82f2bbfb/4DNFILBPYFFN.pairs.gz.px2',
+                            'federated_user_arn': 'arn:aws:sts::643366669028:federated-user/4DNFILBPYFFN',
+                            'SecretAccessKey': 'zSTZoUi7vDlGxduU02InZg7w0FKMsA5vFTorqfN2',
+                            'AccessKeyId': 'ASIAZLS5EJLSCJCJPQPJ'
+                        },
+                        'file_format': 'pairs_px2',
+                        'submitted_filename': 'blah.pairs.gz.px2',
+                        'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.pairs.gz.px2',
+                        'filesize': 311778, 'md5sum': '557d8f3fdb93796fa0ef3fc2fac69511'
+                    },
+                    {
+                        'uuid': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f',
+                        'upload_key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.sam.pairs.gz.px2',
+                        'accession': '4DNFILBPYFFN', 'status': 'uploading', 'filename': '4DNFILBPYFFN',
+                        'upload_credentials': {
+                            'key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.sam.pairs.gz.px2',
+                            'SessionToken': 'FQoDYXdzEBoaverylongstringindeed',
+                            'request_id': '3d7bbb1c-8c3e-11e8-a749-a3005f22d66c',
+                            'Expiration': '2018-07-21T04:59:18+00:00', 'federated_user_id': '643366669028:4DNFILBPYFFN',
+                            'upload_url': 's3://encoded-4dn-files/82f2bbfb/4DNFILBPYFFN.sam.pairs.gz.px2',
+                            'federated_user_arn': 'arn:aws:sts::643366669028:federated-user/4DNFILBPYFFN',
+                            'SecretAccessKey': '/lJJMbUofkQjMRela2rKBf8xno4EFtpTgwGKKz81',
+                            'AccessKeyId': 'ASIAZLS5EJLSKABCICVE'
+                        },
+                        'file_format': 'pairsam_px2',
+                        'submitted_filename': 'coder.sam.pairs.gz.px2',
+                        'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.sam.pairs.gz.px2',
+                        'filesize': 1004496, 'md5sum': '03072675bd71c1229733b6880f64cfd4'
+                    }
+                ],
+                'extra_files': [
+                    {
+                        'uuid': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f',
+                        'upload_key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.pairs.gz.px2',
+                        'accession': '4DNFILBPYFFN', 'status': 'uploading', 'filename': '4DNFILBPYFFN',
+                        'file_format': 'pairs_px2', 'submitted_filename': 'blah.pairs.gz.px2', 'filesize': 311778,
+                        'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.pairs.gz.px2',
+                        'md5sum': '557d8f3fdb93796fa0ef3fc2fac69511'
+                    },
+                    {
+                        'uuid': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f',
+                        'upload_key': '82f2bbfb-eee8-4a8d-8161-78e26b9cf23f/4DNFILBPYFFN.sam.pairs.gz.px2',
+                        'accession': '4DNFILBPYFFN', 'status': 'uploading', 'filename': '4DNFILBPYFFN',
+                        'file_format': 'pairsam_px2', 'submitted_filename': 'coder.sam.pairs.gz.px2',
+                        'filesize': 1004496, 'md5sum': '03072675bd71c1229733b6880f64cfd4',
+                        'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.sam.pairs.gz.px2'
+                    }
+                ],
+                'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.pairs.gz',
+                'lab': '/labs/4dn-dcic-lab/'
+            }
+        ]
+    }
+
+
+def test_update_item_extrafiles(mocker, connection_mock, pf_w_extfiles_resp):
+    extrafiles = {'pairs_px2': '/test/file/test_pairs.gz.px2', 'pairsam_px2': '/test/file/testfile.pairs.sam.gz'}
+    with mocker.patch('wranglertools.import_data.ff_utils.post_metadata', return_value=pf_w_extfiles_resp):
+        with mocker.patch('wranglertools.import_data.upload_extra_file', side_effect=[None, None]):
+            resp = imp.update_item('POST', False, {}, None, extrafiles, connection_mock, 'FileProcessed')
+            assert 'result' in resp['@type']
+            assert resp['status'] == 'success'

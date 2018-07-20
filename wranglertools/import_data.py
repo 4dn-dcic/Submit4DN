@@ -344,11 +344,11 @@ def parse_exception(e):
         # try parsing the exception
         text = e.args[0]
         index = text.index('Reason: ')
-        resp_text = text[index+8:]
+        resp_text = text[index + 8:]
         resp_dict = ast.literal_eval(resp_text)
         return resp_dict
-    # if failed, reaise it
-    except:
+    # if not re-raise
+    except:  # pragma: no cover
         raise e
 
 
@@ -549,6 +549,7 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
         ef_info['submitted_filename'] = sfilename
         if not ef_info.get('md5sum'):
             ef_info['md5sum'] = md5(filepath)
+        if not ef_info.get('filesize'):
             ef_info['filesize'] = os.path.getsize(filepath)
     seen_formats.append(ef_format)
     return ef_info, seen_formats
@@ -603,7 +604,7 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
                 existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')
                                     if ef.get('file_format') is not None]
         seen_formats = []
-        for extfile in extrafiles:
+        for i, extfile in enumerate(extrafiles):
             ext_meta, seen_formats = check_extra_file_meta(extfile, seen_formats, existing_formats)
             if ext_meta is not None:
                 # check to see if any existing ones need updating
@@ -614,6 +615,8 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
                         exists = True
                 if not exists:
                     extrafile_meta.append(ext_meta)  # if not add the metadata
+            else:
+                del extrafiles[i]
         if extrafile_meta:
             for efm in extrafile_meta:
                 if efm.get('filename'):
@@ -621,6 +624,8 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
                     extrafiles2upload[efm['file_format']] = fp
                     del efm['filename']
             post_json['extra_files'] = extrafile_meta
+        else:
+            del post_json['extra_files']
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
@@ -1082,7 +1087,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                     e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key,
                                                 add_on="check_only=True")
                 except Exception as problem:
-                    e = parse_exception(e)
+                    e = parse_exception(problem)
             else:
                 post_json = remove_deleted(post_json)
                 try:
