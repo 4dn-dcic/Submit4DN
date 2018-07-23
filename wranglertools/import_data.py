@@ -803,9 +803,9 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             os.remove(filename_to_post)
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_files_creds')
-        for format, filepath in extrafiles.items():
+        for fformat, filepath in extrafiles.items():
             for ecred in extcreds:
-                if format == ecred.get('file_format'):
+                if fformat == ecred.get('file_format'):
                     upload_creds = ecred.get('upload_credentials')
                     upload_extra_file(upload_creds, filepath)
     return e

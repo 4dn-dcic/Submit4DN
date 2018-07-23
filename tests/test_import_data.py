@@ -1007,7 +1007,7 @@ def test_check_extra_file_meta_w_filename_seen_format(capsys):
 
 def test_check_extra_file_meta_malformed_data(capsys):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
-    result, seen = imp.check_extra_file_meta(fn, [], [])
+    result, _ = imp.check_extra_file_meta(fn, [], [])
     out = capsys.readouterr()[0]
     assert not result
     assert 'Malformed extrafile field formatting' in out
@@ -1016,7 +1016,7 @@ def test_check_extra_file_meta_malformed_data(capsys):
 def test_check_extra_file_meta_no_file_format(capsys):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     data = {'filename': fn}
-    result, seen = imp.check_extra_file_meta(data, [], [])
+    result, _ = imp.check_extra_file_meta(data, [], [])
     out = capsys.readouterr()[0]
     assert not result
     assert 'extrafiles.file_format is required' in out
@@ -1084,7 +1084,7 @@ def test_populate_post_json_extrafile_no_meta(mocker, connection_mock):
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           return_value=(None, None)):
-            pjson, existing, file2upload, efiles = imp.populate_post_json(
+            pjson, _, _, efiles = imp.populate_post_json(
                 pj, connection_mock, 'FileReference')
             assert 'extra_files' not in pjson
             assert not efiles
@@ -1106,7 +1106,7 @@ def test_populate_post_json_extrafile_2_files_2_filenames(
                 post_json_w_extf, connection_mock, 'FileProcessed')
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
-            for ff, fp in efiles.items():
+            for _, fp in efiles.items():
                 assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
             for ef in pjson['extra_files']:
                 assert 'file_format' in ef
