@@ -332,13 +332,17 @@ def get_uploadable_fields(connection, types, include_description=False,
         uri = '/profiles/' + schema_name
         schema_grabber = FDN_Schema(connection, uri)
         required_fields = schema_grabber.required
-        fields[name] = build_field_list(schema_grabber.properties,
+        properties = schema_grabber.properties
+        fields[name] = build_field_list(properties,
                                         required_fields,
                                         include_description,
                                         include_comments,
                                         include_enums)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
+        if 'extra_files' in properties:
+            fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
+                                401, 'Full Path to Extrafile to upload')])
     return fields
 
 
