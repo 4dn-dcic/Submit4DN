@@ -1102,7 +1102,7 @@ def test_populate_post_json_extrafile_2_files_2_filenames(
                                 'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
                                 'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
                           ]):
-            pjson, existing, file2upload, efiles = imp.populate_post_json(
+            pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed')
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
@@ -1133,11 +1133,11 @@ def test_populate_post_json_extrafile_w_existing(
                                 'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
                                 'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
                           ]):
-            pjson, existing, file2upload, efiles = imp.populate_post_json(
+            pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed')
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
-            for ff, fp in efiles.items():
+            for _, fp in efiles.items():
                 assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
             for ef in pjson['extra_files']:
                 if ef['file_format'] == 'pairs_px2':
@@ -1159,11 +1159,11 @@ def test_populate_post_json_extrafile_w_existing_no_extra_file(
                                 'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
                                 'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
                           ]):
-            pjson, existing, file2upload, efiles = imp.populate_post_json(
+            pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed')
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
-            for ff, fp in efiles.items():
+            for _, fp in efiles.items():
                 assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
             for ef in pjson['extra_files']:
                 assert 'filename' not in ef
@@ -1180,7 +1180,7 @@ def test_populate_post_json_extrafile_2_files_1_filename(
                                 'md5sum': 'baimd5'}, ['bai']),
                               ({'file_format': 'pairs_px2'}, ['bai', 'pairs_px2'])
                           ]):
-            pjson, existing, file2upload, efiles = imp.populate_post_json(
+            pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed')
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 1
