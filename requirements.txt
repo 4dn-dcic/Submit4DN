@@ -11,7 +11,6 @@ python-magic==0.4.12
 requests==2.11.0
 xlrd==1.0.0
 xlwt==1.1.2
-awscli
 dcicutils>=0.1.85
 
 # Build tasks
