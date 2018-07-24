@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
-import json
 import argparse
 import os.path
 import hashlib
