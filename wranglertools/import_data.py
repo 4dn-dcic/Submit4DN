@@ -1099,8 +1099,8 @@ def format_file(param, files, connection):
     template = {"bucket_name": "",
                 "workflow_argument_name": param.split('--')[-1]}
     # find bucket
-    health_page = requests.get(connection.server + 'health', auth=connection.auth, headers=connection.headers)
-    bucket_main = health_page.json().get('file_upload_bucket')
+    health_page = ff_utils.get_metadata('health', key=connection.key)
+    bucket_main = health_page.get('file_upload_bucket')
     resp = {}
     # if it is a list of files, uuid and object key are list objects
     if isinstance(files, list):
