@@ -1272,7 +1272,7 @@ def user_workflow_reader(datafile, sheet, connection):
                   error=error, patch="-", not_patched="-"))
 
 
-def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
+def get_upload_creds(file_id, connection):  # pragma: no cover
     url = "%s/upload/" % (file_id)
     req = ff_utils.post_metadata({}, url, key=connection.key)
     return req['@graph'][0]['upload_credentials']
