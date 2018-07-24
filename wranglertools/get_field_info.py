@@ -341,8 +341,9 @@ def get_uploadable_fields(connection, types, include_description=False,
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
         if 'extra_files' in properties:
-            fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
-                                401, 'Full Path to Extrafile to upload')])
+            if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
+                fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
+                                               401, 'Full Path to Extrafile to upload')])
     return fields
 
 
