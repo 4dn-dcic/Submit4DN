@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
-import json
 import argparse
 import os.path
 import hashlib
@@ -1162,8 +1161,8 @@ def format_file(param, files, connection):
     template = {"bucket_name": "",
                 "workflow_argument_name": param.split('--')[-1]}
     # find bucket
-    health_page = requests.get(connection.server + 'health', auth=connection.auth, headers=connection.headers)
-    bucket_main = health_page.json().get('file_upload_bucket')
+    health_page = ff_utils.get_metadata('health', key=connection.key)
+    bucket_main = health_page.get('file_upload_bucket')
     resp = {}
     # if it is a list of files, uuid and object key are list objects
     if isinstance(files, list):
@@ -1273,13 +1272,10 @@ def user_workflow_reader(datafile, sheet, connection):
                   error=error, patch="-", not_patched="-"))
 
 
-def get_upload_creds(file_id, connection):  # pragma: no cover
-    url = "%s%s/upload/" % (connection.server, file_id)
-    req = requests.post(url,
-                        auth=connection.auth,
-                        headers=connection.headers,
-                        data=json.dumps({}))
-    return req.json()['@graph'][0]['upload_credentials']
+def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
+    url = "%s/upload/" % (file_id)
+    req = ff_utils.post_metadata({}, url, key=connection.key)
+    return req['@graph'][0]['upload_credentials']
 
 
 def upload_file_item(metadata_post_response, path):
