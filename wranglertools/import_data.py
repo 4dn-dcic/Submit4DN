@@ -617,9 +617,9 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
                     del efm['filename']
 
                 for ef in existing_extrafiles:
-                    if ef['file_format'] == ext_meta['file_format']:
+                    if ef['file_format'] == efm['file_format']:
                         if not updated_existing:
-                            ef.update(ext_meta)
+                            ef.update(efm)
                             del extrafile_meta[i]
                             updated_existing = True
 

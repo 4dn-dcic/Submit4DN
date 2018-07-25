@@ -994,15 +994,23 @@ def test_check_extra_file_meta_w_format_filename_new_file(mocker):
             assert ff in seen
 
 
-def test_check_extra_file_meta_w_filename_seen_format(capsys):
+def test_check_extra_file_meta_w_filename_seen_format(mocker, capsys):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     ff = 'pairs_px2'
+    md5sum = 'mymd5'
+    fsize = 10
     data = {'file_format': ff, 'filename': fn}
-    result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
-    out = capsys.readouterr()[0]
-    assert not result
-    assert 'pairs_px2' in seen
-    assert 'Each file in extra_files must have unique file_format' in out
+    with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
+        with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
+            result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
+            out = capsys.readouterr()[0]
+            assert result['file_format'] == ff
+            assert result['filename'] == fn
+            assert result['md5sum'] == md5sum
+            assert result['filesize'] == fsize
+            assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+            assert ff in seen
+            assert 'Warning each file in extra_files must have unique file_format' in out
 
 
 def test_check_extra_file_meta_malformed_data(capsys):
@@ -1119,8 +1127,8 @@ def test_populate_post_json_extrafile_w_existing(
     with mocker.patch('wranglertools.import_data.get_existing',
                       return_value={'uuid': 'pfuuid',
                                     'extra_files': [
-                                        {'file_format': 'pairs_px2', 'filename': '/test2_pairs_index.pairs.gz.px2',
-                                         'submitted_filename': 'test2_pairs_index.pairs.gz.px2', 'filesize': 30,
+                                        {'file_format': 'pairs_px2', 'filesize': 30,
+                                         'submitted_filename': 'test2_pairs_index.pairs.gz.px2',
                                          'md5sum': 'px22md5', 'another_field': 'value'}
                                     ]}):
 
@@ -1137,7 +1145,7 @@ def test_populate_post_json_extrafile_w_existing(
                 post_json_w_extf, connection_mock, 'FileProcessed')
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
-            for _, fp in efiles.items():
+            for fp in efiles.values():
                 assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
             for ef in pjson['extra_files']:
                 if ef['file_format'] == 'pairs_px2':
