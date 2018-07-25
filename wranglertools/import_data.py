@@ -532,13 +532,12 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
     except AttributeError:
         print('Malformed extrafile field formatting', ef_info)
         return None, seen_formats
-
     if not ef_format:
         print('extrafiles.file_format is required')
         return None, seen_formats
     if ef_format in seen_formats:
-        print("Each file in extra_files must have unique file_format")
-        return None, seen_formats
+        print("Warning each file in extra_files must have unique file_format")
+
     if ef_format in existing_formats:
         print("An extrafile with %s format exists - will attempt to patch" % ef_format)
 
@@ -596,35 +595,40 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
         # in sheet these will be file paths need to both poopulate the extrafiles properties
         # in post or patch as well as upload the file if not already there
         existing_formats = []
+        existing_extrafiles = []
         extrafile_meta = []
         if existing_data:
             if existing_data.get('extra_files'):
-                extrafile_meta = existing_data.get('extra_files')  # to include existing
+                existing_extrafiles = existing_data.get('extra_files')  # to include existing
                 existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')
                                     if ef.get('file_format') is not None]
         seen_formats = []
         for i, extfile in enumerate(extrafiles):
             ext_meta, seen_formats = check_extra_file_meta(extfile, seen_formats, existing_formats)
             if ext_meta is not None:
-                # check to see if any existing ones need updating
-                exists = False
-                for ef in extrafile_meta:
-                    if ef['file_format'] == ext_meta['file_format']:
-                        ef.update(ext_meta)
-                        exists = True
-                if not exists:
-                    extrafile_meta.append(ext_meta)  # if not add the metadata
-            else:
-                del extrafiles[i]
+                extrafile_meta.append(ext_meta)
+
+        updated_existing = False
         if extrafile_meta:
-            for efm in extrafile_meta:
+            for i, efm in enumerate(extrafile_meta):
                 if efm.get('filename'):
                     fp = efm['filename']
                     extrafiles2upload[efm['file_format']] = fp
                     del efm['filename']
-            post_json['extra_files'] = extrafile_meta
+
+                for ef in existing_extrafiles:
+                    if ef['file_format'] == ext_meta['file_format']:
+                        if not updated_existing:
+                            ef.update(ext_meta)
+                            del extrafile_meta[i]
+                            updated_existing = True
+
+        if updated_existing or extrafile_meta:
+            # we have data to update
+            post_json['extra_files'] = extrafile_meta + existing_extrafiles
         else:
             del post_json['extra_files']
+
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
