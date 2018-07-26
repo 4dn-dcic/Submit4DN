@@ -530,13 +530,11 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
     try:
         ef_format = ef_info.get('file_format')
     except AttributeError:
-        print('Malformed extrafile field formatting', ef_info)
+        print('WARNING! -- Malformed extrafile field formatting', ef_info)
         return None, seen_formats
-    if not ef_format:
-        print('extrafiles.file_format is required')
-        return None, seen_formats
-    if ef_format in seen_formats:
-        print("Warning each file in extra_files must have unique file_format")
+    else:
+        if not ef_format:
+            return ef_info, seen_formats
 
     if ef_format in existing_formats:
         print("An extrafile with %s format exists - will attempt to patch" % ef_format)
@@ -600,20 +598,20 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
         if existing_data:
             if existing_data.get('extra_files'):
                 existing_extrafiles = existing_data.get('extra_files')  # to include existing
-                existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')
-                                    if ef.get('file_format') is not None]
+                existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')]
         seen_formats = []
         for extrafile in extrafiles:
             extrafile_meta, seen_formats = check_extra_file_meta(extrafile, seen_formats, existing_formats)
-            if extrafile_meta is not None:
-                if extrafile_meta.get('filename'):
-                    extrafiles2upload[extrafile_meta['file_format']] = extrafile_meta['filename']
-                    del extrafile_meta['filename']
-                for ix, eef in enumerate(existing_extrafiles):
-                    if eef['file_format'] == extrafile_meta['file_format']:
-                        # we are patching so want to remove existing entry from existing_extrafiles
-                        del existing_extrafiles[ix]
-                        break
+            if extrafile_meta:
+                if extrafile_meta.get('file_format'):
+                    if extrafile_meta.get('filename'):
+                        extrafiles2upload[extrafile_meta['file_format']] = extrafile_meta['filename']
+                        del extrafile_meta['filename']
+                    for ix, eef in enumerate(existing_extrafiles):
+                        if eef['file_format'] == extrafile_meta['file_format']:
+                            # we are patching so want to remove existing entry from existing_extrafiles
+                            del existing_extrafiles[ix]
+                            break
                 extrafile_metadata.append(extrafile_meta)
 
         if extrafile_metadata:

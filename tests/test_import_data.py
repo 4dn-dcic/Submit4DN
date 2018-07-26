@@ -994,7 +994,7 @@ def test_check_extra_file_meta_w_format_filename_new_file(mocker):
             assert ff in seen
 
 
-def test_check_extra_file_meta_w_filename_seen_format(mocker, capsys):
+def test_check_extra_file_meta_w_filename_seen_format(mocker):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     ff = 'pairs_px2'
     md5sum = 'mymd5'
@@ -1003,14 +1003,12 @@ def test_check_extra_file_meta_w_filename_seen_format(mocker, capsys):
     with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
         with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
             result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
-            out = capsys.readouterr()[0]
             assert result['file_format'] == ff
             assert result['filename'] == fn
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
             assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
             assert ff in seen
-            assert 'Warning each file in extra_files must have unique file_format' in out
 
 
 def test_check_extra_file_meta_malformed_data(capsys):
@@ -1018,16 +1016,14 @@ def test_check_extra_file_meta_malformed_data(capsys):
     result, _ = imp.check_extra_file_meta(fn, [], [])
     out = capsys.readouterr()[0]
     assert not result
-    assert 'Malformed extrafile field formatting' in out
+    assert 'WARNING! -- Malformed extrafile field formatting' in out
 
 
-def test_check_extra_file_meta_no_file_format(capsys):
+def test_check_extra_file_meta_no_file_format():
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     data = {'filename': fn}
     result, _ = imp.check_extra_file_meta(data, [], [])
-    out = capsys.readouterr()[0]
-    assert not result
-    assert 'extrafiles.file_format is required' in out
+    assert result == data
 
 
 def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
