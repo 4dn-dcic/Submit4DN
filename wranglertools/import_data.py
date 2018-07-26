@@ -1018,7 +1018,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(
+        post_json, existing_data, file_to_upload, extrafiles = populate_post_json(
             post_json, connection, sheet, attach_fields)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
