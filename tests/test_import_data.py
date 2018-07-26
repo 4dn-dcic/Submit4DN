@@ -1150,7 +1150,7 @@ def test_populate_post_json_extrafile_w_existing(
             for ef in pjson['extra_files']:
                 if ef['file_format'] == 'pairs_px2':
                     assert not ef['submitted_filename'].startswith('test2')
-                    assert 'another_field' in ef
+                    assert 'another_field' not in ef
                 assert 'filename' not in ef
 
 
@@ -1196,6 +1196,30 @@ def test_populate_post_json_extrafile_2_files_1_filename(
             for ef in pjson['extra_files']:
                 assert 'file_format' in ef
                 assert ef['file_format'] in ['bai', 'pairs_px2']
+                assert 'filename' not in ef
+
+
+def test_populate_post_json_extrafile_2_files_same_format(
+        mocker, connection_mock, post_json_w_extf):
+    post_json_w_extf['extra_files'][1] = {'file_format': 'bai', 'filename': '/test_bai.bam.bai'}
+    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
+        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
+                          side_effect=[
+                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+                                'md5sum': 'test_baimd5'}, ['bai']),
+                              ({'file_format': 'bai', 'filename': '/test2_bai.bam.bai',
+                                'submitted_filename': 'test2_bai.bam.bai', 'filesize': 10,
+                                'md5sum': 'test2_baimd5'}, ['bai', 'bai'])
+                          ]):
+            pjson, _, _, efiles = imp.populate_post_json(
+                post_json_w_extf, connection_mock, 'FileProcessed')
+            assert len(pjson['extra_files']) == 2
+            assert len(efiles) == 1
+            assert efiles['bai'] == '/test2_bai.bam.bai'
+            for ef in pjson['extra_files']:
+                assert 'file_format' in ef
+                assert ef['file_format'] == 'bai'
                 assert 'filename' not in ef
 
 

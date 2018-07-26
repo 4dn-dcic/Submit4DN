@@ -596,36 +596,29 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
         # in post or patch as well as upload the file if not already there
         existing_formats = []
         existing_extrafiles = []
-        extrafile_meta = []
+        extrafile_metadata = []
         if existing_data:
             if existing_data.get('extra_files'):
                 existing_extrafiles = existing_data.get('extra_files')  # to include existing
                 existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')
                                     if ef.get('file_format') is not None]
         seen_formats = []
-        for i, extfile in enumerate(extrafiles):
-            ext_meta, seen_formats = check_extra_file_meta(extfile, seen_formats, existing_formats)
-            if ext_meta is not None:
-                extrafile_meta.append(ext_meta)
+        for extrafile in extrafiles:
+            extrafile_meta, seen_formats = check_extra_file_meta(extrafile, seen_formats, existing_formats)
+            if extrafile_meta is not None:
+                if extrafile_meta.get('filename'):
+                    extrafiles2upload[extrafile_meta['file_format']] = extrafile_meta['filename']
+                    del extrafile_meta['filename']
+                for ix, eef in enumerate(existing_extrafiles):
+                    if eef['file_format'] == extrafile_meta['file_format']:
+                        # we are patching so want to remove existing entry from existing_extrafiles
+                        del existing_extrafiles[ix]
+                        break
+                extrafile_metadata.append(extrafile_meta)
 
-        updated_existing = False
-        if extrafile_meta:
-            for i, efm in enumerate(extrafile_meta):
-                if efm.get('filename'):
-                    fp = efm['filename']
-                    extrafiles2upload[efm['file_format']] = fp
-                    del efm['filename']
-
-                for ef in existing_extrafiles:
-                    if ef['file_format'] == efm['file_format']:
-                        if not updated_existing:
-                            ef.update(efm)
-                            del extrafile_meta[i]
-                            updated_existing = True
-
-        if updated_existing or extrafile_meta:
+        if extrafile_metadata:
             # we have data to update
-            post_json['extra_files'] = extrafile_meta + existing_extrafiles
+            post_json['extra_files'] = extrafile_metadata + existing_extrafiles
         else:
             del post_json['extra_files']
 
