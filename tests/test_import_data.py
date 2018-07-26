@@ -1129,7 +1129,7 @@ def test_populate_post_json_extrafile_no_meta(mocker, connection_mock):
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           return_value=(None, None)):
             pjson, _, _, efiles = imp.populate_post_json(
-                pj, connection_mock, 'FileReference')
+                pj, connection_mock, 'FileReference', [])
             assert 'extra_files' not in pjson
             assert not efiles
 
@@ -1147,7 +1147,7 @@ def test_populate_post_json_extrafile_2_files_2_filenames(
                                 'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed')
+                post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
             for _, fp in efiles.items():
@@ -1178,7 +1178,7 @@ def test_populate_post_json_extrafile_w_existing(
                                 'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed')
+                post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
             for fp in efiles.values():
@@ -1204,7 +1204,7 @@ def test_populate_post_json_extrafile_w_existing_no_extra_file(
                                 'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed')
+                post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 2
             for _, fp in efiles.items():
@@ -1225,7 +1225,7 @@ def test_populate_post_json_extrafile_2_files_1_filename(
                               ({'file_format': 'pairs_px2'}, ['bai', 'pairs_px2'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed')
+                post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 1
             assert efiles['bai'] == '/test_bai.bam.bai'
@@ -1249,7 +1249,7 @@ def test_populate_post_json_extrafile_2_files_same_format(
                                 'md5sum': 'test2_baimd5'}, ['bai', 'bai'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed')
+                post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 1
             assert efiles['bai'] == '/test2_bai.bam.bai'
