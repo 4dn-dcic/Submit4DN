@@ -235,7 +235,7 @@ sheet_order = [
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
     "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
-    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
+    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
     ]
 

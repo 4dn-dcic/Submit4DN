@@ -26,4 +26,3 @@ flake8==2.4.1
 # Documentation builder
 sphinx-autobuild
 sphinx
-

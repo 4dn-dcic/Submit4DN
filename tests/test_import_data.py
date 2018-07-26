@@ -292,7 +292,7 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
             # mocking the test post line
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'}):
                 imp.excel_reader(test_insert, 'Document', False, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, ['attachment'])
                 args = imp.remove_deleted.call_args
                 attach = args[0][0]['attachment']
                 assert attach['href'].startswith('data:image/jpeg;base64')
@@ -360,7 +360,7 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, [])
                 args = imp.ff_utils.post_metadata.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
@@ -388,7 +388,7 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_moc
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
                 imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, [])
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i.strip()]
                 assert message0 == outlist[0]
@@ -413,7 +413,7 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
             # mock posting new items
             with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
                 imp.excel_reader(test_insert, 'ExperimentHiC', True, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True)
+                                 dict_load, dict_rep, dict_set, True, [])
                 args = imp.ff_utils.post_metadata.call_args
                 out = capsys.readouterr()[0]
                 outlist = [i.strip() for i in out.split('\n') if i is not ""]
@@ -449,7 +449,7 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                 # mock get upload creds
                 with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
                     imp.excel_reader(test_insert, 'ExperimentHiC', False, connection_mock, True, all_aliases,
-                                     dict_load, dict_rep, dict_set, True)
+                                     dict_load, dict_rep, dict_set, True, [])
                     # check for md5sum
                     args = imp.ff_utils.patch_metadata.call_args
                     post_json_arg = args[0][0]
@@ -483,7 +483,7 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection_mock)
         # mock posting new items
         with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
             imp.excel_reader(test_insert, 'FileFastq', True, connection_mock, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True)
+                             dict_load, dict_rep, dict_set, True, [])
             args = imp.ff_utils.post_metadata.call_args
             out = capsys.readouterr()[0]
             print([i for i in args])
@@ -508,7 +508,7 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection_m
         # mock upload file and skip
         with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection_mock, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True)
+                             dict_load, dict_rep, dict_set, True, [])
             args = imp.ff_utils.post_metadata.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
@@ -531,7 +531,7 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection_
         # mock upload file and skip
         with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
             imp.excel_reader(test_insert, 'ExperimentSet', True, connection_mock, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True)
+                             dict_load, dict_rep, dict_set, True, [])
             args = imp.ff_utils.post_metadata.call_args
             out = capsys.readouterr()[0]
             assert message == out.strip()
@@ -944,3 +944,63 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
     report = imp.check_file_pairing(rows)
     assert 'NO GO' in report
     assert report['NO GO'] == 'Can only check file pairing by aliases'
+
+
+@pytest.fixture
+def mock_profiles():
+    return {
+        "FileProcessed": {
+            "title": "Processed file from workflow runs",
+            "type": "object",
+            "properties": {
+                "higlass_uid": {"type": "string"},
+                "file_format": {"type": "string"}
+            }
+        },
+        "Document": {
+            "title": "Document",
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "type": "object",
+                    "description": "File attached to this Item.",
+                    "attachment": True,
+                    "properties": {
+                        "download": {"type": "string"},
+                        "href": {"type": "string"},
+                        "type": {"type": "string"},
+                        "md5sum": {"type": "string", "format": "md5sum"},
+                        "size": {"type": "integer"},
+                        "width": {"type": "integer"},
+                        "height": {"type": "integer"},
+                        "blob_id": {"type": "string"}
+                    }
+                },
+                "description": {"type": "string"},
+                "references": {
+                    "type": "array",
+                    "items": {"type": "string", "linkTo": "Publication"}
+                }
+            }
+        }
+    }
+
+
+def test_get_profiles(mocker, mock_profiles, connection_mock):
+    '''just using a simple mock profiles dictionary'''
+    with mocker.patch('wranglertools.import_data.ff_utils.get_metadata',
+                      return_value=mock_profiles):
+        profiles = imp.get_profiles(connection_mock)
+        assert profiles == mock_profiles
+
+
+def test_get_attachment_fields(mock_profiles):
+    afields = imp.get_attachment_fields(mock_profiles)
+    assert len(afields) == 1
+    assert 'attachment' in afields
+
+
+def test_get_collections(mock_profiles):
+    colls = imp.get_collections(mock_profiles)
+    for c in mock_profiles.keys():
+        assert c.lower() in colls

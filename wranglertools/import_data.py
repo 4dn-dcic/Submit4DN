@@ -116,6 +116,7 @@ list_of_loadxl_fields = [
     ['Experiment', ['experiment_relation']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentSeq', ['experiment_relation']],
+    ['ExperimentTsaseq', ['experiment_relation']],
     ['ExperimentDamid', ['experiment_relation']],
     ['ExperimentChiapet', ['experiment_relation']],
     ['ExperimentAtacseq', ['experiment_relation']],
@@ -181,8 +182,10 @@ def attachment(path):
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
-                         'text/html', 'application/zip'):
+        if mime_type in ('application/pdf', "application/zip", 'text/plain',
+                         'text/tab-separated-values', 'text/html', 'application/msword',
+                         'application/vnd.ms-excel',
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             # XXX Should use chardet to detect charset for text files here.
             pass
         elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
@@ -522,12 +525,13 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet):  # , existing_data):
+def populate_post_json(post_json, connection, sheet, attach_fields):  # , existing_data):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
-    if post_json.get("attachment"):
-        attach = attachment(post_json["attachment"])
-        post_json["attachment"] = attach
+    for af in attach_fields:
+        if post_json.get(af):
+            attach = attachment(post_json[af])
+            post_json[af] = attach
 
     existing_data = get_existing(post_json, connection)
     # Combine aliases
@@ -891,7 +895,7 @@ def check_file_pairing(fastq_row):
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate, attach_fields):
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
     dryrun = not(update or patchall)
@@ -957,7 +961,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)  # , existing_data)
+        post_json, existing_data, file_to_upload = populate_post_json(
+            post_json, connection, sheet, attach_fields)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -1321,9 +1326,21 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
                 sys.exit(1)
 
 
-def get_collections(connection):
+def get_profiles(connection):
+    return ff_utils.get_metadata("/profiles/", key=connection.key, add_on="frame=object")
+
+
+def get_attachment_fields(profiles):
+    attach_field = []
+    for _, profile in profiles.items():
+        if profile.get('properties'):
+            attach_field.extend([f for f, val in profile.get('properties').items() if (
+                val.get('type') == 'object' and val.get('attachment') and f not in attach_field)])
+    return attach_field
+
+
+def get_collections(profiles):
     """Get a list of all the data_types in the system."""
-    profiles = ff_utils.get_metadata("/profiles/", key=connection.key, add_on="frame=object")
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     return supported_collections
@@ -1376,7 +1393,9 @@ def main():  # pragma: no cover
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
     # get me a list of all the data_types in the system
-    supported_collections = get_collections(connection)
+    profiles = get_profiles(connection)
+    supported_collections = get_collections(profiles)
+    attachment_fields = get_attachment_fields(profiles)
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
@@ -1391,10 +1410,10 @@ def main():  # pragma: no cover
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower() == "experimentmic_path":
             excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(args.infile, n, connection)
