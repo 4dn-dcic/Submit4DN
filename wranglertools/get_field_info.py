@@ -235,7 +235,7 @@ sheet_order = [
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
     "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
-    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
+    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
     ]
 
@@ -319,6 +319,9 @@ class FDN_Schema(object):
         self.required = None
         if 'required' in response:
             self.required = response['required']
+        self.file_format_file_extension = None
+        if 'file_format_file_extension' in response:
+            self.file_format_file_extension = response['file_format_file_extension']
 
 
 def get_uploadable_fields(connection, types, include_description=False,
@@ -329,13 +332,18 @@ def get_uploadable_fields(connection, types, include_description=False,
         uri = '/profiles/' + schema_name
         schema_grabber = FDN_Schema(connection, uri)
         required_fields = schema_grabber.required
-        fields[name] = build_field_list(schema_grabber.properties,
+        properties = schema_grabber.properties
+        fields[name] = build_field_list(properties,
                                         required_fields,
                                         include_description,
                                         include_comments,
                                         include_enums)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
+        if 'extra_files' in properties:
+            if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
+                fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
+                                               401, 'Full Path to Extrafile to upload')])
     return fields
 
 
