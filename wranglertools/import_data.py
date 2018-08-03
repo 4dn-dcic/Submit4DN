@@ -721,7 +721,7 @@ def error_report(error_dic, sheet, all_aliases, connection, id=''):
                 error_field = err['name'][0]
                 report.append("{sheet:<30}Field '{er}': {des}"
                               .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
-    # if there is a conflict
+    # if there is a an access forbidden error
     elif error_dic.get('title') == 'Forbidden':
         error_description = error_dic['description']
         try:
@@ -1065,6 +1065,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # add to success/error counters
         if e.get("status") == "error":  # pragma: no cover
             # display the used alias with the error
+            e_id = ""
             if post_json.get('aliases'):
                 e_id = post_json['aliases'][0]
             error_rep = error_report(e, sheet, all_aliases, connection, e_id)
@@ -1106,6 +1107,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 pass
             else:
                 # display the used alias with the error
+                e_id = ""
                 if post_json.get('aliases'):
                     e_id = post_json['aliases'][0]
                 error_rep = error_report(e, sheet, all_aliases, connection, e_id)
