@@ -696,7 +696,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def error_report(error_dic, sheet, all_aliases, connection, id=''):
+def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
@@ -725,8 +725,8 @@ def error_report(error_dic, sheet, all_aliases, connection, id=''):
     elif error_dic.get('title') == 'Forbidden':
         error_description = error_dic['description']
         try:
-            report.append("{sheet:<30}{id}: {des}"
-                          .format(des=error_description, id=id, sheet="ERROR " + sheet.lower()))
+            report.append("{sheet:<30}{eid}: {des}"
+                          .format(des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
         except:
             return error_dic
     # if there is a conflict
