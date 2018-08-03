@@ -1362,7 +1362,7 @@ def loadxl_cycle(patch_list, connection, alias_dict):
                 except Exception as problem:
                     e = parse_exception(problem)
                 if e.get("status") == "error":  # pragma: no cover
-                    error_rep = s(e, n.upper(), [k for k in alias_dict], connection)
+                    error_rep = error_report(e, n.upper(), [k for k in alias_dict], connection)
                     if error_rep:
                         print(error_rep)
                     else:
