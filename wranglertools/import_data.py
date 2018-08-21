@@ -1436,7 +1436,7 @@ def get_all_aliases(workbook, sheets, novalidate=False):
             if my_aliases:
                 for a in my_aliases:
                     if aliases_by_type.get(a):
-                        if novalidate:
+                        if not novalidate:
                             print("WARNING! NON-UNIQUE ALIAS: ", a)
                             print("\tused for TYPE ", aliases_by_type[a], "and ", sheet)
                     else:
