@@ -117,6 +117,7 @@ class FDN_Connection(object):
         # passed key object stores the key dict in con_key
         self.check = False
         self.key = key4dn.con_key
+        self.admin = False
         # check connection and find user uuid
         # TODO: we should not need try/except, since if me page fails, there is
         # no need to proggress, but the test are failing without this Part
@@ -126,6 +127,9 @@ class FDN_Connection(object):
             me_page = ff_utils.get_metadata('me', key=self.key)
             self.user = me_page['@id']
             self.email = me_page['email']
+            groups = me_page.get('groups', [])
+            if 'admin' in groups:
+                self.admin = True
             self.check = True
         except:
             print('Can not establish connection, please check your keys')
@@ -236,7 +240,7 @@ sheet_order = [
     "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm", "FileFormat"
     ]
 
 
@@ -396,8 +400,13 @@ def main():  # pragma: no cover
         sys.exit(1)
     connection = FDN_Connection(key)
     if args.type == ['all']:
-        args.type = [sheet for sheet in sheet_order if sheet not in [
-                    'ExperimentMic_Path', 'OntologyTerm']]
+        excluded_types = ['ExperimentMic_Path', 'OntologyTerm']
+        if not connection.admin:
+            excluded_types.extend([
+                'User', 'Lab', 'Award', 'Organism', 'FileFormat', 'FileReference',
+                'FileSet', 'WorkflowRunSbg', 'WorkflowRunAwsem'
+            ])
+        args.type = [sheet for sheet in sheet_order if sheet not in excluded_types]
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
