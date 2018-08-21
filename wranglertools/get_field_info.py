@@ -403,7 +403,7 @@ def main():  # pragma: no cover
         excluded_types = ['ExperimentMic_Path', 'OntologyTerm']
         if not connection.admin:
             excluded_types.extend([
-                'User', 'Lab', 'Award', 'Organism', 'FileFormat', 'FileReference',
+                'User', 'Lab', 'Award', 'Organism', 'FileFormat',
                 'FileSet', 'WorkflowRunSbg', 'WorkflowRunAwsem'
             ])
         args.type = [sheet for sheet in sheet_order if sheet not in excluded_types]
