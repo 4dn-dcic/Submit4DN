@@ -396,9 +396,64 @@ def main():  # pragma: no cover
     if key.error:
         sys.exit(1)
     connection = FDN_Connection(key)
+    lowercase_types = [item.lower().replace('-', '') for item in args.type]
     if args.type == ['all']:
         args.type = [sheet for sheet in sheet_order if sheet not in [
                     'ExperimentMic_Path', 'OntologyTerm']]
+    elif 'hic' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "ExperimentHiC", "ExperimentSetReplicate",
+            ]
+    elif 'chipseq' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Target", "Antibody", "Biosource",
+            "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
+            "ExperimentSeq", "ExperimentSetReplicate",
+            ]
+    elif 'repliseq' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "FileProcessed", "ExperimentRepliseq", "ExperimentSetReplicate",
+            "ExperimentSet"
+            ]
+    elif 'atacseq' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "FileProcessed", "ExperimentAtacseq", "ExperimentSetReplicate",
+            ]
+    elif 'damid' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample",
+            "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
+            "ExperimentDamid", "ExperimentSetReplicate",
+            ]
+    elif 'chiapet' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "FileProcessed", "ExperimentChiapet", "ExperimentSetReplicate",
+            ]
+    elif 'capturec' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
+            "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
+            "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
+            "FileProcessed", "ExperimentCaptureC", "ExperimentSetReplicate",
+            ]
+    elif 'fish' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "GenomicRegion", "Target", "Antibody",
+            "Biosource", "Biosample", "BiosampleCellCulture", "Image",
+            "MicroscopeSettingA1", "FileMicroscopy", "FileReference", "FileProcessed",
+            "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
+            ]
+    elif args.type == ['SPT']:
+        args.type += [
+            "Protocol", "Publication", "Target", "Modification", "Biosource",
+            "Biosample", "BiosampleCellCulture", "Image", "MicroscopeSettingA2",
+            "FileProcessed", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
+            ]
+    args.type = list(set([item for item in args.type if item in sheet_order]))
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
