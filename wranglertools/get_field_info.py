@@ -399,78 +399,64 @@ def main():  # pragma: no cover
     if key.error:
         sys.exit(1)
     connection = FDN_Connection(key)
+    lowercase_types = [item.lower().replace('-', '') for item in args.type]
     if args.type == ['all']:
         args.type = [sheet for sheet in sheet_order if sheet not in [
                     'ExperimentMic_Path', 'OntologyTerm']]
-    elif args.type == ['HiC']:
-        args.type = [
-            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
-            "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
-            "GenomicRegion", "Target", "Modification", "Biosource", "Biosample",
-            "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
-            "ExperimentHiC", "ExperimentSetReplicate",
+    elif 'hic' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "ExperimentHiC", "ExperimentSetReplicate",
             ]
-    elif args.type == ['Chip-Seq']:
-        args.type = [
-            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
-            "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
-            "GenomicRegion", "Target", "Antibody", "Modification", "Biosource",
-            "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
+    elif 'chipseq' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Target", "Antibody", "Biosource",
+            "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
             "ExperimentSeq", "ExperimentSetReplicate",
             ]
-    elif args.type == ['Repliseq']:
-        args.type = [
-            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
-            "Vendor", "Enzyme", "Construct", "TreatmentRnai", "TreatmentChemical",
-            "GenomicRegion", "Target", "Antibody", "Modification", "Biosource",
-            "Biosample", "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
-            "ExperimentRepliseq", "ExperimentSetReplicate",
+    elif 'repliseq' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "FileProcessed", "ExperimentRepliseq", "ExperimentSetReplicate",
+            "ExperimentSet"
             ]
-    elif args.type == ['Atacseq']:
-        args.type = [
-            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
-            "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
-            "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
-            "FileProcessed", "ExperimentAtacseq", "ExperimentSetReplicate",
+    elif 'atacseq' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "FileProcessed", "ExperimentAtacseq", "ExperimentSetReplicate",
             ]
-    elif args.type == ['DamID']:
-        args.type = [
-            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
-            "TreatmentChemical", "Target", "Modification", "Biosource", "Biosample",
+    elif 'damid' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample",
             "BiosampleCellCulture", "Image", "FileFastq", "FileProcessed",
             "ExperimentDamid", "ExperimentSetReplicate",
             ]
-    elif args.type == ['ChiaPet']:
-        args.type = [
-            "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
-            "TreatmentChemical", "Target", "Antibody", "Modification",
-            "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
-            "FileProcessed", "ExperimentChiapet", "ExperimentSetReplicate",
+    elif 'chiapet' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "Biosource", "Biosample", "BiosampleCellCulture",
+            "Image", "FileFastq", "FileProcessed", "ExperimentChiapet", "ExperimentSetReplicate",
             ]
-    elif args.type == ['CaptureC']:
-        args.type = [
+    elif 'capturec' in lowercase_types:
+        args.type += [
             "Protocol", "Publication", "Enzyme", "Construct", "TreatmentRnai",
             "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",
             "Biosource", "Biosample", "BiosampleCellCulture", "Image", "FileFastq",
             "FileProcessed", "ExperimentCaptureC", "ExperimentSetReplicate",
             ]
-    elif args.type == ['FISH']:
-        args.type = [
-            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
-            "Vendor", "Construct", "TreatmentRnai", "TreatmentChemical", "GenomicRegion",
-            "Target", "Antibody", "Modification", "Biosource", "Biosample", "BiosampleCellCulture",
-            "Image", "FileFasta", "FileProcessed", "MicroscopeSettingA1", "FileMicroscopy",
-            "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
+    elif 'fish' in lowercase_types:
+        args.type += [
+            "Protocol", "Publication", "GenomicRegion", "Target", "Antibody",
+            "Biosource", "Biosample", "BiosampleCellCulture", "Image",
+            "MicroscopeSettingA1", "FileMicroscopy", "FileReference", "FileProcessed",
+            "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
             ]
     elif args.type == ['SPT']:
-        args.type = [
-            "Document", "Protocol", "Publication", "IndividualMouse", "IndividualHuman",
-            "Vendor", "Construct", "TreatmentRnai", "TreatmentChemical", "GenomicRegion",
-            "Target", "Antibody", "Modification", "Biosource", "Biosample", "BiosampleCellCulture",
-            "Image", "FileFasta", "FileProcessed", "MicroscopeSettingA2", "FileMicroscopy",
-            "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
+        args.type += [
+            "Protocol", "Publication", "Target", "Modification", "Biosource", 
+            "Biosample", "BiosampleCellCulture", "Image", "MicroscopeSettingA2",
+            "FileProcessed", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
             ]
-
+    args.type = list(set([item for item in args.type if item in sheet_order]))
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
