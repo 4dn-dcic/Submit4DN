@@ -1,7 +1,6 @@
 # flake8: noqa
 import pytest
-import dcicutils.submit_utils as submit_utils
-
+from wranglertools.get_field_info import FDN_Key, FDN_Connection
 
 class MockedResponse(object):
     def __init__(self, json, status):
@@ -10,6 +9,38 @@ class MockedResponse(object):
 
     def json(self):
         return self._json
+
+
+class MockedConnection(object):
+    def __init__(self, key4dn):
+        self.key = key4dn.con_key
+        self.lab = 'test_lab'
+        self.user = 'test_user'
+        self.award = 'test_award'
+        self.labs = ['test_lab']
+        self.email = 'test@test.test'
+
+    def set_award(self):
+        self.award = 'test_award'
+        return
+
+    def prompt_for_lab_award(self):
+        self.lab = 'test_lab'
+        return
+
+
+@pytest.fixture
+def connection_mock():
+    keypairs = {
+                "default":
+                {"server": "https://data.4dnucleome.org/",
+                 "key": "testkey",
+                 "secret": "testsecret"
+                 }
+                }
+    key = FDN_Key(keypairs, "default")
+    connection = MockedConnection(key)
+    return connection
 
 
 @pytest.fixture
@@ -21,8 +52,8 @@ def connection():
                  "secret": "testsecret"
                  }
                 }
-    key = submit_utils.FDN_Key(keypairs, "default")
-    connection = submit_utils.FDN_Connection(key)
+    key = FDN_Key(keypairs, "default")
+    connection = FDN_Connection(key)
     connection.lab = 'test_lab'
     connection.user = 'test_user'
     connection.award = 'test_award'
@@ -38,8 +69,8 @@ def connection_public():
                  "secret": ""
                  }
                 }
-    key2 = submit_utils.FDN_Key(keypairs, "default")
-    connection = submit_utils.FDN_Connection(key2)
+    key2 = FDN_Key(keypairs, "default")
+    connection = FDN_Connection(key2)
     connection.lab = 'test_lab'
     connection.user = 'test_user'
     connection.award = 'test_award'
@@ -55,8 +86,8 @@ def connection_fake():
                  "secret": ""
                  }
                 }
-    key2 = submit_utils.FDN_Key(keypairs, "default")
-    connection = submit_utils.FDN_Connection(key2)
+    key2 = FDN_Key(keypairs, "default")
+    connection = FDN_Connection(key2)
     connection.lab = 'test_lab'
     connection.user = 'test_user'
     connection.award = 'test_award'
@@ -265,6 +296,7 @@ def returned_vendor_schema():
     data = {"title":"Vendor","description":"Schema for submitting an originating lab or vendor.","id":"/profiles/vendor.json","$schema":"http://json-schema.org/draft-04/schema#","type":"object","required":["title"],"identifyingProperties":["uuid","name"],"additionalProperties":False,"mixinProperties":[{"$ref":"mixins.json#/schema_version"},{"$ref":"mixins.json#/uuid"},{"$ref":"mixins.json#/status"},{"$ref":"mixins.json#/notes"},{"$ref":"mixins.json#/submitted"},{"$ref":"mixins.json#/attribution"},{"$ref":"mixins.json#/aliases"}],"properties":{"aliases":{"type":"array","default":[],"uniqueItems":True,"title":"Lab aliases","description":"Lab specific identifiers to reference an object.","items":{"comment":"Current convention is colon separated lab name and lab identifier. (e.g. john-doe:42).","pattern":"^\\S+:\\S+","uniqueKey":"alias","title":"Lab alias","description":"A lab specific identifier to reference an object.","type":"string"}},"award":{"comment":"See award.json for list of available identifiers.","title":"Grant","description":"Grant associated with the submission.","linkTo":"Award","type":"string"},"lab":{"description":"Lab associated with the submission.","linkSubmitsFor":True,"title":"Lab","comment":"See lab.json for list of available identifiers.","linkTo":"Lab","type":"string"},"date_created":{"anyOf":[{"format":"date-time"},{"format":"date"}],"serverDefault":"now","readonly":True,"type":"string","comment":"Do not submit, value is assigned by the server. The date the object is created.","title":"Date created","rdfs:subPropertyOf":"dc:created","permission":"import_items"},"submitted_by":{"serverDefault":"userid","readonly":True,"type":"string","comment":"Do not submit, value is assigned by the server. The user that created the object.","linkTo":"User","title":"Submitted by","rdfs:subPropertyOf":"dc:creator","permission":"import_items"},"notes":{"elasticsearch_mapping_index_type":{"title":"Field mapping index type","description":"Defines one of three types of indexing available","type":"string","enum":["analyzed","not_analyzed","no"],"default":"analyzed"},"description":"DCIC internal notes.","type":"string","title":"Notes"},"status":{"readonly":True,"default":"in review by lab","title":"Status","type":"string","enum":["released","current","revoked","deleted","replaced","in review by lab","in review by project","released to project"],"permission":"import_items"},"uuid":{"serverDefault":"uuid4","readonly":True,"requestMethod":"POST","type":"string","title":"UUID","format":"uuid","permission":"import_items"},"schema_version":{"default":"1","pattern":"^\\d+(\\.\\d+)*$","requestMethod":[],"title":"Schema Version","comment":"Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.","type":"string"},"description":{"title":"Description","description":"A plain text description of the source.","type":"string","default":""},"title":{"title":"Name","description":"The complete name of the originating lab or vendor. ","type":"string"},"name":{"uniqueKey":True,"type":"string","description":"DON'T SUBMIT, auto-generated, use for referencing vendors in other sheets.","pattern":"^[a-z0-9\\-]+$"},"url":{"title":"URL","description":"An external resource with additional information about the source.","type":"string","format":"uri"},"@type":{"calculatedProperty":True,"title":"Type","type":"array","items":{"type":"string"}},"@id":{"calculatedProperty":True,"title":"ID","type":"string"}},"boost_values":{"name":1,"title":1},"@type":["JSONSchema"]}
     return MockedResponse(data, 200)
 
+
 @pytest.fixture
 def returned_vendor_schema_l():
     data = {"title": "Vendor", "description": "Lab or Company that is the Source for a Product/Sample.", "id": "/profiles/vendor.json", "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "required": ["title", "lab", "award"], "identifyingProperties": ["uuid", "name"], "additionalProperties": False, "mixinProperties": [{"$ref": "mixins.json#/schema_version"}, {"$ref": "mixins.json#/uuid"}, {"$ref": "mixins.json#/status"}, {"$ref": "mixins.json#/notes"}, {"$ref": "mixins.json#/submitted"}, {"$ref": "mixins.json#/modified"}, {"$ref": "mixins.json#/release_dates"}, {"$ref": "mixins.json#/attribution"}, {"$ref": "mixins.json#/tags"}, {"$ref": "mixins.json#/aliases"}], "mixinFacets": [{"$ref": "mixins.json#/facets_common"}], "properties": {"aliases": {"title": "Aliases", "description": "Lab specific ID (e.g. dcic_lab:my_biosample1).", "type": "array", "comment": "Colon separated lab name and lab identifier, no slash. (e.g. dcic-lab:42).", "default": [], "lookup": 1, "uniqueItems": True, "ff_flag": "clear clone", "items": {"uniqueKey": "alias", "title": "Lab alias", "description": "Lab specific ID (e.g. dcic_lab:my_biosample1).", "type": "string", "pattern": "^[^\\s\\\\/]+:[^\\s\\\\/]+"}}, "tags": {"title": "Tags", "description": "Key words that can tag an item - useful for filtering.", "type": "array", "lookup": 1000, "uniqueItems": True, "ff_flag": "clear clone", "items": {"title": "Tag", "description": "A tag for the item.", "type": "string"}}, "lab": {"title": "Lab", "description": "Lab associated with the submission.", "exclude_from": ["submit4dn", "FFedit-create"], "type": "string", "linkTo": "Lab", "linkSubmitsFor": True, "default": ""}, "contributing_labs": {"title": "Contributing Labs", "description": "Other labs associated with the submitted data.", "type": "array", "lookup": 1000, "items": {"title": "Contributing Lab", "description": "A lab that has contributed to the associated data.", "type": "string", "linkTo": "Lab"}}, "award": {"title": "Grant", "description": "Grant associated with the submission.", "exclude_from": ["submit4dn", "FFedit-create"], "default": "", "type": "string", "linkTo": "Award"}, "public_release": {"title": "Public Release Date", "description": "The date which the item was released to the public", "comment": "Do not submit, value is assigned when released.", "type": "string", "lookup": 1000, "anyOf": [{"format": "date-time"}, {"format": "date"}], "exclude_from": ["submit4dn", "FFedit-create"], "permission": "import_items"}, "project_release": {"title": "Project Release Date", "description": "The date which the item was released to the project", "comment": "Do not submit, value is assigned when released to project.", "type": "string", "lookup": 1000, "anyOf": [{"format": "date-time"}, {"format": "date"}], "exclude_from": ["submit4dn"], "permission": "import_items"}, "last_modified": {"title": "Last Modified", "exclude_from": ["submit4dn", "FFedit-create"], "type": "object", "additionalProperties": False, "lookup": 1000, "properties": {"date_modified": {"title": "Date modified", "description": "Do not submit, value is assigned by the server. The date the object is modified.", "type": "string", "anyOf": [{"format": "date-time"}, {"format": "date"}], "permission": "import_items"}, "modified_by": {"title": "Modified by", "description": "Do not submit, value is assigned by the server. The user that modfied the object.", "type": "string", "linkTo": "User", "permission": "import_items"}}}, "date_created": {"rdfs:subPropertyOf": "dc:created", "title": "Date Created", "lookup": 1000, "exclude_from": ["submit4dn", "FFedit-create"], "type": "string", "anyOf": [{"format": "date-time"}, {"format": "date"}], "serverDefault": "now", "permission": "import_items"}, "submitted_by": {"rdfs:subPropertyOf": "dc:creator", "title": "Submitted By", "exclude_from": ["submit4dn", "FFedit-create"], "type": "string", "linkTo": "User", "lookup": 1000, "serverDefault": "userid", "permission": "import_items"}, "notes": {"title": "Notes", "description": "DCIC internal notes.", "type": "string", "exclude_from": ["submit4dn", "FFedit-create"], "elasticsearch_mapping_index_type": {"title": "Field mapping index type", "description": "Defines one of three types of indexing available", "type": "string", "default": "analyzed", "enum": ["analyzed", "not_analyzed", "no"]}}, "status": {"title": "Status", "exclude_from": ["submit4dn"], "type": "string", "default": "in review by lab", "permission": "import_items", "enum": ["released", "current", "planned", "revoked", "archived", "deleted", "obsolete", "replaced", "in review by lab", "submission in progress", "released to project", "archived to project"]}, "uuid": {"title": "UUID", "type": "string", "format": "uuid", "exclude_from": ["submit4dn", "FFedit-create"], "serverDefault": "uuid4", "permission": "import_items", "requestMethod": "POST"}, "schema_version": {"title": "Schema Version", "internal_comment": "Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.", "type": "string", "exclude_from": ["submit4dn", "FFedit-create"], "pattern": "^\\d+(\\.\\d+)*$", "requestMethod": [], "default": "1"}, "description": {"title": "Description", "description": "A plain text description of the source.", "type": "string", "lookup": 30, "default": "", "formInput": "textarea"}, "title": {"title": "Name", "description": "The complete name of the originating lab or vendor. ", "type": "string", "lookup": 20}, "name": {"description": "DON'T SUBMIT, auto-generated, use for referencing vendors in other sheets.", "type": "string", "pattern": "^[a-z0-9\\-]+$", "uniqueKey": True, "exclude_from": ["submit4dn", "FFedit-create"]}, "url": {"title": "URL", "description": "An external resource with additional information about the source.", "type": "string", "lookup": 1000, "format": "uri"}, "@id": {"title": "ID", "type": "string", "calculatedProperty": True}, "@type": {"title": "Type", "type": "array", "items": {"type": "string"}, "calculatedProperty": True}, "external_references": {"title": "External Reference URIs", "description": "External references to this item.", "type": "array", "items": {"type": "object", "title": "External Reference", "properties": {"uri": {"type": "string"}, "ref": {"type": "string"}}}, "calculatedProperty": True}, "display_title": {"title": "Display Title", "description": "A calculated title for every object in 4DN", "type": "string", "calculatedProperty": True}, "link_id": {"title": "link_id", "description": "A copy of @id that can be embedded. Uses ~ instead of /", "type": "string", "calculatedProperty": True}, "principals_allowed": {"title": "principals_allowed", "description": "calced perms for ES filtering", "type": "object", "properties": {"view": {"type": "string"}, "edit": {"type": "string"}, "audit": {"type": "string"}}, "calculatedProperty": True}}, "boost_values": {"name": 1.0, "title": 1.0}, "facets": {"award.project": {"title": "Project"}, "lab.display_title": {"title": "Lab"}}, "@type": ["JSONSchema"]}
@@ -351,7 +383,7 @@ def returned_user_me_submit_for_one_lab():
         '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
         'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current',
         'submits_for': [
-            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~'}
+            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', '@id': '/labs/bing-ren-lab/'}
         ]
     }
     return MockedResponse(data, 307)
@@ -365,8 +397,8 @@ def returned_user_me_submit_for_two_labs():
         '@id': '/users/da4f53e5-4e54-4ae7-ad75-ba47316a8bfa/', '@type': ['User', 'Item'],
         'link_id': '~users~da4f53e5-4e54-4ae7-ad75-ba47316a8bfa~', 'status': 'current',
         'submits_for': [
-            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~'},
-            {'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~'}
+            {'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', '@id': '/labs/bing-ren-lab/'},
+            {'uuid': '895847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Ben Ring, USDC', 'link_id': '~labs~ben-ring-lab~', '@id': '/labs/ben-ring-lab/'}
         ]
     }
     return MockedResponse(data, 307)

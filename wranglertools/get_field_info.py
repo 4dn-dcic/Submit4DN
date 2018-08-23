@@ -2,10 +2,12 @@
 # -*- coding: latin-1 -*-
 import os.path
 import argparse
-from dcicutils import submit_utils
+from dcicutils import ff_utils
 import attr
 import xlwt
 import sys
+import json
+# import sys
 
 
 EPILOG = '''
@@ -92,6 +94,115 @@ def getArgs():  # pragma: no cover
     return args
 
 
+class FDN_Key:
+    def __init__(self, keyfile, keyname):
+        self.error = False
+        # is the keyfile a dictionary
+        if isinstance(keyfile, dict):
+            keys = keyfile
+        # is the keyfile a file (the expected case)
+        elif os.path.isfile(str(keyfile)):
+            keys_f = open(keyfile, 'r')
+            keys_json_string = keys_f.read()
+            keys_f.close()
+            keys = json.loads(keys_json_string)
+        # if both fail, the file does not exist
+        else:
+            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
+            self.error = True
+            return
+        self.con_key = keys[keyname]
+        if not self.con_key['server'].endswith("/"):
+            self.con_key['server'] += "/"
+
+
+class FDN_Connection(object):
+    def __init__(self, key4dn):
+        # passed key object stores the key dict in con_key
+        self.check = False
+        self.key = key4dn.con_key
+        # check connection and find user uuid
+        # TODO: we should not need try/except, since if me page fails, there is
+        # no need to proggress, but the test are failing without this Part
+        # make mocked connections and remove try/except
+        # is public connection using submit4dn a realistic case?
+        try:
+            me_page = ff_utils.get_metadata('me', key=self.key)
+            self.user = me_page['@id']
+            self.email = me_page['email']
+            self.check = True
+        except:
+            print('Can not establish connection, please check your keys')
+            me_page = {}
+        if not me_page:
+            sys.exit(1)
+        if me_page.get('submits_for') is not None:
+            # get all the labs that the user making the connection submits_for
+            self.labs = [l['@id'] for l in me_page['submits_for']]
+            # take the first one as default value for the connection - reset in
+            # import_data if needed by calling set_lab_award
+            self.lab = self.labs[0]
+            self.set_award(self.lab)  # set as default first
+        else:
+            self.labs = None
+            self.lab = None
+            self.award = None
+
+    def set_award(self, lab, dontPrompt=True):
+        '''Sets the award for the connection for use in import_data
+           if dontPrompt is False will ask the User to choose if there
+           are more than one award for the connection.lab otherwise
+           the first award for the lab will be used
+        '''
+        self.award = None
+        labjson = ff_utils.get_metadata(lab, key=self.key)
+        if labjson.get('awards') is not None:
+            awards = labjson.get('awards')
+            # if don't prompt is active take first lab
+            if dontPrompt:
+                self.award = awards[0]['@id']
+                return
+            # if there is one lab return it as lab
+            if len(awards) == 1:
+                self.award = awards[0]['@id']
+                return
+            # if there are multiple labs
+            achoices = []
+            print("Multiple awards for {labname}:".format(labname=lab))
+            for i, awd in enumerate(awards):
+                ch = str(i + 1)
+                achoices.append(ch)
+                print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
+            # re try the input until a valid choice is input
+            awd_resp = ''
+            while awd_resp not in achoices:
+                awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
+            self.award = awards[int(awd_resp) - 1]['@id']
+            return
+
+    def prompt_for_lab_award(self):
+        '''Check to see if user submits_for multiple labs or the lab
+            has multiple awards and if so prompts for the one to set
+            for the connection
+        '''
+        if self.labs:
+            if len(self.labs) > 1:
+                lchoices = []
+                print("Submitting for multiple labs:")
+                for i, lab in enumerate(self.labs):
+                    ch = str(i + 1)
+                    lchoices.append(ch)
+                    print("  ({choice}) {labname}".format(choice=ch, labname=lab))
+                lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
+                if lab_resp not in lchoices:
+                    print("Not a valid choice - using {default}".format(default=self.lab))
+                    return
+                else:
+                    self.lab = self.labs[int(lab_resp) - 1]
+
+        self.set_award(self.lab, False)
+
+
 @attr.s
 class FieldInfo(object):
     name = attr.ib()
@@ -109,7 +220,6 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3
                     #          'Grouping for non-replicate experiments')
                     ]
 
-
 fetch_items = {
     "Document": "document",
     "Protocol": "protocol",
@@ -119,86 +229,19 @@ fetch_items = {
     "Vendor": "vendor"
     }
 
-
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualHuman", "Vendor", "Enzyme", "Construct", "TreatmentRnai",
-    "TreatmentChemical", "GenomicRegion", "Target", "Antibody", "Modification",  "Image",
-    "Biosource", "BiosampleCellCulture", "Biosample",  "FileFastq",
-    "FileProcessed", "FileReference", "FileCalibration", "FileSet", "FileSetCalibration",
-    "MicroscopeSettingD1", "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
-    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic", "ExperimentMic_Path",
-    "ExperimentHiC", "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
-    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentSet",
+    "IndividualMouse", "IndividualFly", "IndividualHuman", "Vendor", "Enzyme",
+    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
+    "Antibody", "Modification",  "Image", "Biosource", "BiosampleCellCulture",
+    "Biosample",  "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
+    "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
+    "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
+    "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
+    "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
+    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
     ]
-
-
-def sort_item_list(item_list, item_id, field):
-    """Sort all items in list alphabetically based on values in the given field and bring item_id to beginning."""
-    # sort all items based on the key
-    sorted_list = sorted(item_list, key=lambda k: ("" if k.get(field) is None else k.get(field)))
-    # move the item_id ones to the front
-    move_list = [i for i in sorted_list if i.get(field) == item_id]
-    move_list.reverse()
-    for move_item in move_list:
-        try:
-            sorted_list.remove(move_item)
-            sorted_list.insert(0, move_item)
-        except:  # pragma: no cover
-            pass
-    return sorted_list
-
-
-def fetch_all_items(sheet, field_list, connection):
-    """For a given sheet, get all released items"""
-    all_items = []
-    if sheet in fetch_items.keys():
-        # Search all items, get uuids, get them one by one
-        obj_id = "search/?type=" + fetch_items[sheet]
-        resp = submit_utils.get_FDN(obj_id, connection)
-        items_uuids = [i["uuid"] for i in resp['@graph']]
-        items_list = []
-        for item_uuid in items_uuids:
-            items_list.append(submit_utils.get_FDN(item_uuid, connection))
-
-        # order items with lab and user
-        # the date ordering is already in place through search result (resp)
-        # 1) order by dcic lab
-        items_list = sort_item_list(items_list, '/lab/dcic-lab/', 'lab')
-        # 2) sort by submitters lab
-        items_list = sort_item_list(items_list, connection.lab, 'lab')
-        # 3) sort by submitters user
-        items_list = sort_item_list(items_list, connection.user, 'submitted_by')
-        # 4) If biosurce, also sort by tier
-        if sheet == "Biosource":
-            items_list = sort_item_list(items_list, 'Tier 1', 'cell_line_tier')
-
-        # filter for fields that exist on the excel sheet
-        for item in items_list:
-            item_info = []
-            for field in field_list:
-                # required fields will have a star
-                field = field.strip('*')
-                # add # to skip existing items during submission
-                if field == "#Field Name:":
-                    item_info.append("#")
-                # the attachment field returns a dictionary
-                elif field == "attachment":
-                    try:
-                        item_info.append(item.get(field)['download'])
-                    except:
-                        item_info.append("")
-                else:
-                    # when writing values, check for the lists and turn them into string
-                    write_value = item.get(field, '')
-                    if isinstance(write_value, list):
-                        write_value = ','.join(write_value)
-                    item_info.append(write_value)
-            all_items.append(item_info)
-        return all_items
-    else:  # pragma: no cover
-        return
 
 
 def get_field_type(field):
@@ -271,21 +314,40 @@ def build_field_list(properties, required_fields=None, include_description=False
     return fields
 
 
+class FDN_Schema(object):
+    def __init__(self, connection, uri):
+        self.uri = uri
+        self.connection = connection
+        response = ff_utils.get_metadata(uri, key=connection.key, add_on="frame=object")
+        self.properties = response['properties']
+        self.required = None
+        if 'required' in response:
+            self.required = response['required']
+        self.file_format_file_extension = None
+        if 'file_format_file_extension' in response:
+            self.file_format_file_extension = response['file_format_file_extension']
+
+
 def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
     for name in types:
         schema_name = name + '.json'
         uri = '/profiles/' + schema_name
-        schema_grabber = submit_utils.FDN_Schema(connection, uri)
+        schema_grabber = FDN_Schema(connection, uri)
         required_fields = schema_grabber.required
-        fields[name] = build_field_list(schema_grabber.properties,
+        properties = schema_grabber.properties
+        fields[name] = build_field_list(properties,
                                         required_fields,
                                         include_description,
                                         include_comments,
                                         include_enums)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
             fields[name].extend(exp_set_addition)
+        if 'extra_files' in properties:
+            if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
+                fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
+                                               401, 'Full Path to Extrafile to upload')])
     return fields
 
 
@@ -296,6 +358,9 @@ def create_xls(all_fields, filename):
     for fieldname, description and enum
     '''
     wb = xlwt.Workbook()
+    # text styling for all columns
+    style = xlwt.XFStyle()
+    style.num_format_str = "@"
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
@@ -304,12 +369,15 @@ def create_xls(all_fields, filename):
         ws.write(1, 0, "#Field Type:")
         ws.write(2, 0, "#Description:")
         ws.write(3, 0, "#Additional Info:")
+        # add empty formatting for first column
+        for i in range(100):
+            ws.write(4+i, 0, '', style)
         # order fields in sheet based on lookup numbers, then alphabetically
         for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
-            ws.write(0, col+1, str(field.name))
-            ws.write(1, col+1, str(field.ftype))
+            ws.write(0, col+1, str(field.name), style)
+            ws.write(1, col+1, str(field.ftype), style)
             if field.desc:
-                ws.write(2, col+1, str(field.desc))
+                ws.write(2, col+1, str(field.desc), style)
             # combine comments and Enum
             add_info = ''
             if field.comm:
@@ -318,24 +386,19 @@ def create_xls(all_fields, filename):
                 add_info += "Choices:" + str(field.enum)
             if not field.comm and not field.enum:
                 add_info = "-"
-            ws.write(3, col+1, add_info)
+            ws.write(3, col+1, add_info, style)
+            # add empty formatting for all columns
+            for i in range(100):
+                ws.write(4+i, col+1, '', style)
     wb.save(filename)
 
 
 def main():  # pragma: no cover
     args = getArgs()
-    key = submit_utils.FDN_Key(args.keyfile, args.key)
+    key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
-    connection = submit_utils.FDN_Connection(key)
-    # test connection
-    if not connection.check:
-        print("CONNECTION ERROR: Please check your keys.")
-        return
-
-    if not args.remote:
-        connection.prompt_for_lab_award()
-
+    connection = FDN_Connection(key)
     if args.type == ['all']:
         args.type = [sheet for sheet in sheet_order if sheet not in [
                     'ExperimentMic_Path', 'OntologyTerm']]

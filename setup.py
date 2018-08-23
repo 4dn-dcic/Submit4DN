@@ -17,8 +17,8 @@ requires = [
     'wheel>=0.24.0',
     'xlrd',
     'xlwt>=1.1.2',
-    'awscli',
     'six',
+    'dcicutils>=0.2.1'
 ]
 
 tests_require = [

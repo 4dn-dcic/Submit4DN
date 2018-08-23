@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
-import json
 import argparse
 import os.path
 import hashlib
-from wranglertools.get_field_info import sheet_order
-from dcicutils import submit_utils
+from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
+from dcicutils import ff_utils
 import xlrd
 import datetime
 import sys
@@ -18,6 +17,7 @@ import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
 import attr
+import ast
 import os
 import time
 import subprocess
@@ -57,10 +57,10 @@ Ex: award, lab, target, etc.
 To upload objects with attachments, use the column titled "attachment"
 containing the full path to the file you wish to attach
 
+To delete a field, use the keyword "*delete*" as the value.
+
 For more details:
 please see README.rst
-
-To delete a field, use the keyword "*delete*" as the value.
 '''
 
 
@@ -116,6 +116,7 @@ list_of_loadxl_fields = [
     ['Experiment', ['experiment_relation']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentSeq', ['experiment_relation']],
+    ['ExperimentTsaseq', ['experiment_relation']],
     ['ExperimentDamid', ['experiment_relation']],
     ['ExperimentChiapet', ['experiment_relation']],
     ['ExperimentAtacseq', ['experiment_relation']],
@@ -125,7 +126,7 @@ list_of_loadxl_fields = [
     ['FileReference', ['related_files']],
     ['FileCalibration', ['related_files']],
     ['FileMicroscopy', ['related_files']],
-    ['FileProcessed', ['related_files']],
+    ['FileProcessed', ['related_files', 'produced_from']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
@@ -181,8 +182,10 @@ def attachment(path):
             'download': filename,
             'type': mime_type,
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/msword', 'application/pdf', 'text/plain', 'text/tab-separated-values',
-                         'text/html', 'application/zip'):
+        if mime_type in ('application/pdf', "application/zip", 'text/plain',
+                         'text/tab-separated-values', 'text/html', 'application/msword',
+                         'application/vnd.ms-excel',
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             # XXX Should use chardet to detect charset for text files here.
             pass
         elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
@@ -335,23 +338,47 @@ def fix_attribution(sheet, post_json, connection):
     return post_json
 
 
+def parse_exception(e):
+    """ff_utils functions raise an exception when the expected code is not returned.
+    This response is a pre-formatted text, and this function will get the resonse json
+    out of it."""
+    try:
+        # try parsing the exception
+        text = e.args[0]
+        index = text.index('Reason: ')
+        resp_text = text[index + 8:]
+        resp_dict = ast.literal_eval(resp_text)
+        return resp_dict
+    # if not re-raise
+    except:  # pragma: no cover
+        raise e
+
+
 def get_existing(post_json, connection):
     """Get the entry that will be patched from the server."""
-    temp = {}
-    uuids = []
-    # look if post_json has these 3 identifiers
+    # get all possible identifier from the json
+    all_ids = []
     for identifier in ["uuid", "accession", "@id"]:
         if post_json.get(identifier):
-            temp = {}
-            temp = submit_utils.get_FDN(post_json[identifier], connection)
-            if temp.get("uuid"):
-                uuids.append(temp.get("uuid"))
+            all_ids.append(post_json[identifier])
     # also look for all aliases
     if post_json.get("aliases"):
         # weird precaution in case there are 2 aliases, 1 exisitng , 1 new
-        for an_alias in post_json.get("aliases"):
-            temp = {}
-            temp = submit_utils.get_FDN(an_alias, connection)
+        all_ids.extend(post_json['aliases'])
+    # look if post_json has these 3 identifier
+    temp = {}
+    uuids = []
+    for an_id in all_ids:
+            try:
+                temp = ff_utils.get_metadata(an_id, key=connection.key, add_on="frame=object")
+            except Exception as e:
+                exc = parse_exception(e)
+                # if the item does not exist get_metadata will raise an exceptions
+                # see if the exception message has 404, then continue, if not throw that exception
+                if exc['code'] == 404:
+                    temp = {}
+                else:
+                    raise e
             if temp.get("uuid"):
                 uuids.append(temp.get("uuid"))
 
@@ -362,7 +389,7 @@ def get_existing(post_json, connection):
         return {}
     # if everything is as expected
     elif len(unique_uuids) == 1:
-        temp = submit_utils.get_FDN(unique_uuids[0], connection)
+        temp = ff_utils.get_metadata(unique_uuids[0], key=connection.key, add_on="frame=object")
         return temp
     # funky business not allowed, if identifiers point to different objects
     else:  # pragma: no cover
@@ -404,7 +431,10 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
             match = pattern.match(item)
             if match is None:
                 item = '/' + typeinfield + item
-            res = submit_utils.get_FDN(item, connection)
+            try:
+                res = ff_utils.get_metadata(item, key=connection.key, add_on="frame=object")
+            except Exception as problem:
+                res = parse_exception(problem)
             itemtypes = res.get('@type')
             if itemtypes:
                 if typeinfield not in itemtypes:
@@ -413,6 +443,7 @@ def validate_item(itemlist, typeinfield, alias_dict, connection):
 
 
 def validate_string(strings, alias_dict):
+    """check if the string value is in the aliases list."""
     msg = ''
     for s in strings:
         if alias_dict.get(s, None) is not None:
@@ -427,7 +458,6 @@ def _convert_to_array(s, is_array):
 
 
 def validate_field(field_data, field_type, aliases_by_type, connection):
-    # import pdb; pdb.set_trace()
     to_trim = 'array of embedded objects, '
     is_array = False
     msg = None
@@ -446,7 +476,6 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
 
 
 def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
-    # import pdb; pdb.set_trace()
     report = []
     for field, field_data in post_json.items():
         # ignore commented out fields
@@ -455,10 +484,10 @@ def pre_validate_json(post_json, fields2types, aliases_by_type, connection):
         # ignore empty fields
         if not field_data:
             continue
-        # ignore aliases field as this was validated before
-        if field == 'aliases':
+        # ignore certain fields - aliases validated before
+        # source_experiments and produced_from hold strings of aliases by design
+        if field in ['aliases', 'produced_from', 'source_experiments']:
             continue
-
         field_type = get_f_type(field, fields2types)
         msg = validate_field(field_data, field_type, aliases_by_type, connection)
         if msg:
@@ -496,12 +525,42 @@ def build_patch_json(fields, fields2types):
     return patch_data
 
 
-def populate_post_json(post_json, connection, sheet):  # , existing_data):
+def get_just_filename(path):
+    return path.split('/')[-1]
+
+
+def check_extra_file_meta(ef_info, seen_formats, existing_formats):
+    try:
+        ef_format = ef_info.get('file_format')
+    except AttributeError:
+        print('WARNING! -- Malformed extrafile field formatting', ef_info)
+        return None, seen_formats
+    else:
+        if not ef_format:
+            return ef_info, seen_formats
+
+    if ef_format in existing_formats:
+        print("An extrafile with %s format exists - will attempt to patch" % ef_format)
+
+    filepath = ef_info.get('filename')
+    if filepath is not None:
+        sfilename = get_just_filename(filepath)
+        ef_info['submitted_filename'] = sfilename
+        if not ef_info.get('md5sum'):
+            ef_info['md5sum'] = md5(filepath)
+        if not ef_info.get('filesize'):
+            ef_info['filesize'] = os.path.getsize(filepath)
+    seen_formats.append(ef_format)
+    return ef_info, seen_formats
+
+
+def populate_post_json(post_json, connection, sheet, attach_fields):  # , existing_data):
     """Get existing, add attachment, check for file and fix attribution."""
     # add attachments
-    if post_json.get("attachment"):
-        attach = attachment(post_json["attachment"])
-        post_json["attachment"] = attach
+    for af in attach_fields:
+        if post_json.get(af):
+            attach = attachment(post_json[af])
+            post_json[af] = attach
 
     existing_data = get_existing(post_json, connection)
     # Combine aliases
@@ -517,7 +576,7 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
     filename_to_post = post_json.get('filename')
     if filename_to_post:
         # remove full path from filename
-        just_filename = filename_to_post.split('/')[-1]
+        just_filename = get_just_filename(filename_to_post)
         # if new file
         if not existing_data.get('uuid'):
             post_json['filename'] = just_filename
@@ -530,10 +589,45 @@ def populate_post_json(post_json, connection, sheet):  # , existing_data):
             # if not uploading a file, do not post the filename
             del post_json['filename']
 
+    # deal with extrafiles
+    extrafiles = post_json.get('extra_files')
+    extrafiles2upload = {}
+    if extrafiles:
+        # import pdb; pdb.set_trace()
+        # in sheet these will be file paths need to both poopulate the extrafiles properties
+        # in post or patch as well as upload the file if not already there
+        existing_formats = []
+        existing_extrafiles = []
+        extrafile_metadata = []
+        if existing_data:
+            if existing_data.get('extra_files'):
+                existing_extrafiles = existing_data.get('extra_files')  # to include existing
+                existing_formats = [ef.get('file_format') for ef in existing_data.get('extra_files')]
+        seen_formats = []
+        for extrafile in extrafiles:
+            extrafile_meta, seen_formats = check_extra_file_meta(extrafile, seen_formats, existing_formats)
+            if extrafile_meta:
+                if extrafile_meta.get('file_format'):
+                    if extrafile_meta.get('filename'):
+                        extrafiles2upload[extrafile_meta['file_format']] = extrafile_meta['filename']
+                        del extrafile_meta['filename']
+                    for ix, eef in enumerate(existing_extrafiles):
+                        if eef['file_format'] == extrafile_meta['file_format']:
+                            # we are patching so want to remove existing entry from existing_extrafiles
+                            del existing_extrafiles[ix]
+                            break
+                extrafile_metadata.append(extrafile_meta)
+
+        if extrafile_metadata:
+            # we have data to update
+            post_json['extra_files'] = extrafile_metadata + existing_extrafiles
+        else:
+            del post_json['extra_files']
+
     # if no existing data (new item), add missing award/lab information from submitter
     if not existing_data.get("award"):
         post_json = fix_attribution(sheet, post_json, connection)
-    return post_json, existing_data, file_to_upload
+    return post_json, existing_data, file_to_upload, extrafiles2upload
 
 
 def filter_set_from_exps(post_json):
@@ -602,7 +696,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def error_report(error_dic, sheet, all_aliases, connection):
+def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
@@ -627,6 +721,14 @@ def error_report(error_dic, sheet, all_aliases, connection):
                 error_field = err['name'][0]
                 report.append("{sheet:<30}Field '{er}': {des}"
                               .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
+    # if there is a an access forbidden error
+    elif error_dic.get('title') == 'Forbidden':
+        error_description = error_dic['description']
+        try:
+            report.append("{sheet:<30}{eid}: {des}"
+                          .format(des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
+        except:
+            return error_dic
     # if there is a conflict
     elif error_dic.get('title') == "Conflict":
         try:
@@ -649,7 +751,6 @@ def conflict_error_report(error_dic, sheet, connection):
     # To make sure we get all cases reported, I put a try/except
     all_conflicts = []
     try:
-        import ast
         # list is reported as string, turned into list again
         conflict_str = error_dic.get('detail').replace("Keys conflict:", "").strip()
         conflict_list = ast.literal_eval(conflict_str)
@@ -658,9 +759,12 @@ def conflict_error_report(error_dic, sheet, connection):
             error_value = conflict[1]
             try:
                 # let's see if the user has access to conflicting item
-                existing_item = submit_utils.search_FDN(sheet, error_field, error_value, connection)[0]
-                link_id = existing_item.get('link_id').replace("~", "/")
-                add_text = "please use " + link_id
+                search = "search/?type={sheet}&{field}={value}".format(sheet=sheet,
+                                                                       field=error_field,
+                                                                       value=error_value)
+                existing_item = ff_utils.search_metadata(search, key=connection.key)
+                at_id = existing_item.get('@id')
+                add_text = "please use " + at_id
             except:
                 # if there is a conflicting item, but it is not viewable by the user,
                 # we should release the item to the project/public
@@ -673,7 +777,7 @@ def conflict_error_report(error_dic, sheet, connection):
         return
 
 
-def patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection):
+def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, connection, identifier):
     # if FTP, grab the file from ftp
     ftp_download = False
     if file_to_upload and filename_to_post.startswith("ftp://"):
@@ -683,40 +787,43 @@ def patch_item(file_to_upload, post_json, filename_to_post, existing_data, conne
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
-    e = submit_utils.patch_FDN(existing_data["uuid"], connection, post_json)
+    try:
+        if verb == 'PATCH':
+            e = ff_utils.patch_metadata(post_json, identifier, key=connection.key)
+        elif verb == 'POST':
+            e = ff_utils.post_metadata(post_json, identifier, key=connection.key)
+        else:
+            raise ValueError('Unrecognized verb - must be POST or PATCH')
+    except Exception as problem:
+        e = parse_exception(problem)
+    if e.get('status') == 'error':
+        return e
     if file_to_upload:
-        if e.get('status') == 'error':
-            # print(e['detail'])
-            return e
         # get s3 credentials
-        creds = get_upload_creds(e['@graph'][0]['accession'], connection, e['@graph'][0])
-        e['@graph'][0]['upload_credentials'] = creds
+        if verb == 'PATCH':
+            creds = get_upload_creds(e['@graph'][0]['accession'], connection)
+            e['@graph'][0]['upload_credentials'] = creds
         # upload
-        upload_file(e, filename_to_post)
+        upload_file_item(e, filename_to_post)
         if ftp_download:
             os.remove(filename_to_post)
+    if extrafiles:
+        extcreds = e['@graph'][0].get('extra_files_creds')
+        for fformat, filepath in extrafiles.items():
+            for ecred in extcreds:
+                if fformat == ecred.get('file_format'):
+                    upload_creds = ecred.get('upload_credentials')
+                    upload_extra_file(upload_creds, filepath)
     return e
 
 
-def post_item(file_to_upload, post_json, filename_to_post, connection, sheet):
-    # if FTP, grab the file from ftp
-    ftp_download = False
-    if file_to_upload and filename_to_post.startswith("ftp://"):
-        ftp_download = True
-        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
-    # add the md5
-    if file_to_upload and not post_json.get('md5sum'):
-        print("calculating md5 sum for file %s " % (filename_to_post))
-        post_json['md5sum'] = md5(filename_to_post)
-    e = submit_utils.new_FDN(connection, sheet, post_json)
-    if file_to_upload:
-        if e.get('status') == 'error':
-            return e
-        # upload the file
-        upload_file(e, filename_to_post)
-        if ftp_download:
-            os.remove(filename_to_post)
-    return e
+def patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data):
+    return update_item('PATCH', file_to_upload, post_json, filename_to_post,
+                       extrafiles, connection, existing_data.get('uuid'))
+
+
+def post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet):
+    return update_item('POST', file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet)
 
 
 def ftp_copy(filename_to_post, post_json):
@@ -743,17 +850,7 @@ def ftp_copy(filename_to_post, post_json):
 
 
 def delete_fields(post_json, connection, existing_data):
-    """Does a put to delete fields with the keyword '*delete*'."""
-    my_uuid = existing_data.get("uuid")
-    my_accesssion = existing_data.get("accession")
-    raw_json = submit_utils.get_FDN(my_uuid, connection, frame="raw")
-    # check if the uuid is in the raw_json
-    if not raw_json.get("uuid"):
-        raw_json["uuid"] = my_uuid
-    # if there is an accession, add it to raw so it does not created again
-    if my_accesssion:
-        if not raw_json.get("accession"):
-            raw_json["accession"] = my_accesssion
+    """Deletes fields with the value '*delete*'."""
     # find fields to be removed
     fields_to_be_removed = []
     for key, value in post_json.items():
@@ -762,12 +859,9 @@ def delete_fields(post_json, connection, existing_data):
     # if there are no delete fields, move along sir
     if not fields_to_be_removed:
         return post_json
-    # remove the fields from the raw_json that will be PUT
-    for rm_key in fields_to_be_removed:
-        if raw_json.get(rm_key):
-            del raw_json[rm_key]
-    # Do the put with raw_json
-    submit_utils.put_FDN(my_uuid, connection, raw_json)
+    # Use the url argument delete_fields for deletion
+    del_add_on = 'delete_fields=' + ','.join(fields_to_be_removed)
+    ff_utils.patch_metadata({}, existing_data["uuid"], key=connection.key, add_on=del_add_on)
     # Remove them also from the post_json
     for rm_key in fields_to_be_removed:
         del post_json[rm_key]
@@ -870,7 +964,7 @@ def check_file_pairing(fastq_row):
 
 
 def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate):
+                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate, attach_fields):
     """takes an excel sheet and post or patched the data in."""
     # determine right from the top if dry run
     dryrun = not(update or patchall)
@@ -924,10 +1018,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         if not novalidate:
             row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
             if row_errors:
-                # if existing_data.get("uuid"):
-                #    not_patched += 1
-                # else:
-                #    not_posted += 1
                 error += 1
                 pre_validate_errors.extend(row_errors)
                 invalid = True
@@ -936,7 +1026,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
         filename_to_post = post_json.get('filename')
-        post_json, existing_data, file_to_upload = populate_post_json(post_json, connection, sheet)  # , existing_data)
+        post_json, existing_data, file_to_upload, extrafiles = populate_post_json(
+            post_json, connection, sheet, attach_fields)
         # Filter loadxl fields
         post_json, patch_loadxl_item = filter_loadxl_fields(post_json, sheet)
         # Filter experiment set related fields from experiment
@@ -958,7 +1049,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 # First check for fields to be deleted, and do put
                 post_json = delete_fields(post_json, connection, existing_data)
                 # Do the patch
-                e = patch_item(file_to_upload, post_json, filename_to_post, existing_data, connection)
+                e = patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data)
             else:
                 not_patched += 1
         # if there is no existing item try posting
@@ -967,25 +1058,26 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                 # If there are some fields with delete keyword,just ignore them
                 post_json = remove_deleted(post_json)
                 # Do the post
-                e = post_item(file_to_upload, post_json, filename_to_post, connection, sheet)
+                e = post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet)
             else:
                 not_posted += 1
 
         # add to success/error counters
         if e.get("status") == "error":  # pragma: no cover
-            error_rep = error_report(e, sheet, all_aliases, connection)
+            # display the used alias with the error
+            e_id = ""
+            if post_json.get('aliases'):
+                e_id = post_json['aliases'][0]
+            error_rep = error_report(e, sheet, all_aliases, connection, e_id)
             error += 1
             if error_rep:
-                # error += 1
+                # TODO: move this report formatting to error_report
                 if e.get('detail') and e.get('detail').startswith("Keys conflict: [('alias', 'md5:"):
                     print("Upload failure - md5 of file matches another item in database.")
-                    print(error_rep)
-                else:
-                    print(error_rep)
+                print(error_rep)
             # if error is a weird one
             else:
                 print(e)
-                # error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
                 patch += 1
@@ -999,15 +1091,26 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             # simulate patch/post
             if existing_data.get("uuid"):
                 post_json = remove_deleted(post_json)
-                e = submit_utils.patch_FDN_check(existing_data["uuid"], connection, post_json)
+                try:
+                    e = ff_utils.patch_metadata(post_json, existing_data["uuid"], key=connection.key,
+                                                add_on="check_only=True")
+                except Exception as problem:
+                    e = parse_exception(problem)
             else:
                 post_json = remove_deleted(post_json)
-                e = submit_utils.new_FDN_check(connection, sheet, post_json)
+                try:
+                    e = ff_utils.post_metadata(post_json, sheet, key=connection.key, add_on="check_only=True")
+                except Exception as problem:
+                    e = parse_exception(problem)
             # check simulation status
             if e['status'] == 'success':
                 pass
             else:
-                error_rep = error_report(e, sheet, all_aliases, connection)
+                # display the used alias with the error
+                e_id = ""
+                if post_json.get('aliases'):
+                    e_id = post_json['aliases'][0]
+                error_rep = error_report(e, sheet, all_aliases, connection, e_id)
                 if error_rep:
                     error += 1
                     print(error_rep)
@@ -1071,22 +1174,22 @@ def format_file(param, files, connection):
     template = {"bucket_name": "",
                 "workflow_argument_name": param.split('--')[-1]}
     # find bucket
-    health_page = requests.get(connection.server + 'health', auth=connection.auth, headers=connection.headers)
-    bucket_main = health_page.json().get('file_upload_bucket')
+    health_page = ff_utils.get_metadata('health', key=connection.key)
+    bucket_main = health_page.get('file_upload_bucket')
     resp = {}
     # if it is a list of files, uuid and object key are list objects
     if isinstance(files, list):
         object_key = []
         uuid = []
         for a_file in files:
-            resp = submit_utils.get_FDN(a_file, connection)
+            resp = ff_utils.get_metadata(a_file, key=connection.key, add_on="frame=object")
             object_key.append(resp['display_title'])
             uuid.append(resp['uuid'])
         template['object_key'] = object_key
         template['uuid'] = uuid
     # if it is not a list of files
     else:
-        resp = submit_utils.get_FDN(files, connection)
+        resp = ff_utils.get_metadata(files, key=connection.key, add_on="frame=object")
         template['object_key'] = resp['display_title']
         template['uuid'] = resp['uuid']
     # find the bucket from the last used response
@@ -1122,7 +1225,8 @@ def build_tibanna_json(keys, types, values, connection):
         # insert wf uuid and app_name
         if param == 'workflow_uuid':
             template['workflow_uuid'] = post_json['workflow_uuid']
-            template['app_name'] = submit_utils.get_FDN(post_json['workflow_uuid'], connection).get('app_name')
+            workflow_resp = ff_utils.get_metadata(post_json['workflow_uuid'], key=connection.key, add_on="frame=object")
+            template['app_name'] = workflow_resp.get('app_name')
         elif param.startswith('input--'):
             template["input_files"].append(format_file(param, post_json[param], connection))
         elif param.startswith('output--'):
@@ -1162,7 +1266,10 @@ def user_workflow_reader(datafile, sheet, connection):
             continue
         if post_json:
             # do the magic
-            e = submit_utils.new_FDN(connection, '/WorkflowRun/pseudo-run', post_json)
+            try:
+                e = ff_utils.post_metadata(post_json, '/WorkflowRun/pseudo-run', key=connection.key)
+            except Exception as problem:
+                e = parse_exception(problem)
             if e.get("status") == "SUCCEEDED":
                 post += 1
             else:
@@ -1178,22 +1285,28 @@ def user_workflow_reader(datafile, sheet, connection):
                   error=error, patch="-", not_patched="-"))
 
 
-def get_upload_creds(file_id, connection, file_info):  # pragma: no cover
-    url = "%s%s/upload/" % (connection.server, file_id)
-    req = requests.post(url,
-                        auth=connection.auth,
-                        headers=connection.headers,
-                        data=json.dumps({}))
-    return req.json()['@graph'][0]['upload_credentials']
+def get_upload_creds(file_id, connection):  # pragma: no cover
+    url = "%s/upload/" % (file_id)
+    req = ff_utils.post_metadata({}, url, key=connection.key)
+    return req['@graph'][0]['upload_credentials']
 
 
-def upload_file(metadata_post_response, path):  # pragma: no cover
+def upload_file_item(metadata_post_response, path):
     try:
         item = metadata_post_response['@graph'][0]
         creds = item['upload_credentials']
     except Exception as e:
         print(e)
         return
+    upload_file(creds, path)
+
+
+def upload_extra_file(ecreds, path):
+    upload_file(ecreds, path)
+
+
+def upload_file(creds, path):  # pragma: no cover
+
     ####################
     # POST file to S3
     env = os.environ.copy()  # pragma: no cover
@@ -1239,16 +1352,19 @@ def order_sorter(list_of_names):
     return ret_list
 
 
-def loadxl_cycle(patch_list, connection):
+def loadxl_cycle(patch_list, connection, alias_dict):
     for n in patch_list.keys():
         total = 0
         for entry in patch_list[n]:
             entry = delete_fields(entry, connection, entry)
             if entry != {}:
                 total = total + 1
-                e = submit_utils.patch_FDN(entry["uuid"], connection, entry)
+                try:
+                    e = ff_utils.patch_metadata(entry, entry["uuid"], key=connection.key)
+                except Exception as problem:
+                    e = parse_exception(problem)
                 if e.get("status") == "error":  # pragma: no cover
-                    error_rep = error_report(e, n.upper(), [], connection)
+                    error_rep = error_report(e, n.upper(), [k for k in alias_dict], connection)
                     if error_rep:
                         print(error_rep)
                     else:
@@ -1259,13 +1375,7 @@ def loadxl_cycle(patch_list, connection):
 
 def cabin_cross_check(connection, patchall, update, infile, remote):
     """Set of check for connection, file, dryrun, and prompt."""
-    print("Running on:       {server}".format(server=connection.server))
-    # test connection
-    if not connection.check:
-        print("CONNECTION ERROR: Please check your keys.")
-        sys.exit(1)
-        return
-
+    print("Running on:       {server}".format(server=connection.key['server']))
     # check input file (xls)
     if not os.path.isfile(infile):
         print("File {filename} not found!".format(filename=infile))
@@ -1275,9 +1385,9 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     if not remote:
         connection.prompt_for_lab_award()
 
-    print("Submitting User:  {server}".format(server=connection.email))
-    print("Submitting Lab:   {server}".format(server=connection.lab))
-    print("Submitting Award: {server}".format(server=connection.award))
+    print("Submitting User:  {}".format(connection.email))
+    print("Submitting Lab:   {}".format(connection.lab))
+    print("Submitting Award: {}".format(connection.award))
 
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:
@@ -1295,9 +1405,21 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
                 sys.exit(1)
 
 
-def get_collections(connection):
+def get_profiles(connection):
+    return ff_utils.get_metadata("/profiles/", key=connection.key, add_on="frame=object")
+
+
+def get_attachment_fields(profiles):
+    attach_field = []
+    for _, profile in profiles.items():
+        if profile.get('properties'):
+            attach_field.extend([f for f, val in profile.get('properties').items() if (
+                val.get('type') == 'object' and val.get('attachment') and f not in attach_field)])
+    return attach_field
+
+
+def get_collections(profiles):
     """Get a list of all the data_types in the system."""
-    profiles = submit_utils.get_FDN("/profiles/", connection)
     supported_collections = list(profiles.keys())
     supported_collections = [s.lower() for s in list(profiles.keys())]
     return supported_collections
@@ -1336,12 +1458,12 @@ def get_all_aliases(workbook, sheets):
 
 def main():  # pragma: no cover
     args = getArgs()
-    key = submit_utils.FDN_Key(args.keyfile, args.key)
+    key = FDN_Key(args.keyfile, args.key)
     # check if key has error
     if key.error:
         sys.exit(1)
     # establish connection and run checks
-    connection = submit_utils.FDN_Connection(key)
+    connection = FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
@@ -1350,7 +1472,9 @@ def main():  # pragma: no cover
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
     # get me a list of all the data_types in the system
-    supported_collections = get_collections(connection)
+    profiles = get_profiles(connection)
+    supported_collections = get_collections(profiles)
+    attachment_fields = get_attachment_fields(profiles)
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
@@ -1365,10 +1489,10 @@ def main():  # pragma: no cover
     for n in sorted_names:
         if n.lower() in supported_collections:
             excel_reader(args.infile, n, args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower() == "experimentmic_path":
             excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate)
+                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(args.infile, n, connection)
@@ -1376,7 +1500,7 @@ def main():  # pragma: no cover
                 print('user workflow sheets will only be processed with the --update argument')
         else:
             print("Sheet name '{name}' not part of supported object types!".format(name=n))
-    loadxl_cycle(dict_loadxl, connection)
+    loadxl_cycle(dict_loadxl, connection, aliases_by_type)
     # if any item left in the following dictionaries
     # it means that this items are not posted/patched
     # because they are not on the exp_set file_set sheets
