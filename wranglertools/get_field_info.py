@@ -402,61 +402,39 @@ def main():  # pragma: no cover
 
     lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in args.type]
     if lowercase_types == ['all']:
-        args.type = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
+        sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
     else:
-        if 'hic' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "biosource", "biosample", "biosamplecellculture",
-                "image", "filefastq", "experimenthic", "experimentsetreplicate",
-                ]
-        if 'chipseq' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "target", "antibody", "biosource", "biosample",
-                "biosamplecellculture", "image", "filefastq", "experimentseq", "experimentsetreplicate",
-                ]
-        if 'repliseq' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "biosource", "biosample", "biosamplecellculture",
-                "image", "filefastq", "experimentrepliseq", "experimentsetreplicate", "experimentset",
-                ]
-        if 'atacseq' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "enzyme", "biosource", "biosample", "biosamplecellculture",
-                "image", "filefastq", "experimentatacseq", "experimentsetreplicate",
-                ]
-        if 'damid' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "target", "biosource", "biosample", "biosamplecellculture",
-                "image", "filefastq", "fileprocessed", "experimentdamid", "experimentsetreplicate",
-                ]
-        if 'chiapet' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "target", "biosource", "biosample", "biosamplecellculture",
-                "image", "filefastq", "experimentchiapet", "experimentsetreplicate",
-                ]
-        if 'capturec' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "genomicregion", "target", "biosource",
-                "biosample", "biosamplecellculture", "image", "filefastq",
-                "filereference", "experimentcapturec", "experimentsetreplicate",
-                ]
-        if 'fish' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "genomicregion", "target", "antibody",
-                "biosource", "biosample", "biosamplecellculture", "image",
-                "microscopesettinga1", "filemicroscopy", "filereference", "fileprocessed",
-                "imagingpath", "experimentmic", "experimentsetreplicate",
-                ]
-        if 'spt' in lowercase_types:
-            lowercase_types += [
-                "protocol", "publication", "target", "modification", "biosource",
-                "biosample", "biosamplecellculture", "image", "microscopesettinga2",
-                "fileprocessed", "imagingpath", "experimentmic", "experimentsetreplicate",
-                ]
-        args.type = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
+        presets = {
+            'hic': ["image", "filefastq", "experimenthic"],
+            'chipseq': ["target", "antibody", "filefastq", "experimentseq"],
+            'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
+            'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
+            'damid': ["target", "filefastq", "fileprocessed", "experimentdamid"],
+            'chiapet': ["target", "filefastq", "experimentchiapet"],
+            'capturec': ["genomicregion", "target", "filefastq", "filereference", "experimentcapturec"],
+            'fish': [
+                "genomicregion", "target", "antibody", "microscopesettinga1", "filemicroscopy",
+                "filereference", "fileprocessed", "imagingpath", "experimentmic",
+            ],
+            'spt': [
+                "target", "modification", "microscopesettinga2",
+                "fileprocessed", "imagingpath", "experimentmic",
+            ]}
+        for key in presets.keys():
+            if key in lowercase_types:
+                lowercase_types.remove(key)
+                lowercase_types += presets[key]
+                lowercase_types += [
+                    'protocol', 'publication', 'biosource', 'biosample',
+                    'biosamplecellculture', 'image', 'experimentsetreplicate'
+                    ]
+        sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
+        # no_schema = [item for item in lowercase_types if item not in [t.lower() for t in args.type]]
+        for name in args.type:
+            if name.lower() in lowercase_types and name.lower() not in [sheetname.lower() for sheetname in sheets]:
+                print('No schema found for type {} -- skipping'.format(name))
 
-
-    fields = get_uploadable_fields(connection, args.type, args.descriptions, args.comments, args.enums)
+    fields = get_uploadable_fields(connection, sheets, args.descriptions, args.comments, args.enums)
 
     if args.debug:
         print("retrieved fields as")
