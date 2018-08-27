@@ -227,21 +227,21 @@ fetch_items = {
     "Biosource": "biosource",
     "Publication": "publication",
     "Vendor": "vendor"
-    }
+}
 
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualFly", "IndividualHuman", "Vendor", "Enzyme",
+    "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
     "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
-    "Antibody", "Modification",  "Image", "Biosource", "BiosampleCellCulture",
-    "Biosample",  "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
+    "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
+    "Biosample", "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
     "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm", "FileFormat"
-    ]
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
+]
 
 
 def get_field_type(field):
