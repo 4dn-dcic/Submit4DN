@@ -391,8 +391,8 @@ def create_xls(all_fields, filename):
 
 
 def get_sheet_names(types_list):
-    lowercase_types = [item.lower().replace('-', '').replace('_', '') if
-                       item != 'ExperimentMic_Path' for item in types_list]
+    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list if
+                       item != 'ExperimentMic_Path']
     if lowercase_types == ['all']:
         sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
     else:
