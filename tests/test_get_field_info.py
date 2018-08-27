@@ -349,15 +349,3 @@ def test_create_xls_experiment_set(connection_mock, mocker, returned_experiment_
         os.remove(xls_file)
     except OSError:
         pass
-
-
-def test_get_sheet_names(capfd):
-    input_list = ['hic', 'experi-ment_capture-c', 'TreatmentChemical', 'Biosample']
-    result = gfi.get_sheet_names(input_list)
-    out, err = capfd.readouterr()
-    assert result == [
-        'Protocol', 'Publication', 'Image', 'Biosource', 'BiosampleCellCulture',
-        'Biosample', 'FileFastq', 'ExperimentHiC', 'ExperimentCaptureC', 'ExperimentSetReplicate'
-        ]
-    assert len(result) == len(list(set(result)))
-    assert 'No schema found for type TreatmentChemical' in out

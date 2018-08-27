@@ -19,6 +19,7 @@ EPILOG = '''
         --comments       adds the comments together with enums (by default False)
         --writexls       creates the xls file (by default True)
         --outfile        change the default file name "fields.xls" to a specified one
+        --order          create an ordered and filtered version of the excel (by default True)
 
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
@@ -26,11 +27,6 @@ EPILOG = '''
     To get multiple objects use the '--type' argument multiple times
 
             %(prog)s --type Biosample --type Biosource
-
-    The '--type' argument can also be used with a few custom options to generate multiple
-    sheets, namely 'all', 'HiC', 'Chip-Seq', 'Repliseq', or 'FISH'
-
-            %(prog)s --type HiC
 
     to include comments (useful tips) for all types use the appropriate flag at the end
 
@@ -397,52 +393,24 @@ def create_xls(all_fields, filename):
     wb.save(filename)
 
 
-def get_sheet_names(types_list):
-    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list if
-                       item != 'ExperimentMic_Path']
-    if lowercase_types == ['all']:
-        sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
-    else:
-        presets = {
-            'hic': ["image", "filefastq", "experimenthic"],
-            'chipseq': ["target", "antibody", "filefastq", "experimentseq"],
-            'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
-            'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
-            'damid': ["target", "filefastq", "fileprocessed", "experimentdamid"],
-            'chiapet': ["target", "filefastq", "experimentchiapet"],
-            'capturec': ["genomicregion", "target", "filefastq", "filereference", "experimentcapturec"],
-            'fish': [
-                "genomicregion", "target", "antibody", "microscopesettinga1", "filemicroscopy",
-                "filereference", "fileprocessed", "imagingpath", "experimentmic",
-            ],
-            'spt': [
-                "target", "modification", "microscopesettinga2",
-                "fileprocessed", "imagingpath", "experimentmic",
-            ]}
-        for key in presets.keys():
-            if key in lowercase_types:
-                lowercase_types.remove(key)
-                lowercase_types += presets[key]
-                lowercase_types += [
-                    'protocol', 'publication', 'biosource', 'biosample',
-                    'biosamplecellculture', 'image', 'experimentsetreplicate'
-                    ]
-        sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
-        for name in types_list:
-            modified_name = name.lower().replace('-', '').replace('_', '')
-            if modified_name in lowercase_types and modified_name not in [sheetname.lower() for sheetname in sheets]:
-                print('No schema found for type {} -- skipping'.format(name))
-    return sheets
-
-
 def main():  # pragma: no cover
     args = getArgs()
     key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
     connection = FDN_Connection(key)
-    sheets = get_sheet_names(args.type)
-    fields = get_uploadable_fields(connection, sheets, args.descriptions, args.comments, args.enums)
+    if args.type == ['all']:
+        excluded_types = ['ExperimentMic_Path', 'OntologyTerm']
+        if not connection.admin:
+            excluded_types.extend([
+                'User', 'Lab', 'Award', 'Organism', 'FileFormat',
+                'FileSet', 'WorkflowRunSbg', 'WorkflowRunAwsem'
+            ])
+        args.type = [sheet for sheet in sheet_order if sheet not in excluded_types]
+    fields = get_uploadable_fields(connection, args.type,
+                                   args.descriptions,
+                                   args.comments,
+                                   args.enums)
 
     if args.debug:
         print("retrieved fields as")
