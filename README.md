@@ -72,7 +72,12 @@ It will accept the following parameters:
     --comments       adds the comments together with enums (by default False)
     --writexls       creates the xls file (by default True)
     --outfile        change the default file name "fields.xls" to a specified one
-    --order          create an ordered and filtered version of the excel (by default True)
+
+The --type argument also has a few custom options available: `--type all` generates a workbook
+with all sheets, while options such as `--type HiC`, `--type ChIP-seq`, or `--type FISH` will
+generate a workbook with sheets relevant to that experiment type. The custom '--type' options
+include: all, HiC, ChIP-seq, Repliseq, CaptureC, Atac-seq, DamID, ChIA-PET, FISH, and SPT.
+These presets can be combined with other types as well.
 
 
 Examples generating a single sheet:
@@ -80,34 +85,39 @@ Examples generating a single sheet:
 get_field_info --type Biosample
 get_field_info --type Biosample --comments
 get_field_info --type Biosample --comments --outfile biosample.xls
-
 ```
 
 Example list of sheets:
 ~~~~
-get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
-
+get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile MetadataSheets.xls
 ~~~~
 
 Example list of sheets: (using python scripts)
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile AllItems.xls
-
+python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile MetadataSheets.xls
 ~~~~
 
 Example list of sheets: (Experiment seq)
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type D ocument --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
-
+python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
 ~~~~
 
 Example list of sheets: (Experiment seq simple)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type Protocol --type BiosampleCellCulture --type Biosource --type Biosample --type FileFastq --type ExperimentSeq --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_simple.xls
-
 ~~~~
 
+Examples for list of sheets using a preset option:
+~~~~
+python3 -m wranglertools.get_field_info --type HiC --comments --outfile exp_hic_generic.xls
+python3 -m wranglertools.get_field_info --type ChIP-seq --comments --outfile exp_chipseq_generic.xls
+python3 -m wranglertools.get_field_info --type FISH --comments --outfile exp_fish_generic.xls
+~~~~
 
+Examples for list of sheets using a preset option, as well as additional sheets:
+~~~~
+python3 -m wranglertools.get_field_info --type HiC --type ChIP-seq --type TreatmentAgent --type Modification --comments --outfile exp_hic_plus.xls
+~~~~
 
 
 ## Data submission
@@ -170,6 +180,3 @@ For a better testing experienece that also check to ensure sufficient coverage a
 ```
 
 This will first run linters, if linters pass, tests will be run and if tests achieve specified minimum coverage (89% as of time of writting) pass the tests.
-
-
-

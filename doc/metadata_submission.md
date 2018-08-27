@@ -278,13 +278,13 @@ Your script will need to use an access key and secret that you can obtain by fol
 *Test Server:* <https://testportal.4dnucleome.org/>
 *Production Server:* <https://data.4dnucleome.org/>
 
-You can refer to the ```FDN_key``` and ```FDN_connection``` classes in [the ```fdnDCIC.py``` library](https://github.com/4dn-dcic/Submit4DN/blob/master/wranglertools/fdnDCIC.py) in Submit4DN for an example of how to generate the necessary information that will be passed to the server with each request.
+You can refer to the ```FDN_key``` and ```FDN_connection``` classes in [the ```get_field_info.py``` library](https://github.com/4dn-dcic/Submit4DN/blob/master/wranglertools/get_field_info.py) in Submit4DN for an example of how to generate the necessary information that will be passed to the server with each request.
 
 ###Identifying specific items
 Your script will need to add a uniquely identifying token to the Base URL in order to GET, POST or PATCH metadata for that item. IDs that can be used include: uuids, accessions, certain type specific identifiers and aliases.  See the sections on ['Using Aliases' and 'Referencing existing items'](./excel_submission.md#using-aliases) for the types of identifiers that can be used in your requests.
 
 ###Ordering of POST requests
-Because in many cases fields in one Item may refer to another Item eg. the ```biosample``` field in the ```experiment_hi_c``` schema it is necessary to POST the referenced item prior to POSTing the item that refers to it.  A sensible POSTing order is specified in the ```sheet_order``` array located around line 144 in the [```fdnDCIC.py```](https://github.com/4dn-dcic/Submit4DN/blob/master/wranglertools/fdnDCIC.py) library.
+Because in many cases fields in one Item may refer to another Item eg. the ```biosample``` field in the ```experiment_hi_c``` schema it is necessary to POST the referenced item prior to POSTing the item that refers to it.  A sensible POSTing order is specified in the ```sheet_order``` array located around line 228 in the [```get_field_info.py``` library](https://github.com/4dn-dcic/Submit4DN/blob/master/wranglertools/get_field_info.py) library.
 
 ###json formatting
 The most important component of your submission is the proper formatting of the data into json so it will map correctly onto the 4DN metadata schemas.  The details of the schemas for all object types in the database can be viewed at <https://data.4dnucleome.org/profiles/>.  Individual schemas can be viewed and/or retrieved via GET by appending the schema file name to the above URL (eg. for the Hi-C experiment schema <https://data.4dnucleome.org/profiles/experiment_hi_c.json>). For a listing of all schema files and associated resource names see [this table](schema_info.md), which is up to date with the current schemas in the database.
