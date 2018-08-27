@@ -73,9 +73,11 @@ It will accept the following parameters:
     --writexls       creates the xls file (by default True)
     --outfile        change the default file name "fields.xls" to a specified one
 
-The --type argument also has a few custom options available: '--type all' generates a workbook
-with all sheets, while '--type HiC', '--type Chip-Seq', '--type Repliseq', and '--type FISH'
-will generate a workbook with all sheets except those irrelevant to that experiment type.
+The --type argument also has a few custom options available: `--type all` generates a workbook
+with all sheets, while options such as `--type HiC`, `--type ChIP-seq`, or `--type FISH` will
+generate a workbook with sheets relevant to that experiment type. The custom '--type' options
+include: all, HiC, ChIP-seq, Repliseq, CaptureC, Atac-seq, DamID, ChIA-PET, FISH, and SPT.
+These presets can be combined with other types as well.
 
 
 Examples generating a single sheet:
@@ -113,13 +115,16 @@ python3 -m wranglertools.get_field_info --type Publication --type Protocol --typ
 Examples for list of sheets using a preset option:
 ~~~~
 python3 -m wranglertools.get_field_info --type HiC --comments --outfile exp_hic_generic.xls
-python3 -m wranglertools.get_field_info --type Chip-Seq --comments --outfile exp_seq_generic.xls
+python3 -m wranglertools.get_field_info --type ChIP-seq --comments --outfile exp_seq_generic.xls
 python3 -m wranglertools.get_field_info --type FISH --comments --outfile exp_fish_generic.xls
-python3 -m wranglertools.get_field_info --type Repliseq --comments --outfile exp_repliseq_generic.xls
 
 ~~~~
 
+Examples for list of sheets using a preset option, as well as additional sheets:
+~~~~
+python3 -m wranglertools.get_field_info --type HiC --type ChIP-seq --type TreatmentAgent --type Modification --comments --outfile exp_hic_plus.xls
 
+~~~~
 
 
 ## Data submission
