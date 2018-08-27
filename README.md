@@ -85,31 +85,26 @@ Examples generating a single sheet:
 get_field_info --type Biosample
 get_field_info --type Biosample --comments
 get_field_info --type Biosample --comments --outfile biosample.xls
-
 ```
 
 Example list of sheets:
 ~~~~
 get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
-
 ~~~~
 
 Example list of sheets: (using python scripts)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile AllItems.xls
-
 ~~~~
 
 Example list of sheets: (Experiment seq)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type D ocument --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
-
 ~~~~
 
 Example list of sheets: (Experiment seq simple)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type Protocol --type BiosampleCellCulture --type Biosource --type Biosample --type FileFastq --type ExperimentSeq --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_simple.xls
-
 ~~~~
 
 Examples for list of sheets using a preset option:
@@ -117,13 +112,11 @@ Examples for list of sheets using a preset option:
 python3 -m wranglertools.get_field_info --type HiC --comments --outfile exp_hic_generic.xls
 python3 -m wranglertools.get_field_info --type ChIP-seq --comments --outfile exp_seq_generic.xls
 python3 -m wranglertools.get_field_info --type FISH --comments --outfile exp_fish_generic.xls
-
 ~~~~
 
 Examples for list of sheets using a preset option, as well as additional sheets:
 ~~~~
 python3 -m wranglertools.get_field_info --type HiC --type ChIP-seq --type TreatmentAgent --type Modification --comments --outfile exp_hic_plus.xls
-
 ~~~~
 
 
