@@ -393,14 +393,8 @@ def create_xls(all_fields, filename):
     wb.save(filename)
 
 
-def main():  # pragma: no cover
-    args = getArgs()
-    key = FDN_Key(args.keyfile, args.key)
-    if key.error:
-        sys.exit(1)
-    connection = FDN_Connection(key)
-
-    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in args.type]
+def get_sheet_names(types_list):
+    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list]
     if lowercase_types == ['all']:
         sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
     else:
@@ -430,11 +424,56 @@ def main():  # pragma: no cover
                     ]
         sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
         # no_schema = [item for item in lowercase_types if item not in [t.lower() for t in args.type]]
-        for name in args.type:
-            if name.lower() in lowercase_types and name.lower() not in [sheetname.lower() for sheetname in sheets]:
+        for name in types_list:
+            modified_name = name.lower().replace('-', '').replace('_', '')
+            if modified_name in lowercase_types and modified_name not in [sheetname.lower() for sheetname in sheets]:
                 print('No schema found for type {} -- skipping'.format(name))
+    return sheets
 
-    fields = get_uploadable_fields(connection, sheets, args.descriptions, args.comments, args.enums)
+
+def main():  # pragma: no cover
+    args = getArgs()
+    key = FDN_Key(args.keyfile, args.key)
+    if key.error:
+        sys.exit(1)
+    connection = FDN_Connection(key)
+
+    # lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in args.type]
+    # if lowercase_types == ['all']:
+    #     sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
+    # else:
+    #     presets = {
+    #         'hic': ["image", "filefastq", "experimenthic"],
+    #         'chipseq': ["target", "antibody", "filefastq", "experimentseq"],
+    #         'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
+    #         'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
+    #         'damid': ["target", "filefastq", "fileprocessed", "experimentdamid"],
+    #         'chiapet': ["target", "filefastq", "experimentchiapet"],
+    #         'capturec': ["genomicregion", "target", "filefastq", "filereference", "experimentcapturec"],
+    #         'fish': [
+    #             "genomicregion", "target", "antibody", "microscopesettinga1", "filemicroscopy",
+    #             "filereference", "fileprocessed", "imagingpath", "experimentmic",
+    #         ],
+    #         'spt': [
+    #             "target", "modification", "microscopesettinga2",
+    #             "fileprocessed", "imagingpath", "experimentmic",
+    #         ]}
+    #     for key in presets.keys():
+    #         if key in lowercase_types:
+    #             lowercase_types.remove(key)
+    #             lowercase_types += presets[key]
+    #             lowercase_types += [
+    #                 'protocol', 'publication', 'biosource', 'biosample',
+    #                 'biosamplecellculture', 'image', 'experimentsetreplicate'
+    #                 ]
+    #     sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
+    #     # no_schema = [item for item in lowercase_types if item not in [t.lower() for t in args.type]]
+    #     for name in args.type:
+    #         if name.lower() in lowercase_types and name.lower() not in [sheetname.lower() for sheetname in sheets]:
+    #             print('No schema found for type {} -- skipping'.format(name))
+    sheets = get_sheet_names(args.type)
+    fields = get_uploadable_fields(connection, sheets,
+                                   args.descriptions, args.comments, args.enums)
 
     if args.debug:
         print("retrieved fields as")
