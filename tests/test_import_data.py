@@ -1222,7 +1222,8 @@ def test_populate_post_json_extrafile_2_files_1_filename(
                               ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
                                 'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
                                 'md5sum': 'baimd5'}, ['/file-formats/bai/']),
-                              ({'file_format': '/file-formats/pairs_px2/'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
+                              ({'file_format': '/file-formats/pairs_px2/'},
+                               ['/file-formats/bai/', '/file-formats/pairs_px2/'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed', [])
