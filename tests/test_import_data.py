@@ -1031,7 +1031,7 @@ def test_check_extra_file_meta_w_format_filename_new_file(mocker):
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
             assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-            assert ff in seen
+            assert '/file-formats/' + ff + '/' in seen
 
 
 def test_check_extra_file_meta_w_filename_seen_format(mocker):
@@ -1048,7 +1048,7 @@ def test_check_extra_file_meta_w_filename_seen_format(mocker):
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
             assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-            assert ff in seen
+            assert '/file-formats/' + ff + '/' in seen
 
 
 def test_check_extra_file_meta_malformed_data(capsys):
@@ -1081,7 +1081,7 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
             assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-            assert ff in seen
+            assert '/file-formats/' + ff + '/' in seen
             assert 'An extrafile with pairs_px2 format exists - will attempt to patch' in out
 
 
@@ -1094,7 +1094,7 @@ def test_check_extra_file_meta_w_no_filename():
     assert 'md5sum' not in result
     assert 'filesize' not in result
     assert 'subitted_filename' not in result
-    assert ff in seen
+    assert '/file-formats/' + ff + '/' in seen
 
 
 def test_check_extra_file_meta_w_md5_and_filesize():
@@ -1109,7 +1109,7 @@ def test_check_extra_file_meta_w_md5_and_filesize():
     assert result['md5sum'] == md5sum
     assert result['filesize'] == fsize
     assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-    assert ff in seen
+    assert '/file-formats/' + ff + '/' in seen
 
 
 @pytest.fixture
