@@ -1412,7 +1412,7 @@ def get_collections(profiles):
     return supported_collections
 
 
-def get_all_aliases(workbook, sheets, novalidate=False):
+def get_all_aliases(workbook, sheets):  # , novalidate=False):
     """Extracts all aliases existing in the workbook to later check object connections
        Checks for same aliases that are used for different items and gives warning."""
     aliases_by_type = {}
@@ -1465,7 +1465,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-    aliases_by_type = get_all_aliases(args.infile, sorted_names, args.novalidate)
+    aliases_by_type = get_all_aliases(args.infile, sorted_names)  # , args.novalidate)
     # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
