@@ -1026,7 +1026,7 @@ def test_check_extra_file_meta_w_format_filename_new_file(mocker):
     with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
         with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
             result, seen = imp.check_extra_file_meta(data, [], [])
-            assert result['file_format'] == ff
+            assert result['file_format'] == '/file-formats/' + ff + '/'
             assert result['filename'] == fn
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
@@ -1043,7 +1043,7 @@ def test_check_extra_file_meta_w_filename_seen_format(mocker):
     with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
         with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
             result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
-            assert result['file_format'] == ff
+            assert result['file_format'] == '/file-formats/' + ff + '/'
             assert result['filename'] == fn
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
@@ -1076,7 +1076,7 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
         with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
             result, seen = imp.check_extra_file_meta(data, [], ['pairs_px2'])
             out = capsys.readouterr()[0]
-            assert result['file_format'] == ff
+            assert result['file_format'] == '/file-formats/' + ff + '/'
             assert result['filename'] == fn
             assert result['md5sum'] == md5sum
             assert result['filesize'] == fsize
@@ -1089,7 +1089,7 @@ def test_check_extra_file_meta_w_no_filename():
     ff = 'pairs_px2'
     data = {'file_format': ff}
     result, seen = imp.check_extra_file_meta(data, [], [])
-    assert result['file_format'] == ff
+    assert result['file_format'] == '/file-formats/' + ff + '/'
     assert 'filename' not in result
     assert 'md5sum' not in result
     assert 'filesize' not in result
@@ -1104,7 +1104,7 @@ def test_check_extra_file_meta_w_md5_and_filesize():
     fsize = 20
     data = {'file_format': ff, 'filename': fn, 'md5sum': md5sum, 'filesize': fsize}
     result, seen = imp.check_extra_file_meta(data, [], [])
-    assert result['file_format'] == ff
+    assert result['file_format'] == '/file-formats/' + ff + '/'
     assert result['filename'] == fn
     assert result['md5sum'] == md5sum
     assert result['filesize'] == fsize
