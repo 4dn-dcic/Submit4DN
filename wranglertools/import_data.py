@@ -539,6 +539,9 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
         if not ef_format:
             return ef_info, seen_formats
 
+    # convert format to @id
+    ef_format = '/file-formats/' + ef_format + '/'
+    ef_info['file_format'] = ef_format
     if ef_format in existing_formats:
         print("An extrafile with %s format exists - will attempt to patch" % ef_format)
 
@@ -561,7 +564,7 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
         if post_json.get(af):
             attach = attachment(post_json[af])
             post_json[af] = attach
-
+    # import pdb; pdb.set_trace()
     existing_data = get_existing(post_json, connection)
     # Combine aliases
     if post_json.get('aliases') != ['*delete*']:
@@ -1077,6 +1080,7 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
         # dryrun option
         if dryrun:
+            # import pdb; pdb.set_trace()
             if skip_dryrun:
                 continue
             # simulate patch/post
