@@ -1074,7 +1074,7 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
     data = {'file_format': ff, 'filename': fn}
     with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
         with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
-            result, seen = imp.check_extra_file_meta(data, [], ['pairs_px2'])
+            result, seen = imp.check_extra_file_meta(data, [], ['/file-formats/pairs_px2/'])
             out = capsys.readouterr()[0]
             assert result['file_format'] == '/file-formats/' + ff + '/'
             assert result['filename'] == fn
@@ -1082,7 +1082,7 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
             assert result['filesize'] == fsize
             assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
             assert '/file-formats/' + ff + '/' in seen
-            assert 'An extrafile with pairs_px2 format exists - will attempt to patch' in out
+            assert 'An extrafile with /file-formats/pairs_px2/ format exists - will attempt to patch' in out
 
 
 def test_check_extra_file_meta_w_no_filename():
@@ -1139,12 +1139,12 @@ def test_populate_post_json_extrafile_2_files_2_filenames(
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           side_effect=[
-                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
                                 'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['bai']),
-                              ({'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2',
+                                'md5sum': 'baimd5'}, ['/file-formats/bai/']),
+                              ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
                                 'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
-                                'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
+                                'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed', [])
@@ -1154,7 +1154,7 @@ def test_populate_post_json_extrafile_2_files_2_filenames(
                 assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
             for ef in pjson['extra_files']:
                 assert 'file_format' in ef
-                assert ef['file_format'] in ['bai', 'pairs_px2']
+                assert ef['file_format'] in ['/file-formats/bai/', '/file-formats/pairs_px2/']
                 assert 'filename' not in ef
 
 
@@ -1163,19 +1163,19 @@ def test_populate_post_json_extrafile_w_existing(
     with mocker.patch('wranglertools.import_data.get_existing',
                       return_value={'uuid': 'pfuuid',
                                     'extra_files': [
-                                        {'file_format': 'pairs_px2', 'filesize': 30,
+                                        {'file_format': '/file-formats/pairs_px2/', 'filesize': 30,
                                          'submitted_filename': 'test2_pairs_index.pairs.gz.px2',
                                          'md5sum': 'px22md5', 'another_field': 'value'}
                                     ]}):
 
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           side_effect=[
-                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
                                 'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
                                 'md5sum': 'baimd5'}, ['bai']),
-                              ({'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2',
+                              ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
                                 'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
-                                'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
+                                'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed', [])
@@ -1184,7 +1184,7 @@ def test_populate_post_json_extrafile_w_existing(
             for fp in efiles.values():
                 assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
             for ef in pjson['extra_files']:
-                if ef['file_format'] == 'pairs_px2':
+                if ef['file_format'] == '/file-formats/pairs_px2/':
                     assert not ef['submitted_filename'].startswith('test2')
                     assert 'another_field' not in ef
                 assert 'filename' not in ef
@@ -1196,12 +1196,12 @@ def test_populate_post_json_extrafile_w_existing_no_extra_file(
                       return_value={'uuid': 'pfuuid'}):
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           side_effect=[
-                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
                                 'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['bai']),
-                              ({'file_format': 'pairs_px2', 'filename': '/test_pairs_index.pairs.gz.px2',
+                                'md5sum': 'baimd5'}, ['/file-formats/bai/']),
+                              ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
                                 'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
-                                'md5sum': 'px2md5'}, ['bai', 'pairs_px2'])
+                                'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed', [])
@@ -1219,43 +1219,43 @@ def test_populate_post_json_extrafile_2_files_1_filename(
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           side_effect=[
-                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
                                 'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['bai']),
-                              ({'file_format': 'pairs_px2'}, ['bai', 'pairs_px2'])
+                                'md5sum': 'baimd5'}, ['/file-formats/bai/']),
+                              ({'file_format': '/file-formats/pairs_px2/'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 1
-            assert efiles['bai'] == '/test_bai.bam.bai'
+            assert efiles['/file-formats/bai/'] == '/test_bai.bam.bai'
             for ef in pjson['extra_files']:
                 assert 'file_format' in ef
-                assert ef['file_format'] in ['bai', 'pairs_px2']
+                assert ef['file_format'] in ['/file-formats/bai/', '/file-formats/pairs_px2/']
                 assert 'filename' not in ef
 
 
 def test_populate_post_json_extrafile_2_files_same_format(
         mocker, connection_mock, post_json_w_extf):
-    post_json_w_extf['extra_files'][1] = {'file_format': 'bai', 'filename': '/test_bai.bam.bai'}
+    post_json_w_extf['extra_files'][1] = {'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai'}
     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
         with mocker.patch('wranglertools.import_data.check_extra_file_meta',
                           side_effect=[
-                              ({'file_format': 'bai', 'filename': '/test_bai.bam.bai',
+                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
                                 'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'test_baimd5'}, ['bai']),
-                              ({'file_format': 'bai', 'filename': '/test2_bai.bam.bai',
+                                'md5sum': 'test_baimd5'}, ['/file-formats/bai/']),
+                              ({'file_format': '/file-formats/bai/', 'filename': '/test2_bai.bam.bai',
                                 'submitted_filename': 'test2_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'test2_baimd5'}, ['bai', 'bai'])
+                                'md5sum': 'test2_baimd5'}, ['/file-formats/bai/', '/file-formats/bai/'])
                           ]):
             pjson, _, _, efiles = imp.populate_post_json(
                 post_json_w_extf, connection_mock, 'FileProcessed', [])
             assert len(pjson['extra_files']) == 2
             assert len(efiles) == 1
-            assert efiles['bai'] == '/test2_bai.bam.bai'
+            assert efiles['/file-formats/bai/'] == '/test2_bai.bam.bai'
             for ef in pjson['extra_files']:
                 assert 'file_format' in ef
-                assert ef['file_format'] == 'bai'
+                assert ef['file_format'] == '/file-formats/bai/'
                 assert 'filename' not in ef
 
 
