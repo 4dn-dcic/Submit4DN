@@ -269,21 +269,6 @@ def test_error_conflict_report(connection_mock):
     assert rep.strip() == message.strip()
 
 
-def test_error_access_denied_report(connection_mock):
-    # There are 3 errors, 2 of them are legit, one needs to be checked afains the all aliases list, and excluded
-    err_dict = {'code': 403,
-                'status': 'error',
-                'description': 'Access was denied to this resource.',
-                'title': 'Forbidden',
-                '@type': ['HTTPForbidden', 'Error'],
-                'detail': 'Unauthorized: item_edit failed permission check'}
-    rep = imp.error_report(err_dict, "Vendor", [], connection_mock, 'dcic:released vendor')
-    message = '''
-ERROR vendor                  dcic:released vendor: Access was denied to this resource.
-'''
-    assert rep.strip() == message.strip()
-
-
 def test_fix_attribution(connection_mock):
     post_json = {'field': 'value', 'field2': 'value2'}
     result_json = imp.fix_attribution('some_sheet', post_json, connection_mock)
