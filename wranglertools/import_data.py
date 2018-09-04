@@ -805,8 +805,13 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_files_creds')
         for fformat, filepath in extrafiles.items():
+            try:
+                file_format = ff_utils.get_metadata(fformat, key=connection.key)
+                ff_uuid = file_format.get('uuid')
+            except:
+                raise "Can't find file_format item for %s" % fformat
             for ecred in extcreds:
-                if fformat == ecred.get('file_format'):
+                if ff_uuid == ecred.get('file_format'):
                     upload_creds = ecred.get('upload_credentials')
                     upload_extra_file(upload_creds, filepath)
     return e
