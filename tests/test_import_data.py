@@ -1304,7 +1304,7 @@ def pf_w_extfiles_resp():
                             'SecretAccessKey': 'zSTZoUi7vDlGxduU02InZg7w0FKMsA5vFTorqfN2',
                             'AccessKeyId': 'ASIAZLS5EJLSCJCJPQPJ'
                         },
-                        'file_format': 'pairs_px2',
+                        'file_format': 'd13d06cf-218e-4f61-aaf0-91f226348b2c',
                         'submitted_filename': 'blah.pairs.gz.px2',
                         'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.pairs.gz.px2',
                         'filesize': 311778, 'md5sum': '557d8f3fdb93796fa0ef3fc2fac69511'
@@ -1323,7 +1323,7 @@ def pf_w_extfiles_resp():
                             'SecretAccessKey': '/lJJMbUofkQjMRela2rKBf8xno4EFtpTgwGKKz81',
                             'AccessKeyId': 'ASIAZLS5EJLSKABCICVE'
                         },
-                        'file_format': 'pairsam_px2',
+                        'file_format': 'd13d06cf-218e-6f61-aaf0-91f226248b2c',
                         'submitted_filename': 'coder.sam.pairs.gz.px2',
                         'href': '/files-processed/4DNFILBPYFFN/@@download/4DNFILBPYFFN.sam.pairs.gz.px2',
                         'filesize': 1004496, 'md5sum': '03072675bd71c1229733b6880f64cfd4'
@@ -1358,9 +1358,12 @@ def test_update_item_extrafiles(mocker, connection_mock, pf_w_extfiles_resp):
     extrafiles = {'pairs_px2': '/test/file/test_pairs.gz.px2', 'pairsam_px2': '/test/file/testfile.pairs.sam.gz'}
     with mocker.patch('wranglertools.import_data.ff_utils.post_metadata', return_value=pf_w_extfiles_resp):
         with mocker.patch('wranglertools.import_data.upload_extra_file', side_effect=[None, None]):
-            resp = imp.update_item('POST', False, {}, None, extrafiles, connection_mock, 'FileProcessed')
-            assert 'result' in resp['@type']
-            assert resp['status'] == 'success'
+            with mocker.patch('wranglertools.import_data.ff_utils.get_metadata',
+                              side_effect=[{'uuid': 'd13d06cf-218e-4f61-aaf0-91f226348b2c'},
+                                           {'uuid': 'd13d06cf-218e-6f61-aaf0-91f226248b2c'}]):
+                resp = imp.update_item('POST', False, {}, None, extrafiles, connection_mock, 'FileProcessed')
+                assert 'result' in resp['@type']
+                assert resp['status'] == 'success'
 
 
 def test_get_profiles(mocker, mock_profiles, connection_mock):
