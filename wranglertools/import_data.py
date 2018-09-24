@@ -113,7 +113,9 @@ def getArgs():  # pragma: no cover
 list_of_loadxl_fields = [
     ['Document', ['references']],
     ['User', ['lab', 'submits_for']],
+    ['Biosample', ['biosample_relation']],
     ['Experiment', ['experiment_relation']],
+    ['ExperimentMic', ['experiment_relation']],
     ['ExperimentHiC', ['experiment_relation']],
     ['ExperimentSeq', ['experiment_relation']],
     ['ExperimentTsaseq', ['experiment_relation']],
