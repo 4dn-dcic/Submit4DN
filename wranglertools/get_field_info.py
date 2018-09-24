@@ -243,6 +243,9 @@ sheet_order = [
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
 ]
 
+file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
+file_types.remove('FileFormat')
+
 
 def get_field_type(field):
     field_type = field.get('type', '')
@@ -315,26 +318,24 @@ def build_field_list(properties, required_fields=None, include_description=False
 
 
 class FDN_Schema(object):
-    def __init__(self, connection, uri):
-        self.uri = uri
-        self.connection = connection
+    def __init__(self, connection, schema_name):
+        uri = '/profiles/' + schema_name + '.json'
         response = ff_utils.get_metadata(uri, key=connection.key, add_on="frame=object")
-        self.properties = response['properties']
         self.required = None
         if 'required' in response:
             self.required = response['required']
-        self.file_format_file_extension = None
-        if 'file_format_file_extension' in response:
-            self.file_format_file_extension = response['file_format_file_extension']
+        if schema_name in file_types and response['properties'].get('file_format'):
+            q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
+            formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
+            response['properties']['file_format']['enum'] = formats
+        self.properties = response['properties']
 
 
 def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
     for name in types:
-        schema_name = name + '.json'
-        uri = '/profiles/' + schema_name
-        schema_grabber = FDN_Schema(connection, uri)
+        schema_grabber = FDN_Schema(connection, name)
         required_fields = schema_grabber.required
         properties = schema_grabber.properties
         fields[name] = build_field_list(properties,
