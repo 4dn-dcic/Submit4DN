@@ -416,11 +416,9 @@ def add_to_mistype_message(item='', itype='', ftype='', msg=''):
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
-    # import pdb; pdb.set_trace()
     pattern = re.compile(r"/(\w+)/\w")
     for item in itemlist:
         if item in alias_dict:
-            # import pdb; pdb.set_trace()
             itemtype = alias_dict[item]
             if typeinfield not in itemtype:
                 # need special cases for FileSet and ExperimentSet?
@@ -566,7 +564,6 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
         if post_json.get(af):
             attach = attachment(post_json[af])
             post_json[af] = attach
-    # import pdb; pdb.set_trace()
     existing_data = get_existing(post_json, connection)
     # Combine aliases
     if post_json.get('aliases') != ['*delete*']:
@@ -598,7 +595,6 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
     extrafiles = post_json.get('extra_files')
     extrafiles2upload = {}
     if extrafiles:
-        # import pdb; pdb.set_trace()
         # in sheet these will be file paths need to both poopulate the extrafiles properties
         # in post or patch as well as upload the file if not already there
         existing_formats = []
@@ -922,8 +918,6 @@ def check_file_pairing(fastq_row):
     files = {}
     errors = {}
     for row in fastq_row:
-        # import pdb
-        # pdb.set_trace()
         if row[0].startswith("#"):
             continue
         row.pop(0)  # to make indexes same
@@ -1087,7 +1081,6 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
         # dryrun option
         if dryrun:
-            # import pdb; pdb.set_trace()
             if skip_dryrun:
                 continue
             # simulate patch/post
