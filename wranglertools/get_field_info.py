@@ -240,7 +240,7 @@ sheet_order = [
     ]
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
-#file_types.remove('FileFormat')
+# file_types.remove('FileFormat')
 
 
 def get_field_type(field):
