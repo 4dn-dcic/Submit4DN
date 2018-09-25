@@ -117,7 +117,6 @@ class FDN_Connection(object):
         # passed key object stores the key dict in con_key
         self.check = False
         self.key = key4dn.con_key
-        self.admin = False
         # check connection and find user uuid
         # TODO: we should not need try/except, since if me page fails, there is
         # no need to proggress, but the test are failing without this Part
@@ -127,9 +126,6 @@ class FDN_Connection(object):
             me_page = ff_utils.get_metadata('me', key=self.key)
             self.user = me_page['@id']
             self.email = me_page['email']
-            groups = me_page.get('groups', [])
-            if 'admin' in groups:
-                self.admin = True
             self.check = True
         except:
             print('Can not establish connection, please check your keys')
@@ -227,24 +223,24 @@ fetch_items = {
     "Biosource": "biosource",
     "Publication": "publication",
     "Vendor": "vendor"
-}
+    }
 
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
+    "IndividualMouse", "IndividualFly", "IndividualHuman", "Vendor", "Enzyme",
     "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
-    "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
-    "Biosample", "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
+    "Antibody", "Modification",  "Image", "Biosource", "BiosampleCellCulture",
+    "Biosample",  "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
     "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
     "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
-]
+    ]
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
-file_types.remove('FileFormat')
+# file_types.remove('FileFormat')
 
 
 def get_field_type(field):
@@ -401,13 +397,8 @@ def main():  # pragma: no cover
         sys.exit(1)
     connection = FDN_Connection(key)
     if args.type == ['all']:
-        excluded_types = ['ExperimentMic_Path', 'OntologyTerm']
-        if not connection.admin:
-            excluded_types.extend([
-                'User', 'Lab', 'Award', 'Organism', 'FileFormat',
-                'FileSet', 'WorkflowRunSbg', 'WorkflowRunAwsem'
-            ])
-        args.type = [sheet for sheet in sheet_order if sheet not in excluded_types]
+        args.type = [sheet for sheet in sheet_order if sheet not in [
+                    'ExperimentMic_Path', 'OntologyTerm']]
     fields = get_uploadable_fields(connection, args.type,
                                    args.descriptions,
                                    args.comments,
