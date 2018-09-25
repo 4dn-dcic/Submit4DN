@@ -447,13 +447,8 @@ def main():  # pragma: no cover
             "MicroscopeSettingA1", "FileMicroscopy", "FileReference", "FileProcessed",
             "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
             ]
-<<<<<<< HEAD
-    elif args.type == ['SPT']:
-        args.type += [
-=======
     elif 'spt' in lowercase_types:
         lowercase_types += [
->>>>>>> 0affe01... More edits to main() in get_field_info for types
             "Protocol", "Publication", "Target", "Modification", "Biosource",
             "Biosample", "BiosampleCellCulture", "Image", "MicroscopeSettingA2",
             "FileProcessed", "ImagingPath", "ExperimentMic", "ExperimentSetReplicate",
