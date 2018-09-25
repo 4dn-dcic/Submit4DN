@@ -698,7 +698,7 @@ def combine_set(post_json, existing_data, sheet, accumulate_dict):
     return post_json, accumulate_dict
 
 
-def error_report(error_dic, sheet, all_aliases, connection):
+def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
     """From the validation error report, forms a readable statement."""
     # This dictionary is the common elements in the error dictionary I see so far
     # I want to catch anything that does not follow this to catch different cases
@@ -723,6 +723,14 @@ def error_report(error_dic, sheet, all_aliases, connection):
                 error_field = err['name'][0]
                 report.append("{sheet:<30}Field '{er}': {des}"
                               .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
+    # if there is a an access forbidden error
+    elif error_dic.get('title') == 'Forbidden':
+        error_description = error_dic['description']
+        try:
+            report.append("{sheet:<30}{eid}: {des}"
+                          .format(des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
+        except:
+            return error_dic
     # if there is a conflict
     elif error_dic.get('title') == "Conflict":
         try:
@@ -1058,19 +1066,20 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
         # add to success/error counters
         if e.get("status") == "error":  # pragma: no cover
-            error_rep = error_report(e, sheet, all_aliases, connection)
+            # display the used alias with the error
+            e_id = ""
+            if post_json.get('aliases'):
+                e_id = post_json['aliases'][0]
+            error_rep = error_report(e, sheet, all_aliases, connection, e_id)
             error += 1
             if error_rep:
-                # error += 1
+                # TODO: move this report formatting to error_report
                 if e.get('detail') and e.get('detail').startswith("Keys conflict: [('alias', 'md5:"):
                     print("Upload failure - md5 of file matches another item in database.")
-                    print(error_rep)
-                else:
-                    print(error_rep)
+                print(error_rep)
             # if error is a weird one
             else:
                 print(e)
-                # error += 1
         elif e.get("status") == "success":
             if existing_data.get("uuid"):
                 patch += 1
@@ -1099,7 +1108,11 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
             if e['status'] == 'success':
                 pass
             else:
-                error_rep = error_report(e, sheet, all_aliases, connection)
+                # display the used alias with the error
+                e_id = ""
+                if post_json.get('aliases'):
+                    e_id = post_json['aliases'][0]
+                error_rep = error_report(e, sheet, all_aliases, connection, e_id)
                 if error_rep:
                     error += 1
                     print(error_rep)
@@ -1414,7 +1427,7 @@ def get_collections(profiles):
     return supported_collections
 
 
-def get_all_aliases(workbook, sheets):  # , novalidate=False):
+def get_all_aliases(workbook, sheets):
     """Extracts all aliases existing in the workbook to later check object connections
        Checks for same aliases that are used for different items and gives warning."""
     aliases_by_type = {}
@@ -1467,7 +1480,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-    aliases_by_type = get_all_aliases(args.infile, sorted_names)  # , args.novalidate)
+    aliases_by_type = get_all_aliases(args.infile, sorted_names)
     # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
