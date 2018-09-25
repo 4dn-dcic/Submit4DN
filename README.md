@@ -85,8 +85,7 @@ get_field_info --type Biosample --comments --outfile biosample.xls
 
 Example list of sheets:
 ~~~~
-get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile AllItems.xls
-
+get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile MetadataSheets.xls
 ~~~~
 
 Example list of sheets: (using python scripts)
@@ -170,6 +169,3 @@ For a better testing experienece that also check to ensure sufficient coverage a
 ```
 
 This will first run linters, if linters pass, tests will be run and if tests achieve specified minimum coverage (89% as of time of writting) pass the tests.
-
-
-
