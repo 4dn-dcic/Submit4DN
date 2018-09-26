@@ -117,7 +117,6 @@ class FDN_Connection(object):
         # passed key object stores the key dict in con_key
         self.check = False
         self.key = key4dn.con_key
-        self.admin = False
         # check connection and find user uuid
         # TODO: we should not need try/except, since if me page fails, there is
         # no need to proggress, but the test are failing without this Part
@@ -127,9 +126,6 @@ class FDN_Connection(object):
             me_page = ff_utils.get_metadata('me', key=self.key)
             self.user = me_page['@id']
             self.email = me_page['email']
-            groups = me_page.get('groups', [])
-            if 'admin' in groups:
-                self.admin = True
             self.check = True
         except:
             print('Can not establish connection, please check your keys')
@@ -227,7 +223,7 @@ fetch_items = {
     "Biosource": "biosource",
     "Publication": "publication",
     "Vendor": "vendor"
-}
+    }
 
 sheet_order = [
     "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
@@ -241,7 +237,7 @@ sheet_order = [
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
-]
+    ]
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
 file_types.remove('FileFormat')
@@ -394,24 +390,52 @@ def create_xls(all_fields, filename):
     wb.save(filename)
 
 
+def get_sheet_names(types_list):
+    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list if
+                       item != 'ExperimentMic_Path']
+    if lowercase_types == ['all']:
+        sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
+    else:
+        presets = {
+            'hic': ["image", "filefastq", "experimenthic"],
+            'chipseq': ["target", "antibody", "filefastq", "experimentseq"],
+            'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
+            'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
+            'damid': ["target", "filefastq", "fileprocessed", "experimentdamid"],
+            'chiapet': ["target", "filefastq", "experimentchiapet"],
+            'capturec': ["genomicregion", "target", "filefastq", "filereference", "experimentcapturec"],
+            'fish': [
+                "genomicregion", "target", "antibody", "microscopesettinga1", "filemicroscopy",
+                "filereference", "fileprocessed", "imagingpath", "experimentmic",
+            ],
+            'spt': [
+                "target", "modification", "microscopesettinga2",
+                "fileprocessed", "imagingpath", "experimentmic",
+            ]}
+        for key in presets.keys():
+            if key in lowercase_types:
+                lowercase_types.remove(key)
+                lowercase_types += presets[key]
+                lowercase_types += [
+                    'protocol', 'publication', 'biosource', 'biosample',
+                    'biosamplecellculture', 'image', 'experimentsetreplicate'
+                    ]
+        sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
+        for name in types_list:
+            modified_name = name.lower().replace('-', '').replace('_', '')
+            if modified_name in lowercase_types and modified_name not in [sheetname.lower() for sheetname in sheets]:
+                print('No schema found for type {} -- skipping'.format(name))
+    return sheets
+
+
 def main():  # pragma: no cover
     args = getArgs()
     key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
     connection = FDN_Connection(key)
-    if args.type == ['all']:
-        excluded_types = ['ExperimentMic_Path', 'OntologyTerm']
-        if not connection.admin:
-            excluded_types.extend([
-                'User', 'Lab', 'Award', 'Organism', 'FileFormat',
-                'FileSet', 'WorkflowRunSbg', 'WorkflowRunAwsem'
-            ])
-        args.type = [sheet for sheet in sheet_order if sheet not in excluded_types]
-    fields = get_uploadable_fields(connection, args.type,
-                                   args.descriptions,
-                                   args.comments,
-                                   args.enums)
+    sheets = get_sheet_names(args.type)
+    fields = get_uploadable_fields(connection, sheets, args.descriptions, args.comments, args.enums)
 
     if args.debug:
         print("retrieved fields as")
