@@ -416,11 +416,9 @@ def add_to_mistype_message(item='', itype='', ftype='', msg=''):
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
-    # import pdb; pdb.set_trace()
     pattern = re.compile(r"/(\w+)/\w")
     for item in itemlist:
         if item in alias_dict:
-            # import pdb; pdb.set_trace()
             itemtype = alias_dict[item]
             if typeinfield not in itemtype:
                 # need special cases for FileSet and ExperimentSet?
@@ -541,6 +539,9 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
         if not ef_format:
             return ef_info, seen_formats
 
+    # convert format to @id
+    ef_format = '/file-formats/' + ef_format + '/'
+    ef_info['file_format'] = ef_format
     if ef_format in existing_formats:
         print("An extrafile with %s format exists - will attempt to patch" % ef_format)
 
@@ -563,7 +564,6 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
         if post_json.get(af):
             attach = attachment(post_json[af])
             post_json[af] = attach
-
     existing_data = get_existing(post_json, connection)
     # Combine aliases
     if post_json.get('aliases') != ['*delete*']:
@@ -595,7 +595,6 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
     extrafiles = post_json.get('extra_files')
     extrafiles2upload = {}
     if extrafiles:
-        # import pdb; pdb.set_trace()
         # in sheet these will be file paths need to both poopulate the extrafiles properties
         # in post or patch as well as upload the file if not already there
         existing_formats = []
@@ -812,8 +811,13 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_files_creds')
         for fformat, filepath in extrafiles.items():
+            try:
+                file_format = ff_utils.get_metadata(fformat, key=connection.key)
+                ff_uuid = file_format.get('uuid')
+            except:
+                raise "Can't find file_format item for %s" % fformat
             for ecred in extcreds:
-                if fformat == ecred.get('file_format'):
+                if ff_uuid == ecred.get('file_format'):
                     upload_creds = ecred.get('upload_credentials')
                     upload_extra_file(upload_creds, filepath)
     return e
@@ -922,8 +926,6 @@ def check_file_pairing(fastq_row):
     files = {}
     errors = {}
     for row in fastq_row:
-        # import pdb
-        # pdb.set_trace()
         if row[0].startswith("#"):
             continue
         row.pop(0)  # to make indexes same
