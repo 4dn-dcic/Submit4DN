@@ -791,6 +791,14 @@ def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection
         assert not msg
 
 
+def test_validate_item_not_in_alias_dict_hyphen(mocker, connection_mock):
+    item = '/ontology-terms/EFO%3A0006274'
+    with mocker.patch('dcicutils.ff_utils.get_metadata',
+                      return_value={'@type': ['OntologyTerm']}):
+        msg = imp.validate_item([item], 'Individual', {}, connection_mock)
+        assert " \'/ontology-terms/EFO%3A0006274\'" in msg
+
+
 def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection_mock):
     item = 'test:alias1'
     with mocker.patch('dcicutils.ff_utils.get_metadata',
