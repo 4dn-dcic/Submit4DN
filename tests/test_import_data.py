@@ -791,6 +791,14 @@ def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection
         assert not msg
 
 
+def test_validate_item_not_in_alias_dict_hyphen(mocker, connection_mock):
+    item = '/ontology-terms/EFO%3A0006274'
+    with mocker.patch('dcicutils.ff_utils.get_metadata',
+                      return_value={'@type': ['OntologyTerm']}):
+        msg = imp.validate_item([item], 'Individual', {}, connection_mock)
+        assert " \'/ontology-terms/EFO%3A0006274\'" in msg
+
+
 def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection_mock):
     item = 'test:alias1'
     with mocker.patch('dcicutils.ff_utils.get_metadata',
@@ -959,37 +967,6 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
     report = imp.check_file_pairing(rows)
     assert 'NO GO' in report
     assert report['NO GO'] == 'Can only check file pairing by aliases'
-
-
-@pytest.fixture
-def profile_fffe():
-    '''fixture to test the file_format_file_extention schema info'''
-    return {
-        "file_format_file_extension": {
-            "bam": ".bam",
-            "bai": ".bam.bai",
-            "pairs": ".pairs.gz",
-            "pairsam": ".sam.pairs.gz",
-            "pairs_px2": ".pairs.gz.px2",
-            "pairsam_px2": ".sam.pairs.gz.px2",
-            "cool": ".cool",
-            "mcool": ".mcool",
-            "hic": ".hic",
-            "normvector_juicerformat": ".normvector.juicerformat.gz",
-            "zip": ".zip",
-            "bg": ".bedGraph.gz",
-            "bg_px2": ".bedGraph.gz.px2",
-            "bw": ".bw",
-            "bed": ".bed.gz",
-            "txt": ".txt.gz",
-            "csv": ".csv",
-            "other": "",
-            "barcode_file": ".txt",
-            "compressed_fasta": ".fasta.gz",
-            "fasta": ".fasta",
-            "juicer_format_restriction_site_file": ".txt"
-        }
-    }
 
 
 @pytest.fixture
