@@ -962,37 +962,6 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
 
 
 @pytest.fixture
-def profile_fffe():
-    '''fixture to test the file_format_file_extention schema info'''
-    return {
-        "file_format_file_extension": {
-            "bam": ".bam",
-            "bai": ".bam.bai",
-            "pairs": ".pairs.gz",
-            "pairsam": ".sam.pairs.gz",
-            "pairs_px2": ".pairs.gz.px2",
-            "pairsam_px2": ".sam.pairs.gz.px2",
-            "cool": ".cool",
-            "mcool": ".mcool",
-            "hic": ".hic",
-            "normvector_juicerformat": ".normvector.juicerformat.gz",
-            "zip": ".zip",
-            "bg": ".bedGraph.gz",
-            "bg_px2": ".bedGraph.gz.px2",
-            "bw": ".bw",
-            "bed": ".bed.gz",
-            "txt": ".txt.gz",
-            "csv": ".csv",
-            "other": "",
-            "barcode_file": ".txt",
-            "compressed_fasta": ".fasta.gz",
-            "fasta": ".fasta",
-            "juicer_format_restriction_site_file": ".txt"
-        }
-    }
-
-
-@pytest.fixture
 def mock_profiles():
     return {
         "FileProcessed": {
