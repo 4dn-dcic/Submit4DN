@@ -416,7 +416,7 @@ def add_to_mistype_message(item='', itype='', ftype='', msg=''):
 
 def validate_item(itemlist, typeinfield, alias_dict, connection):
     msg = ''
-    pattern = re.compile(r"/(\w+)/\w")
+    pattern = re.compile(r"/[\w-]+/\w")
     for item in itemlist:
         if item in alias_dict:
             itemtype = alias_dict[item]
