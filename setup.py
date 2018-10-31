@@ -13,12 +13,11 @@ requires = [
     'Pillow',
     'py>=1.4.31',
     'python-magic>=0.4.12',
-    'requests',
     'wheel>=0.24.0',
     'xlrd',
     'xlwt>=1.1.2',
     'six',
-    'dcicutils>=0.2.1'
+    'dcicutils>=0.5.3'
 ]
 
 tests_require = [
