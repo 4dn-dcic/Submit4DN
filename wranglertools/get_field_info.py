@@ -226,7 +226,7 @@ fetch_items = {
     }
 
 sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
+    "User", "Award", "Lab", "Document", "OntologyTerm", "Protocol", "Organism",
     "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
     "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
     "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
@@ -236,7 +236,7 @@ sheet_order = [
     "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "Publication"
     ]
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
