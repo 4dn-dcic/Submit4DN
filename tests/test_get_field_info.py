@@ -356,8 +356,8 @@ def test_get_sheet_names(capfd):
     result = gfi.get_sheet_names(input_list)
     out, err = capfd.readouterr()
     assert result == [
-        'Protocol', 'Publication', 'Image', 'Biosource', 'BiosampleCellCulture',
-        'Biosample', 'FileFastq', 'ExperimentHiC', 'ExperimentCaptureC', 'ExperimentSetReplicate'
+        'Protocol', 'Image', 'Biosource', 'BiosampleCellCulture', 'Biosample',
+        'FileFastq', 'ExperimentHiC', 'ExperimentCaptureC', 'ExperimentSetReplicate', 'Publication'
         ]
     assert len(result) == len(list(set(result)))
     assert 'No schema found for type TreatmentChemical' in out
