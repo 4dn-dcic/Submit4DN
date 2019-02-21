@@ -101,6 +101,7 @@ python3 -m wranglertools.get_field_info --type Publication --type Document --typ
 Example list of sheets: (Experiment seq simple)
 ~~~~
 python3 -m wranglertools.get_field_info --type Publication --type Protocol --type BiosampleCellCulture --type Biosource --type Biosample --type FileFastq --type ExperimentSeq --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_simple.xls
+~~~~
 
 Examples for list of sheets using a preset option:
 ~~~~
