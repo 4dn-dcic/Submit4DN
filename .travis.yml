@@ -25,7 +25,7 @@ script:
 - invoke test
 - echo "finished running tests on repo"
 - echo " now install packaged and run tests again, on installed package"
-- python setup.py test -m "not ftp"
+- python setup.py test
 after_success:
 - python-codacy-coverage -r coverage.xml
 - coveralls
