@@ -63,6 +63,8 @@ For more details:
 please see README.rst
 '''
 
+mimetypes.add_type('text/plain', '.gb')
+
 
 def getArgs():  # pragma: no cover
     parser = argparse.ArgumentParser(
