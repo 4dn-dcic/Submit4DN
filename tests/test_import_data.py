@@ -3,7 +3,8 @@ import pytest
 # test data is in conftest.py
 
 
-@pytest.mark.file_operation
+# @pytest.mark.file_operation
+@pytest.mark.ftp
 def test_attachment_from_ftp():
     attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
     assert attach
@@ -357,7 +358,8 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #         assert out.strip() == message
 
 
-@pytest.mark.file_operation
+# @pytest.mark.file_operation
+@pytest.mark.ftp
 def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
     test_insert = './tests/data_files/Ftp_file_test_md5.xls'
     dict_load = {}
@@ -385,7 +387,8 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
                 assert message1 == outlist[1]
 
 
-@pytest.mark.file_operation
+# @pytest.mark.file_operation
+@pytest.mark.ftp
 def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock):
     test_insert = './tests/data_files/Ftp_file_test.xls'
     dict_load = {}
