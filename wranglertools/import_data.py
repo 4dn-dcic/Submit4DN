@@ -643,7 +643,7 @@ def filter_set_from_exps(post_json):
             post_json.pop(replicate_field)
     # Part II - Experiment Sets
     if post_json.get('experiment_set'):
-        exp_set_info = post_json['experiment_set']
+        exp_set_info.append(post_json['experiment_set'])
         post_json.pop('experiment_set')
     return post_json, rep_set_info, exp_set_info
 
@@ -1140,12 +1140,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                     else:
                         dict_replicates[rep_id] = [saveitem, ]
                     # Part-II Experiment Sets
-                    if exp_set_info:
-                        for exp_set in exp_set_info:
-                            if dict_exp_sets.get(exp_set):
-                                dict_exp_sets[exp_set].append(item_id)
-                            else:
-                                dict_exp_sets[exp_set] = [item_id, ]
+                if exp_set_info:
+                    for exp_set in exp_set_info:
+                        if dict_exp_sets.get(exp_set):
+                            dict_exp_sets[exp_set].append(item_id)
+                        else:
+                            dict_exp_sets[exp_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
     if patch_loadxl and not invalid:
