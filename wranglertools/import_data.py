@@ -643,7 +643,7 @@ def filter_set_from_exps(post_json):
             post_json.pop(replicate_field)
     # Part II - Experiment Sets
     if post_json.get('experiment_set'):
-        exp_set_info = post_json['experiment_set']
+        exp_set_info.append(post_json['experiment_set'])
         post_json.pop('experiment_set')
     return post_json, rep_set_info, exp_set_info
 
