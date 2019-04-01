@@ -1140,12 +1140,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                     else:
                         dict_replicates[rep_id] = [saveitem, ]
                     # Part-II Experiment Sets
-            if exp_set_info:
-                for exp_set in exp_set_info:
-                    if dict_exp_sets.get(exp_set):
-                        dict_exp_sets[exp_set].append(item_id)
-                    else:
-                        dict_exp_sets[exp_set] = [item_id, ]
+                if exp_set_info:
+                    for exp_set in exp_set_info:
+                        if dict_exp_sets.get(exp_set):
+                            dict_exp_sets[exp_set].append(item_id)
+                        else:
+                            dict_exp_sets[exp_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
     if patch_loadxl and not invalid:
