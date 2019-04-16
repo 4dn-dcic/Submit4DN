@@ -148,7 +148,6 @@ def test_connection_prompt_for_lab_award_multi_award(
         to a lab the first is set as the defaul on init
     '''
     defaultlab = '/labs/bing-ren-lab/'
-    defaultaward = '/awards/1U54DK107977-01/'
     chosenaward = '/awards/1U01ES017166-01/'
     with mocker.patch('dcicutils.ff_utils.get_metadata',
                       side_effect=[returned_user_me_submit_for_one_lab.json(),
@@ -169,7 +168,6 @@ def test_connection_prompt_for_lab_award_multi_lab_award(
     mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
         returned_lab_w_two_awards, returned_otherlab_w_two_awards):
     defaultlab = '/labs/bing-ren-lab/'
-    defaultaward = '/awards/1U54DK107977-01/'
     chosenlab = '/labs/ben-ring-lab/'
     chosenaward = '/awards/7777777/'
     with mocker.patch('dcicutils.ff_utils.get_metadata',
