@@ -672,7 +672,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, capsys):
-    with mocker.patch('imp.os.path.isfile', return_value=True):
+    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
         imp.cabin_cross_check(connection_mock, False, False, 'blah', True)
         out = capsys.readouterr()[0]
         message = '''
