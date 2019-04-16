@@ -132,7 +132,7 @@ def test_connection_prompt_for_lab_award_multi_lab_bad_choice(
         assert connection.award == defaultaward
         # monkeypatch the "input" function, so that it returns "2".
         # This simulates the user entering "2" in the terminal:
-        monkeypatch.setattr('builtins.input', lambda x: "3")
+        monkeypatch.setitem(__builtins__, 'input', lambda x: "3")
         connection.prompt_for_lab_award()
         assert connection.lab == defaultlab
         assert connection.award == defaultaward
