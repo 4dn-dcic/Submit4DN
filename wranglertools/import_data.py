@@ -1388,10 +1388,25 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     # check for multi labs and awards and reset connection appropriately
     if not remote:
         connection.prompt_for_lab_award()
+    else:
+        # running remotely cases:
+        # one lab one award - use them
+        # one lab with multiple awards or multiple Labs
+        #   - set lab and award to None
+        if len(connection.labs) > 1:
+            connection.lab = None
+            connection.award = None
+        else:
+            connection.set_award(connection.lab, remote)
+            if connection.award is None:
+                connection.lab = None
 
     print("Submitting User:  {}".format(connection.email))
-    print("Submitting Lab:   {}".format(connection.lab))
-    print("Submitting Award: {}".format(connection.award))
+    if connection.lab is None:
+        print("WARNING: Submitting Lab and Award Unspecified\nLab and Award info must be included for all items or submission will fail")
+    else:
+        print("Submitting Lab:   {}".format(connection.lab))
+        print("Submitting Award: {}".format(connection.award))
 
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:

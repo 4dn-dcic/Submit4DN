@@ -20,7 +20,7 @@ class MockedConnection(object):
         self.labs = ['test_lab']
         self.email = 'test@test.test'
 
-    def set_award(self):
+    def set_award(self, lab, dontPrompt=False):
         self.award = 'test_award'
         return
 

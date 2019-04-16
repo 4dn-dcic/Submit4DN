@@ -671,6 +671,23 @@ The validation will only check for schema rules, but not for object relations
     assert out.strip() == message.strip()
 
 
+def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, capsys):
+    with mocker.patch('imp.os.path.isfile', return_value=True):
+        imp.cabin_cross_check(connection_mock, False, False, 'blah', True)
+        out = capsys.readouterr()[0]
+        message = '''
+Running on:       https://data.4dnucleome.org/
+Submitting User:  test@test.test
+Submitting Lab:   test_lab
+Submitting Award: test_award
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+        assert out.strip() == message.strip()
+    pass
 # Disabled - public account is not compatible with the connection object at the moment
 # # TODO: use mastertest tests for this purpose
 # def test_get_collections(connection_public):
