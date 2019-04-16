@@ -1403,7 +1403,8 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
 
     print("Submitting User:  {}".format(connection.email))
     if connection.lab is None:
-        print("WARNING: Submitting Lab and Award Unspecified\nLab and Award info must be included for all items or submission will fail")
+        print("WARNING: Submitting Lab and Award Unspecified")
+        print("Lab and Award info must be included for all items or submission will fail")
     else:
         print("Submitting Lab:   {}".format(connection.lab))
         print("Submitting Award: {}".format(connection.award))

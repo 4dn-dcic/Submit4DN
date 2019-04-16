@@ -123,8 +123,6 @@ def test_connection_prompt_for_lab_award_multi_lab_bad_choice(
         returned_lab_w_one_award, returned_otherlab_w_one_award, capsys):
     defaultlab = '/labs/bing-ren-lab/'
     defaultaward = '/awards/1U54DK107977-01/'
-    chosenlab = '/labs/ben-ring-lab/'
-    chosenaward = '/awards/1U01ES017166-01/'
     with mocker.patch('dcicutils.ff_utils.get_metadata',
                       side_effect=[returned_user_me_submit_for_two_labs.json(),
                                    returned_lab_w_one_award.json(),
