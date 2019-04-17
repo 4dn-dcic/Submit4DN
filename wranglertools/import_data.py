@@ -100,6 +100,14 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="will skip attribution prompt \
                         needed for automated submissions")
+    parser.add_argument('--lab',
+                        help="When using --remote can pass in a valid lab identifier \
+                        eg. uuid or @id to add attribution - must be able to submit for lab and \
+                        not needed if only submit for a single lab.")
+    parser.add_argument('--award',
+                        help="When using --remote if you are submitting for a lab with multiple awards \
+                        can pass a valid award identifier eg. uuid or @id to add attribution \
+                        not needed if there is only one award associated with the submitting lab.")
     parser.add_argument('--novalidate',
                         default=False,
                         action='store_true',
@@ -1377,7 +1385,7 @@ def loadxl_cycle(patch_list, connection, alias_dict):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote):
+def cabin_cross_check(connection, patchall, update, infile, remote, lab, award):
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
     # check input file (xls)
@@ -1389,17 +1397,44 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
     if not remote:
         connection.prompt_for_lab_award()
     else:
+        labjson = None
         # running remotely cases:
-        # one lab one award - use them
-        # one lab with multiple awards or multiple Labs
-        #   - set lab and award to None
-        if len(connection.labs) > 1:
-            connection.lab = None
-            connection.award = None
-        else:
-            connection.set_award(connection.lab, remote)
-            if connection.award is None:
+        if len(connection.labs) > 1:  # lab may be provided as an option or is None
+            try:
+                labjson = ff_utils.get_metadata(lab, key=connection.key, add_on='frame=raw')
+                labuuid = labjson['uuid']
+            except (KeyError, TypeError):
+                print("Submitting Lab NOT FOUND: {}".format(lab))
                 connection.lab = None
+            else:
+                connection.lab = lab
+        if award is None:  # has not been passed in as option
+            # lab may be None and then so will award
+            # or lab may have 1 award so use it
+            # or lab may have multiple awards so award set to None
+            connection.set_award(connection.lab, True)
+        else:  # use the award passed as option
+            # need to check to make sure award is associated with the lab
+            try:
+                award_uid = ff_utils.get_metadata(award, key=connection.key)['uuid']
+            except (KeyError, TypeError):
+                print("Submitting award NOT FOUND: {}".format(award))
+                award_uid = None
+            if connection.lab is None and award_uid:
+                print("Submitting award:   {}".format(award))
+                print("ERROR: --award option used but lab not found (check --lab option) - exiting!")
+                sys.exit(1)
+            else:
+                if not labjson:
+                    try:
+                        labjson = ff_utils.get_metadata(connection.lab, key=connection.key, add_on='frame=raw')
+                    except Exception:
+                        labjson = {}  # this should not happen
+                labawards = labjson.get('awards', [])
+                if award_uid and award_uid not in labawards:
+                    print("Award {} not associated with lab {}".format(award, connection.lab))
+                    award = None
+            connection.award = award
 
     print("Submitting User:  {}".format(connection.email))
     if connection.lab is None:
@@ -1484,7 +1519,8 @@ def main():  # pragma: no cover
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
-    cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
+    cabin_cross_check(connection, args.patchall, args.update, args.infile,
+                      args.remote, args.lab, args.award)
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
         names = [args.type]
