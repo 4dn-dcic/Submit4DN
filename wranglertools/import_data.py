@@ -1402,7 +1402,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote, lab, award):
         if len(connection.labs) > 1:  # lab may be provided as an option or is None
             try:
                 labjson = ff_utils.get_metadata(lab, key=connection.key, add_on='frame=raw')
-                labuuid = labjson['uuid']
+                labjson['uuid']
             except (KeyError, TypeError):
                 print("Submitting Lab NOT FOUND: {}".format(lab))
                 connection.lab = None

@@ -697,7 +697,9 @@ def test_cabin_cross_check_remote_w_lab_award_options(mocker, connection_mock, c
                               returned_lab_w_awards_raw.json(),
                               returned_award_raw.json()]):
             connection_mock.labs = ['test_lab', 'other_lab']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '795847de-20b6-4f8c-ba8d-185215469cbf', 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
+            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                  '795847de-20b6-4f8c-ba8d-185215469cbf',
+                                  'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
             out = capsys.readouterr()[0]
             message = '''
 Running on:       https://data.4dnucleome.org/
@@ -720,7 +722,8 @@ def test_cabin_cross_check_remote_w_award_and_no_lab_options(mocker, connection_
                           side_effect=[pytest.raises(TypeError), returned_award_raw.json()]):
             with pytest.raises(SystemExit):
                 connection_mock.labs = ['test_lab', 'other_lab']
-                imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
+                imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                      None, 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
             out = capsys.readouterr()[0]
             message = '''
 Running on:       https://data.4dnucleome.org/
@@ -737,7 +740,8 @@ def test_cabin_cross_check_remote_w_labopt_and_no_award(mocker, connection_mock,
         with mocker.patch('dcicutils.ff_utils.get_metadata',
                           return_value=returned_lab_w_awards_raw.json()):
             connection_mock.labs = ['test_lab', 'other_lab']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '795847de-20b6-4f8c-ba8d-185215469cbf', None)
+            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                  '795847de-20b6-4f8c-ba8d-185215469cbf', None)
             out = capsys.readouterr()[0]
             message = '''
 Running on:       https://data.4dnucleome.org/
