@@ -779,6 +779,35 @@ The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
             assert out.strip() == message.strip()
+
+
+def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection_mock, capsys,
+                                                              returned_lab_w_awards_raw, returned_award_raw):
+    award_data = returned_award_raw.json()
+    award_data['uuid'] = 'non-lab-award-uuid'
+    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
+        with mocker.patch('dcicutils.ff_utils.get_metadata',
+                          side_effect=[
+                              returned_lab_w_awards_raw.json(),
+                              returned_award_raw.json()]):
+            connection_mock.labs = ['test_lab', 'other_lab']
+            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                  '795847de-20b6-4f8c-ba8d-185215469cbf',
+                                  'non-lab-award-uuid')
+            out = capsys.readouterr()[0]
+            message = '''
+Running on:       https://data.4dnucleome.org/
+Award non-lab-award-uuid not associated with lab 795847de-20b6-4f8c-ba8d-185215469cbf
+Submitting User:  test@test.test
+Submitting Lab:   795847de-20b6-4f8c-ba8d-185215469cbf
+Submitting Award: None
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+            assert out.strip() == message.strip()
 # Disabled - public account is not compatible with the connection object at the moment
 # # TODO: use mastertest tests for this purpose
 # def test_get_collections(connection_public):
