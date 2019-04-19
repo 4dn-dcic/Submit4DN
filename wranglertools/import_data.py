@@ -1385,7 +1385,16 @@ def loadxl_cycle(patch_list, connection, alias_dict):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote, lab, award):
+def _verify_and_return_item(item, connection):
+    try:
+        res = ff_utils.get_metadata(item, key=connection.key, add_on='frame=object')
+        assert '@id' in res
+    except (AssertionError, TypeError):
+        return None
+    return res
+
+
+def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, award=None):
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
     # check input file (xls)
@@ -1394,55 +1403,57 @@ def cabin_cross_check(connection, patchall, update, infile, remote, lab, award):
         sys.exit(1)
 
     # check for multi labs and awards and reset connection appropriately
+    # if lab and/or award options used modify connection accordingly and check for conflict later
+    if lab or award:
+        if lab is not None:
+            connection.lab = lab
+            if not award:
+                connection.set_award(lab, remote)
+        if award is not None:
+            connection.award = award
     if not remote:
-        connection.prompt_for_lab_award()
+        connection.prompt_for_lab_award(lab, award)
     else:
-        labjson = None
-        # running remotely cases:
-        if len(connection.labs) > 1:  # lab may be provided as an option or is None
-            try:
-                labjson = ff_utils.get_metadata(lab, key=connection.key, add_on='frame=raw')
-                assert 'uuid' in labjson
-            except (AssertionError, TypeError):
-                print("Submitting Lab NOT FOUND: {}".format(lab))
+        if not lab:  # did not provide lab option
+            if len(connection.labs) > 1:  # lab may be provided as an option or is None
                 connection.lab = None
-            else:
-                connection.lab = lab
         if award is None:  # has not been passed in as option
             # lab may be None and then so will award
             # or lab may have 1 award so use it
             # or lab may have multiple awards so award set to None
             connection.set_award(connection.lab, True)
-        else:  # use the award passed as option
-            # need to check to make sure award is associated with the lab
-            try:
-                award_uid = ff_utils.get_metadata(award, key=connection.key)['uuid']
-            except (KeyError, TypeError):
-                print("Submitting award NOT FOUND: {}".format(award))
-                award_uid = None
-            if connection.lab is None and award_uid:
-                print("Submitting award:   {}".format(award))
-                print("ERROR: --award option used but lab not found (check --lab option) - exiting!")
+
+    # check to be sure that lab and award exist and if both that the award is linked to lab
+    submit_lab = connection.lab
+    submit_award = connection.award
+    lab_json = _verify_and_return_item(submit_lab, connection)
+    if not lab_json:
+        print("Submitting Lab NOT FOUND: {}".format(submit_lab))
+        connection.lab = None
+    award_json = _verify_and_return_item(submit_award, connection)
+    if not award_json:
+        print("Submitting award NOT FOUND: {}".format(submit_award))
+        connection.award = None
+    else:  # make sure award is linked to lab
+        if lab_json is not None:
+            labawards = labjson.get('awards', [])
+            if award_json.get('@id') not in labawards:
+                print("Award {} not associated with lab {} - exiting!".format(submit_award, submit_lab))
                 sys.exit(1)
-            else:
-                if not labjson:
-                    try:
-                        labjson = ff_utils.get_metadata(connection.lab, key=connection.key, add_on='frame=raw')
-                    except Exception:
-                        labjson = {}  # this should not happen
-                labawards = labjson.get('awards', [])
-                if award_uid and award_uid not in labawards:
-                    print("Award {} not associated with lab {}".format(award, connection.lab))
-                    award = None
-            connection.award = award
 
     print("Submitting User:  {}".format(connection.email))
+    missing = []
     if connection.lab is None:
-        print("WARNING: Submitting Lab and Award Unspecified")
-        print("Lab and Award info must be included for all items or submission will fail")
-    else:
-        print("Submitting Lab:   {}".format(connection.lab))
-        print("Submitting Award: {}".format(connection.award))
+        missing.append('Lab')
+    if connection.award is None:
+        missing.append('Award')
+    if missing:
+        whatis = ' and '.join(missing)
+        print("WARNING: Submitting {} Unspecified".format(whatis))
+        print("{} info must be included for all items or submission will fail".format(whatis))
+
+    print("Submitting Lab:   {}".format(connection.lab))
+    print("Submitting Award: {}".format(connection.award))
 
     # if dry-run, message explaining the test, and skipping user input
     if not patchall and not update:

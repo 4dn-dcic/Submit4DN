@@ -177,12 +177,12 @@ class FDN_Connection(object):
                 self.award = awards[int(awd_resp) - 1]['@id']
         return
 
-    def prompt_for_lab_award(self):
+    def prompt_for_lab_award(self, lab=None, award=None):
         '''Check to see if user submits_for multiple labs or the lab
             has multiple awards and if so prompts for the one to set
             for the connection
         '''
-        if self.labs is not None:
+        if not lab and self.labs is not None:
             if len(self.labs) > 1:
                 lchoices = []
                 print("Submitting for multiple labs:")
@@ -196,9 +196,11 @@ class FDN_Connection(object):
                     return
                 else:
                     self.lab = self.labs[int(lab_resp) - 1]
-            self.set_award(self.lab, False)
+            if not award:
+                self.set_award(self.lab, False)
         else:
-            self.set_award(None)
+            if not award:
+                self.set_award(None)
 
 
 @attr.s
