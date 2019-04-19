@@ -24,7 +24,7 @@ class MockedConnection(object):
         self.award = 'test_award'
         return
 
-    def prompt_for_lab_award(self):
+    def prompt_for_lab_award(self, lab=None, award=None):
         self.lab = 'test_lab'
         return
 
@@ -471,6 +471,34 @@ def returned_lab_w_two_awards():
 
 
 @pytest.fixture
+def returned_lab_w_two_awards_objframe():
+    data = {
+        'awards': ['/awards/1U54DK107977-01/', '/awards/1U01ES017166-01/'],
+        'title': 'Bing Ren, UCSD', 'link_id': '~labs~bing-ren-lab~', 'institute_label': 'UCSD', '@id': '/labs/bing-ren-lab/',
+        'status': 'current', 'uuid': '795847de-20b6-4f8c-ba8d-185215469cbf', 'display_title': 'Bing Ren, UCSD',
+        'name': 'bing-ren-lab', '@type': ['Lab', 'Item']
+    }
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_award_objframe():
+    data = {
+        "uuid": "1dbecc95-ec91-4081-a862-c79d18a8d0bd",
+        "@id": "/awards/1U01ES017166-01/",
+        "title": "THE SAN DIEGO EPIGENOME CENTER",
+        "@type": ["Award", "Item"],
+        "project": "External",
+        "name": "1U01ES017166-01",
+        "link_id": "~awards~1U01ES017166-01~",
+        "viewing_group": "Not 4DN",
+        "pi": "/users/e3159ffc-a5a9-43a1-8cfa-90b776c39788/",
+        "status": "current"
+    }
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
 def returned_otherlab_w_two_awards():
     data = {
         'awards': [
@@ -496,52 +524,52 @@ def returned_otherlab_w_two_awards():
     return MockedResponse(data, 200)
 
 
-@pytest.fixture
-def returned_lab_w_awards_raw():
-    data = {
-        "pi": "e3159ffc-a5a9-43a1-8cfa-90b776c39788",
-        "title": "Bing Ren, UCSD",
-        "institute_name": "University of California, San Diego",
-        "name": "bing-ren-lab",
-        "date_created": "2017-04-08T13:01:38.072587+00:00",
-        "uuid": "795847de-20b6-4f8c-ba8d-185215469cbf",
-        "submitted_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
-        "status": "current",
-        "institute_label": "UCSD",
-        "schema_version": "1",
-        "last_modified": {
-            "modified_by": "986b362f-4eb6-4a9c-8173-3ab267227777",
-            "date_modified": "2019-03-13T20:26:18.004090+00:00"
-        },
-        "awards": [
-            "4871e338-b07d-4665-a00a-357648e5bad6",
-            "1dbecc95-ec91-4081-a862-c79d18a8d0bd",
-            "c55dd1f0-433b-4714-bfce-8b3ae09f071c",
-            "d61f0a46-7e58-477f-b23d-198854b11276"
-        ]
-    }
-    return MockedResponse(data, 200)
+# @pytest.fixture
+# def returned_lab_w_awards_raw():
+#     data = {
+#         "pi": "e3159ffc-a5a9-43a1-8cfa-90b776c39788",
+#         "title": "Bing Ren, UCSD",
+#         "institute_name": "University of California, San Diego",
+#         "name": "bing-ren-lab",
+#         "date_created": "2017-04-08T13:01:38.072587+00:00",
+#         "uuid": "795847de-20b6-4f8c-ba8d-185215469cbf",
+#         "submitted_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
+#         "status": "current",
+#         "institute_label": "UCSD",
+#         "schema_version": "1",
+#         "last_modified": {
+#             "modified_by": "986b362f-4eb6-4a9c-8173-3ab267227777",
+#             "date_modified": "2019-03-13T20:26:18.004090+00:00"
+#         },
+#         "awards": [
+#             "4871e338-b07d-4665-a00a-357648e5bad6",
+#             "1dbecc95-ec91-4081-a862-c79d18a8d0bd",
+#             "c55dd1f0-433b-4714-bfce-8b3ae09f071c",
+#             "d61f0a46-7e58-477f-b23d-198854b11276"
+#         ]
+#     }
+#     return MockedResponse(data, 200)
 
 
-@pytest.fixture
-def returned_award_raw():
-    data = {
-        "project": "4DN",
-        "title": "THE ORGANIZATIONAL HUB AND WEB PORTAL FOR THE 4D NUCLEOME NETWORK",
-        "name": "1U01CA200147-01",
-        "uuid": "c55dd1f0-433b-4714-bfce-8b3ae09f071c",
-        "url": "https://projectreporter.nih.gov/project_description.cfm?projectnumber=1U01CA200147-01",
-        "submitted_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
-        "status": "current",
-        "viewing_group": "4DN",
-        "description": "Truncated description ...",
-        "date_created": "2017-04-08T13:01:36.766611+00:00",
-        "last_modified": {
-            "modified_by": "986b362f-4eb6-4a9c-8173-3ab267227777",
-            "date_modified": "2018-12-17T17:38:19.212770+00:00"
-        },
-        "schema_version": "1",
-        "pi": "5549e16d-fa63-477c-a1ed-6189cecc1304",
-        "end_date": "2020-08-31"
-    }
-    return MockedResponse(data, 200)
+# @pytest.fixture
+# def returned_award_raw():
+#     data = {
+#         "project": "4DN",
+#         "title": "THE ORGANIZATIONAL HUB AND WEB PORTAL FOR THE 4D NUCLEOME NETWORK",
+#         "name": "1U01CA200147-01",
+#         "uuid": "c55dd1f0-433b-4714-bfce-8b3ae09f071c",
+#         "url": "https://projectreporter.nih.gov/project_description.cfm?projectnumber=1U01CA200147-01",
+#         "submitted_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
+#         "status": "current",
+#         "viewing_group": "4DN",
+#         "description": "Truncated description ...",
+#         "date_created": "2017-04-08T13:01:36.766611+00:00",
+#         "last_modified": {
+#             "modified_by": "986b362f-4eb6-4a9c-8173-3ab267227777",
+#             "date_modified": "2018-12-17T17:38:19.212770+00:00"
+#         },
+#         "schema_version": "1",
+#         "pi": "5549e16d-fa63-477c-a1ed-6189cecc1304",
+#         "end_date": "2020-08-31"
+#     }
+#     return MockedResponse(data, 200)

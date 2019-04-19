@@ -654,26 +654,10 @@ def test_loadxl_cycle(capsys, mocker, connection_mock):
 
 
 @pytest.mark.file_operation
-def test_cabin_cross_check_dryrun(connection_mock, capsys):
-    imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/Exp_Set_insert.xls', False, None, None)
-    out = capsys.readouterr()[0]
-    message = '''
-Running on:       https://data.4dnucleome.org/
-Submitting User:  test@test.test
-Submitting Lab:   test_lab
-Submitting Award: test_award
-
-##############   DRY-RUN MODE   ################
-Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
-The validation will only check for schema rules, but not for object relations
-##############   DRY-RUN MODE   ################
-'''
-    assert out.strip() == message.strip()
-
-
-def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
+def test_cabin_cross_check_dryrun(mocker, connection_mock, capsys):
+    with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                      side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
+        imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/Exp_Set_insert.xls', False, None, None)
         out = capsys.readouterr()[0]
         message = '''
 Running on:       https://data.4dnucleome.org/
@@ -689,18 +673,61 @@ The validation will only check for schema rules, but not for object relations
         assert out.strip() == message.strip()
 
 
-def test_cabin_cross_check_remote_w_lab_award_options(mocker, connection_mock, capsys,
-                                                      returned_lab_w_awards_raw, returned_award_raw):
+def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, capsys):
     with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('dcicutils.ff_utils.get_metadata',
-                          side_effect=[
-                              returned_lab_w_awards_raw.json(),
-                              returned_award_raw.json()]):
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
+            imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
+            out = capsys.readouterr()[0]
+            message = '''
+Running on:       https://data.4dnucleome.org/
+Submitting User:  test@test.test
+Submitting Lab:   test_lab
+Submitting Award: test_award
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+            assert out.strip() == message.strip()
+
+
+def test_cabin_cross_check_not_remote_w_lab_award_options(mocker, connection_mock, capsys):
+    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
+        with mocker.patch.object(connection_mock, 'prompt_for_lab_award', return_value='blah'):
+            with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                              side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
+                connection_mock.labs = ['test_lab', 'other_lab']
+                imp.cabin_cross_check(connection_mock, False, False, 'blah', False,
+                                      '795847de-20b6-4f8c-ba8d-185215469cbf',
+                                      'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
+                out = capsys.readouterr()[0]
+                print(out)
+                message = '''
+Running on:       https://data.4dnucleome.org/
+Submitting User:  test@test.test
+Submitting Lab:   795847de-20b6-4f8c-ba8d-185215469cbf
+Submitting Award: c55dd1f0-433b-4714-bfce-8b3ae09f071c
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+                assert out.strip() == message.strip()
+
+
+def test_cabin_cross_check_remote_w_lab_award_options(mocker, connection_mock, capsys):
+    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
             connection_mock.labs = ['test_lab', 'other_lab']
             imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
                                   '795847de-20b6-4f8c-ba8d-185215469cbf',
                                   'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
             out = capsys.readouterr()[0]
+            print(out)
             message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
@@ -715,38 +742,46 @@ The validation will only check for schema rules, but not for object relations
             assert out.strip() == message.strip()
 
 
-def test_cabin_cross_check_remote_w_award_and_no_lab_options(mocker, connection_mock, capsys,
-                                                             returned_lab_w_awards_raw, returned_award_raw):
+def test_cabin_cross_check_remote_w_ok_award_and_no_lab_options(mocker, connection_mock, capsys,
+                                                                returned_lab_w_two_awards_objframe,
+                                                                returned_award_objframe):
     with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('dcicutils.ff_utils.get_metadata',
-                          side_effect=[pytest.raises(TypeError), returned_award_raw.json()]):
-            with pytest.raises(SystemExit):
-                connection_mock.labs = ['test_lab', 'other_lab']
-                imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                      None, 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[{'awards': ['/awards/1U54DK107977-01/', '/awards/1U01ES017166-01/']},
+                                       {'@id': '/awards/1U54DK107977-01/'}]):
+            connection_mock.lab = '/labs/bing-ren-lab/'
+            connection_mock.labs = ['/labs/bing-ren-lab/']
+            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                  None, '/awards/1U54DK107977-01/')
             out = capsys.readouterr()[0]
+            print(out)
             message = '''
 Running on:       https://data.4dnucleome.org/
-Submitting Lab NOT FOUND: None
-Submitting award:   c55dd1f0-433b-4714-bfce-8b3ae09f071c
-ERROR: --award option used but lab not found (check --lab option) - exiting!
+Submitting User:  test@test.test
+Submitting Lab:   /labs/bing-ren-lab/
+Submitting Award: /awards/1U54DK107977-01/
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
 '''
             assert out.strip() == message.strip()
 
 
-def test_cabin_cross_check_remote_w_labopt_and_no_award(mocker, connection_mock, capsys,
-                                                        returned_lab_w_awards_raw):
+def test_cabin_cross_check_remote_w_labopt_and_lab_has_single_award(mocker, connection_mock, capsys):
     with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('dcicutils.ff_utils.get_metadata',
-                          return_value=returned_lab_w_awards_raw.json()):
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
             connection_mock.labs = ['test_lab', 'other_lab']
             imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                  '795847de-20b6-4f8c-ba8d-185215469cbf', None)
+                                  '/labs/test_lab/', None)
             out = capsys.readouterr()[0]
+            print(out)
             message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
-Submitting Lab:   795847de-20b6-4f8c-ba8d-185215469cbf
+Submitting Lab:   /labs/test_lab/
 Submitting Award: test_award
 
 ##############   DRY-RUN MODE   ################
@@ -757,12 +792,12 @@ The validation will only check for schema rules, but not for object relations
             assert out.strip() == message.strip()
 
 
-def test_cabin_cross_check_remote_w_unknown_lab_and_award(mocker, connection_mock, capsys,
-                                                          returned_lab_w_awards_raw):
+def test_cabin_cross_check_remote_w_unknown_lab_and_award(mocker, connection_mock, capsys):
     with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=pytest.raises(TypeError)):
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[None, None]):
             connection_mock.labs = ['test_lab', 'other_lab']
-            connection_mock.set_award = lambda x: None
+            # connection_mock.set_award = lambda x: None
             imp.cabin_cross_check(connection_mock, False, False, 'blah', True, 'unknown_lab', 'unknown_award')
             out = capsys.readouterr()[0]
             message = '''
@@ -772,34 +807,7 @@ Submitting award NOT FOUND: unknown_award
 Submitting User:  test@test.test
 WARNING: Submitting Lab and Award Unspecified
 Lab and Award info must be included for all items or submission will fail
-
-##############   DRY-RUN MODE   ################
-Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
-The validation will only check for schema rules, but not for object relations
-##############   DRY-RUN MODE   ################
-'''
-            assert out.strip() == message.strip()
-
-
-def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection_mock, capsys,
-                                                              returned_lab_w_awards_raw, returned_award_raw):
-    award_data = returned_award_raw.json()
-    award_data['uuid'] = 'non-lab-award-uuid'
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('dcicutils.ff_utils.get_metadata',
-                          side_effect=[
-                              returned_lab_w_awards_raw.json(),
-                              returned_award_raw.json()]):
-            connection_mock.labs = ['test_lab', 'other_lab']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                  '795847de-20b6-4f8c-ba8d-185215469cbf',
-                                  'non-lab-award-uuid')
-            out = capsys.readouterr()[0]
-            message = '''
-Running on:       https://data.4dnucleome.org/
-Award non-lab-award-uuid not associated with lab 795847de-20b6-4f8c-ba8d-185215469cbf
-Submitting User:  test@test.test
-Submitting Lab:   795847de-20b6-4f8c-ba8d-185215469cbf
+Submitting Lab:   None
 Submitting Award: None
 
 ##############   DRY-RUN MODE   ################
@@ -808,6 +816,20 @@ The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
             assert out.strip() == message.strip()
+
+
+def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection_mock, capsys):
+    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[{'awards': ['/awards/test_award/', '/awards/1U54DK107977-01/']},
+                                       {'@id': '/awards/non-ren-lab-award/'}]):
+            with pytest.raises(SystemExit):
+                connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
+                imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                      '/labs/bing-ren-lab/',
+                                      '/awards/non-ren-lab-award/')
+
+# with pytest.raises(SystemExit):
 # Disabled - public account is not compatible with the connection object at the moment
 # # TODO: use mastertest tests for this purpose
 # def test_get_collections(connection_public):

@@ -1436,7 +1436,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, aw
         connection.award = None
     else:  # make sure award is linked to lab
         if lab_json is not None:
-            labawards = labjson.get('awards', [])
+            labawards = lab_json.get('awards', [])
             if award_json.get('@id') not in labawards:
                 print("Award {} not associated with lab {} - exiting!".format(submit_award, submit_lab))
                 sys.exit(1)
