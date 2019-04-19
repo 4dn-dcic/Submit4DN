@@ -653,6 +653,20 @@ def test_loadxl_cycle(capsys, mocker, connection_mock):
         assert message == out.strip()
 
 
+def test_verify_and_return_item_good_item(mocker, connection_mock, returned_award_objframe):
+    with mocker.patch('dcicutils.ff_utils.get_metadata',
+                      return_value=returned_award_objframe.json()):
+        res = imp._verify_and_return_item('/awards/1U01ES017166-01/', connection_mock)
+        assert res == returned_award_objframe.json()
+
+
+def test_verify_and_return_item_bad_item(mocker, connection_mock):
+    with mocker.patch('dcicutils.ff_utils.get_metadata',
+                      return_value=None):
+        res = imp._verify_and_return_item('blah', connection_mock)
+        assert res is None
+
+
 @pytest.mark.file_operation
 def test_cabin_cross_check_dryrun(mocker, connection_mock, capsys):
     with mocker.patch('wranglertools.import_data._verify_and_return_item',
