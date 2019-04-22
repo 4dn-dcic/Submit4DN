@@ -182,25 +182,26 @@ class FDN_Connection(object):
             has multiple awards and if so prompts for the one to set
             for the connection
         '''
-        if not lab and self.labs is not None:
-            if len(self.labs) > 1:
-                lchoices = []
-                print("Submitting for multiple labs:")
-                for i, lab in enumerate(self.labs):
-                    ch = str(i + 1)
-                    lchoices.append(ch)
-                    print("  ({choice}) {labname}".format(choice=ch, labname=lab))
-                lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
-                if lab_resp not in lchoices:
-                    print("Not a valid choice - using {default}".format(default=self.lab))
-                    return
-                else:
-                    self.lab = self.labs[int(lab_resp) - 1]
+        if lab:
+            if not award:
+                self.set_award(self.lab)
+        else:
+            if self.labs is not None:
+                if len(self.labs) > 1:
+                    lchoices = []
+                    print("Submitting for multiple labs:")
+                    for i, lab in enumerate(self.labs):
+                        ch = str(i + 1)
+                        lchoices.append(ch)
+                        print("  ({choice}) {labname}".format(choice=ch, labname=lab))
+                    lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
+                    if lab_resp not in lchoices:
+                        print("Not a valid choice - using {default}".format(default=self.lab))
+                        return
+                    else:
+                        self.lab = self.labs[int(lab_resp) - 1]
             if not award:
                 self.set_award(self.lab, False)
-        else:
-            if not award:
-                self.set_award(None)
 
 
 @attr.s

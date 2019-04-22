@@ -185,21 +185,6 @@ def test_connection_prompt_for_lab_award_multi_lab_award(
         assert connection.award == chosenaward
 
 
-def test_connection_no_prompt_if_no_labs(mocker, mkey, returned_user_me_submit_for_one_lab,
-                                         returned_lab_w_one_award):
-    '''using as remote user who has only one lab submits_for that has one award
-       in this case checking to make sure that lab and award are still present on connection
-    '''
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        connection.labs = None
-        connection.prompt_for_lab_award()
-        assert connection.labs is None
-        assert connection.award is None
-
-
 def test_set_award_no_lab(mocker, mkey, returned_user_me_submit_for_one_lab,
                           returned_lab_w_one_award):
     with mocker.patch('dcicutils.ff_utils.get_metadata',
