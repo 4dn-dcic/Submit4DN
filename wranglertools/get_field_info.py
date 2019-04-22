@@ -138,65 +138,70 @@ class FDN_Connection(object):
             # take the first one as default value for the connection - reset in
             # import_data if needed by calling set_lab_award
             self.lab = self.labs[0]
-            self.set_award(self.lab)  # set as default first
+            self.set_award(self.lab, dontPrompt=True)  # set as default first
         else:
             self.labs = None
             self.lab = None
             self.award = None
 
-    def set_award(self, lab, dontPrompt=True):
+    def set_award(self, lab, dontPrompt=False):
         '''Sets the award for the connection for use in import_data
            if dontPrompt is False will ask the User to choose if there
            are more than one award for the connection.lab otherwise
            the first award for the lab will be used
         '''
         self.award = None
-        labjson = ff_utils.get_metadata(lab, key=self.key)
-        if labjson.get('awards') is not None:
-            awards = labjson.get('awards')
-            # if don't prompt is active take first lab
-            if dontPrompt:
-                self.award = awards[0]['@id']
-                return
-            # if there is one lab return it as lab
-            if len(awards) == 1:
-                self.award = awards[0]['@id']
-                return
-            # if there are multiple labs
-            achoices = []
-            print("Multiple awards for {labname}:".format(labname=lab))
-            for i, awd in enumerate(awards):
-                ch = str(i + 1)
-                achoices.append(ch)
-                print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
-            # re try the input until a valid choice is input
-            awd_resp = ''
-            while awd_resp not in achoices:
-                awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
-            self.award = awards[int(awd_resp) - 1]['@id']
-            return
+        if lab is not None:
+            labjson = ff_utils.get_metadata(lab, key=self.key)
+            if labjson.get('awards') is not None:
+                awards = labjson.get('awards')
+                if len(awards) == 1:
+                    self.award = awards[0]['@id']
+                    return
 
-    def prompt_for_lab_award(self):
+                # if don't prompt is active leave None
+                if dontPrompt:
+                    return
+
+                # if there are multiple awards
+                achoices = []
+                print("Multiple awards for {labname}:".format(labname=lab))
+                for i, awd in enumerate(awards):
+                    ch = str(i + 1)
+                    achoices.append(ch)
+                    print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
+                # re try the input until a valid choice is input
+                awd_resp = ''
+                while awd_resp not in achoices:
+                    awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
+                self.award = awards[int(awd_resp) - 1]['@id']
+        return
+
+    def prompt_for_lab_award(self, lab=None, award=None):
         '''Check to see if user submits_for multiple labs or the lab
             has multiple awards and if so prompts for the one to set
             for the connection
         '''
-        if self.labs:
-            if len(self.labs) > 1:
-                lchoices = []
-                print("Submitting for multiple labs:")
-                for i, lab in enumerate(self.labs):
-                    ch = str(i + 1)
-                    lchoices.append(ch)
-                    print("  ({choice}) {labname}".format(choice=ch, labname=lab))
-                lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
-                if lab_resp not in lchoices:
-                    print("Not a valid choice - using {default}".format(default=self.lab))
-                    return
-                else:
-                    self.lab = self.labs[int(lab_resp) - 1]
-
-        self.set_award(self.lab, False)
+        if lab:
+            if not award:
+                self.set_award(self.lab)
+        else:
+            if self.labs is not None:
+                if len(self.labs) > 1:
+                    lchoices = []
+                    print("Submitting for multiple labs:")
+                    for i, lab in enumerate(self.labs):
+                        ch = str(i + 1)
+                        lchoices.append(ch)
+                        print("  ({choice}) {labname}".format(choice=ch, labname=lab))
+                    lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
+                    if lab_resp not in lchoices:
+                        print("Not a valid choice - using {default}".format(default=self.lab))
+                        return
+                    else:
+                        self.lab = self.labs[int(lab_resp) - 1]
+            if not award:
+                self.set_award(self.lab, False)
 
 
 @attr.s
