@@ -783,6 +783,35 @@ The validation will only check for schema rules, but not for object relations
             assert out.strip() == message.strip()
 
 
+def test_cabin_cross_check_remote_w_multilabs_no_options(mocker, connection_mock, capsys):
+    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
+        with mocker.patch('wranglertools.import_data._verify_and_return_item',
+                          side_effect=[None, None]):
+            connection_mock.labs = ['/labs/bing-ren-lab/', '/labs/test-lab/']
+            connection_mock.award = None
+            connection_mock.set_award = lambda x, y: None
+            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                                  None, None)
+            out = capsys.readouterr()[0]
+            print(out)
+            message = '''
+Running on:       https://data.4dnucleome.org/
+Submitting Lab NOT FOUND: None
+Submitting award NOT FOUND: None
+Submitting User:  test@test.test
+WARNING: Submitting Lab and Award Unspecified
+Lab and Award info must be included for all items or submission will fail
+Submitting Lab:   None
+Submitting Award: None
+
+##############   DRY-RUN MODE   ################
+Since there are no '--update' and/or '--patchall' arguments, you are running the DRY-RUN validation
+The validation will only check for schema rules, but not for object relations
+##############   DRY-RUN MODE   ################
+'''
+            assert out.strip() == message.strip()
+
+
 def test_cabin_cross_check_remote_w_labopt_and_lab_has_single_award(mocker, connection_mock, capsys):
     with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
         with mocker.patch('wranglertools.import_data._verify_and_return_item',
@@ -811,7 +840,6 @@ def test_cabin_cross_check_remote_w_unknown_lab_and_award(mocker, connection_moc
         with mocker.patch('wranglertools.import_data._verify_and_return_item',
                           side_effect=[None, None]):
             connection_mock.labs = ['test_lab', 'other_lab']
-            # connection_mock.set_award = lambda x: None
             imp.cabin_cross_check(connection_mock, False, False, 'blah', True, 'unknown_lab', 'unknown_award')
             out = capsys.readouterr()[0]
             message = '''
