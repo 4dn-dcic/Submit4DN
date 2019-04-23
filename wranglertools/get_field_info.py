@@ -344,7 +344,7 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         include_description,
                                         include_comments,
                                         include_enums)
-        if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
+        if name.startswith('Experiment') and not name.startswith('ExperimentSet') and name != 'ExperimentType':
             fields[name].extend(exp_set_addition)
         if 'extra_files' in properties:
             if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
