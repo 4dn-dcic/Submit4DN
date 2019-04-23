@@ -246,6 +246,7 @@ sheet_order = [
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
 file_types.remove('FileFormat')
+exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
 
 
 def get_field_type(field):
@@ -329,6 +330,10 @@ class FDN_Schema(object):
             q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
             formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
             response['properties']['file_format']['enum'] = formats
+        elif schema_name in exp_types and response['properties'].get('experiment_type'):
+            q = '/search/?type=ExperimentType&field=title&valid_item_types={}'.format(schema_name)
+            exptypes = [i['title'] for i in ff_utils.search_metadata(q, key=connection.key)]
+            response['properties']['experiment_type']['enum'] = exptypes
         self.properties = response['properties']
 
 
