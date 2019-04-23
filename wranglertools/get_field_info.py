@@ -231,7 +231,7 @@ fetch_items = {
     }
 
 sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
+    "User", "Award", "Lab", "Document", "ExperimentType", "Protocol", "Publication", "Organism",
     "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
     "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
     "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
