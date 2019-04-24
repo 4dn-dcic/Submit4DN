@@ -231,7 +231,7 @@ fetch_items = {
     }
 
 sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "Publication", "Organism",
+    "User", "Award", "Lab", "Document", "ExperimentType", "Protocol", "Publication", "Organism",
     "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
     "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
     "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
@@ -246,6 +246,7 @@ sheet_order = [
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
 file_types.remove('FileFormat')
+exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
 
 
 def get_field_type(field):
@@ -329,6 +330,10 @@ class FDN_Schema(object):
             q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
             formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
             response['properties']['file_format']['enum'] = formats
+        elif schema_name in exp_types and response['properties'].get('experiment_type'):
+            q = '/search/?type=ExperimentType&field=title&valid_item_types={}'.format(schema_name)
+            exptypes = [i['title'] for i in ff_utils.search_metadata(q, key=connection.key)]
+            response['properties']['experiment_type']['enum'] = exptypes
         self.properties = response['properties']
 
 
@@ -344,7 +349,7 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         include_description,
                                         include_comments,
                                         include_enums)
-        if name.startswith('Experiment') and not name.startswith('ExperimentSet'):
+        if name.startswith('Experiment') and not name.startswith('ExperimentSet') and name != 'ExperimentType':
             fields[name].extend(exp_set_addition)
         if 'extra_files' in properties:
             if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
