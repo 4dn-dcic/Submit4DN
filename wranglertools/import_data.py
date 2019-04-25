@@ -100,6 +100,14 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="will skip attribution prompt \
                         needed for automated submissions")
+    parser.add_argument('--lab',
+                        help="When using --remote can pass in a valid lab identifier \
+                        eg. uuid or @id to add attribution - must be able to submit for lab and \
+                        not needed if only submit for a single lab.")
+    parser.add_argument('--award',
+                        help="When using --remote if you are submitting for a lab with multiple awards \
+                        can pass a valid award identifier eg. uuid or @id to add attribution \
+                        not needed if there is only one award associated with the submitting lab.")
     parser.add_argument('--novalidate',
                         default=False,
                         action='store_true',
@@ -113,6 +121,7 @@ def getArgs():  # pragma: no cover
 list_of_loadxl_fields = [
     ['Document', ['references']],
     ['User', ['lab', 'submits_for']],
+    ['ExperimentType', ['sop', 'reference_pubs']],
     ['Biosample', ['biosample_relation']],
     ['Experiment', ['experiment_relation']],
     ['ExperimentMic', ['experiment_relation']],
@@ -643,7 +652,7 @@ def filter_set_from_exps(post_json):
             post_json.pop(replicate_field)
     # Part II - Experiment Sets
     if post_json.get('experiment_set'):
-        exp_set_info = post_json['experiment_set']
+        exp_set_info.append(post_json['experiment_set'])
         post_json.pop('experiment_set')
     return post_json, rep_set_info, exp_set_info
 
@@ -1140,12 +1149,12 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
                     else:
                         dict_replicates[rep_id] = [saveitem, ]
                     # Part-II Experiment Sets
-                    if exp_set_info:
-                        for exp_set in exp_set_info:
-                            if dict_exp_sets.get(exp_set):
-                                dict_exp_sets[exp_set].append(item_id)
-                            else:
-                                dict_exp_sets[exp_set] = [item_id, ]
+                if exp_set_info:
+                    for exp_set in exp_set_info:
+                        if dict_exp_sets.get(exp_set):
+                            dict_exp_sets[exp_set].append(item_id)
+                        else:
+                            dict_exp_sets[exp_set] = [item_id, ]
 
     # add all object loadxl patches to dictionary
     if patch_loadxl and not invalid:
@@ -1377,7 +1386,16 @@ def loadxl_cycle(patch_list, connection, alias_dict):
         print("{sheet}(phase2): {total} items patched.".format(sheet=n.upper(), total=total))
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote):
+def _verify_and_return_item(item, connection):
+    try:
+        res = ff_utils.get_metadata(item, key=connection.key, add_on='frame=object')
+        assert '@id' in res
+    except (AssertionError, TypeError):
+        return None
+    return res
+
+
+def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, award=None):
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
     # check input file (xls)
@@ -1386,10 +1404,55 @@ def cabin_cross_check(connection, patchall, update, infile, remote):
         sys.exit(1)
 
     # check for multi labs and awards and reset connection appropriately
+    # if lab and/or award options used modify connection accordingly and check for conflict later
+    if lab or award:
+        if lab is not None:
+            connection.lab = lab
+            if not award:
+                connection.set_award(lab, remote)
+        if award is not None:
+            connection.award = award
     if not remote:
-        connection.prompt_for_lab_award()
+        connection.prompt_for_lab_award(lab, award)
+    else:
+        if not lab:  # did not provide lab option
+            if len(connection.labs) > 1:  # lab may be provided as an option or is None
+                connection.lab = None
+        if award is None:  # has not been passed in as option
+            # lab may be None and then so will award
+            # or lab may have 1 award so use it
+            # or lab may have multiple awards so award set to None
+            connection.set_award(connection.lab, True)
+
+    # check to be sure that lab and award exist and if both that the award is linked to lab
+    submit_lab = connection.lab
+    submit_award = connection.award
+    lab_json = _verify_and_return_item(submit_lab, connection)
+    if not lab_json:
+        print("Submitting Lab NOT FOUND: {}".format(submit_lab))
+        connection.lab = None
+    award_json = _verify_and_return_item(submit_award, connection)
+    if not award_json:
+        print("Submitting award NOT FOUND: {}".format(submit_award))
+        connection.award = None
+    else:  # make sure award is linked to lab
+        if lab_json is not None:
+            labawards = lab_json.get('awards', [])
+            if award_json.get('@id') not in labawards:
+                print("Award {} not associated with lab {} - exiting!".format(submit_award, submit_lab))
+                sys.exit(1)
 
     print("Submitting User:  {}".format(connection.email))
+    missing = []
+    if connection.lab is None:
+        missing.append('Lab')
+    if connection.award is None:
+        missing.append('Award')
+    if missing:
+        whatis = ' and '.join(missing)
+        print("WARNING: Submitting {} Unspecified".format(whatis))
+        print("{} info must be included for all items or submission will fail".format(whatis))
+
     print("Submitting Lab:   {}".format(connection.lab))
     print("Submitting Award: {}".format(connection.award))
 
@@ -1468,7 +1531,8 @@ def main():  # pragma: no cover
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
-    cabin_cross_check(connection, args.patchall, args.update, args.infile, args.remote)
+    cabin_cross_check(connection, args.patchall, args.update, args.infile,
+                      args.remote, args.lab, args.award)
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type:
         names = [args.type]
