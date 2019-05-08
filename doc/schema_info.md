@@ -6,6 +6,7 @@ award.json | Award | award(s)
 biosample.json | Biosample | biosample(s)
 biosample\_cell\_culture.json | BiosampleCellCulture | biosample-cell-cultures, biosample\_cell\_culture
 biosource.json | Biosource | biosource(s)
+bio_feature.json | BioFeature | bio-features, bio\_feature
 construct.json | Construct | construct(s)
 document.json | Document | document(s)
 enzyme.json | Enzyme | enzyme(s)
@@ -19,6 +20,7 @@ file\_fastq.json | FileFastq | files-fastq, file\_fastq
 file\_processed.json | FileProcessed | files-processed, file\_processed
 file\_reference.json | FileReference | files-reference, file\_reference
 file\_set.json | FileSet | file-sets, file\_set
+gene.json | Gene | gene(s)
 genomic\_region.json | GenomicRegion | genomic-regions, genomic\_region
 image.json | Image | image(s)
 individual\_human.json | IndividualHuman | individuals-human, individual\_human
@@ -37,7 +39,6 @@ software.json | Software | software(s)
 sop\_map.json | SopMap | sop-maps, sop\_map
 summary\_statistic.json | SummaryStatistic | summary-statistics, summary\_statistic
 summary\_statistic\_hi\_c.json | SummaryStatisticHiC | summary-statistics-hi-c, summary\_statistic\_hi\_c
-target.json | Target | target(s)
 treatment\_chemical.json | TreatmentChemical | treatments-chemical, treatment\_chemical
 treatment\_rnai.json | TreatmentRnai | treatments-rnai, treatment\_rnai
 user.json | User | user(s)

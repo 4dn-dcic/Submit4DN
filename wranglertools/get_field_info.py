@@ -233,7 +233,7 @@ fetch_items = {
 sheet_order = [
     "User", "Award", "Lab", "Document", "ExperimentType", "Protocol", "Publication", "Organism",
     "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
-    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
+    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Gene", "Target", "BioFeature",
     "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
     "Biosample", "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",

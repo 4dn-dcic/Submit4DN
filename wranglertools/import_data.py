@@ -45,7 +45,7 @@ in the document you need to use '--update' for POSTing to occur
 Defining Object type:
     Each "sheet" of the excel file is named after the object type you are uploading,
     with the format used on http://data.4dnucleome.org//profiles/
-Ex: ExperimentHiC, Biosample, Document, Target
+Ex: ExperimentHiC, Biosample, Document, BioFeature
 
 If there is a single sheet that needs to be posted or patched, you can name the single sheet
 with the object name and use the '--type' argument

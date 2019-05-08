@@ -24,7 +24,7 @@ pip3 install submit4dn --upgrade
 
 ### Troubleshooting
 
-If you encounter an error containing something like:   
+If you encounter an error containing something like:
 
 ```
  Symbol not found: _PyInt_AsLong
@@ -85,17 +85,17 @@ get_field_info --type Biosample --comments --outfile biosample.xls
 
 Example list of sheets:
 ~~~~
-get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type Image --comments --outfile MetadataSheets.xls
+get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type BioFeature --type GenomicRegion --type ExperimentSet --type Image --comments --outfile MetadataSheets.xls
 ~~~~
 
 Example list of sheets: (using python scripts)
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type ExperimentHiC --type ExperimentCaptureC --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile MetadataSheets.xls
+python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type ExperimentHiC --type ExperimentCaptureC --type BioFeature --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile MetadataSheets.xls
 ~~~~
 
 Example list of sheets: (Experiment seq)
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type Target --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
+python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type BioFeature --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
 ~~~~
 
 Example list of sheets: (Experiment seq simple)
