@@ -34,8 +34,7 @@ Description:
 
         *Full list*
         ~~~~
-        python3 get_field_info.py --type Publication --type Document --type Vendor --type Protocol --type ProtocolsCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type File --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type BioFeature --type GenomicRegion --type ExperimentSet --type Image --outfile AllItems.xls --order
-
+        python3 get_field_info.py --type all --outfile AllItems.xls
         ~~~~
         *To get a single sheet use*
         ```

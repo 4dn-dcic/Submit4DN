@@ -408,18 +408,18 @@ def get_sheet_names(types_list):
     else:
         presets = {
             'hic': ["image", "filefastq", "experimenthic"],
-            'chipseq': ["target", "antibody", "filefastq", "experimentseq"],
+            'chipseq': ["gene", "biofeature", "antibody", "filefastq", "experimentseq"],
             'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
             'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
-            'damid': ["target", "filefastq", "fileprocessed", "experimentdamid"],
-            'chiapet': ["target", "filefastq", "experimentchiapet"],
-            'capturec': ["genomicregion", "target", "filefastq", "filereference", "experimentcapturec"],
+            'damid': ["gene", "biofeature", "filefastq", "fileprocessed", "experimentdamid"],
+            'chiapet': ["gene", "biofeature", "filefastq", "experimentchiapet"],
+            'capturec': ["genomicregion", "biofeature", "filefastq", "filereference", "experimentcapturec"],
             'fish': [
-                "genomicregion", "target", "antibody", "microscopesettinga1", "filemicroscopy",
+                "genomicregion", "biofeature", "antibody", "microscopesettinga1", "filemicroscopy",
                 "filereference", "fileprocessed", "imagingpath", "experimentmic",
             ],
             'spt': [
-                "target", "modification", "microscopesettinga2",
+                "gene", "biofeature", "modification", "microscopesettinga2",
                 "fileprocessed", "imagingpath", "experimentmic",
             ]}
         for key in presets.keys():

@@ -264,7 +264,24 @@ The scripts accepts the following parameters:.
 
 **To get the complete list of relevant sheets in one workbook:**
 
-    get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentChemical --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type FileSet --type IndividualHuman --type IndividualMouse --type ExperimentHiC --type ExperimentCaptureC --type ExperimentRepliseq --type BioFeature --type GenomicRegion --type Gene --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile AllItems.xls
+    get_field_info --type all --comments --outfile AllItems.xls
+
+
+**You can also generate the sheets needed for a particular type of experiment using pre-set options**
+
+    get_field_info --type hic --comments --outfile HiCMetadata.xls
+
+    Current presets include:
+    - hic for most types of Hi-C eg. in situ, dilution, single cell
+    - chipseq for ChIP-seq
+    - repliseq for 2-phase or multi-phase Repli-seq
+    - atacseq for ATAC-seq
+    - damid for DamID-seq
+    - chiapet for CHIA-Pet and PLAC-seq
+    - capturec for Capture Hi-C
+    - fish for RNA and DNA FISH
+    - spt for Single Particle Tracking Imaging experiments
+
 
 ##<a name="rest"></a>Submission of metadata using the 4DN REST API
 The 4DN-DCIC metadata database can be accessed using a Hypertext-Transfer-Protocol-(HTTP)-based, Representational-state-transfer (RESTful) application programming interface (API) - aka the REST API.  In fact, this API is used by the ```import_data``` script used to submit metadata entered into excel spreadsheets as described [in this document](https://docs.google.com/document/d/1Xh4GxapJxWXCbCaSqKwUd9a2wTiXmfQByzP0P8q5rnE). This API was developed by the [ENCODE][encode] project so if you have experience retrieving data from or submitting data to ENCODE use of the 4DN-DCIC API should be familiar to you.   The REST API can be used both for data submission and data retrieval, typically using scripts written in your language of choice.  Data objects exchanged with the server conform to the standard JavaScript Object Notation (JSON) format.  Libraries written for use with your chosen language are typically used for the network connection, data transfer, and parsing of data  (for example, requests and json, respectively for Python).  For a good introduction to scripting data retrieval (using GET requests) you can refer to [this page](https://www.encodeproject.org/help/rest-api/) on the [ENCODE][encode] web site that also has a good introduction to viewing and understanding JSON formatted data.
