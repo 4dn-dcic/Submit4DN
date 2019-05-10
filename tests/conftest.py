@@ -2,6 +2,7 @@
 import pytest
 from wranglertools.get_field_info import FDN_Key, FDN_Connection
 
+
 class MockedResponse(object):
     def __init__(self, json, status):
         self._json = json
@@ -19,6 +20,7 @@ class MockedConnection(object):
         self.award = 'test_award'
         self.labs = ['test_lab']
         self.email = 'test@test.test'
+        self.admin = False
 
     def set_award(self, lab, dontPrompt=False):
         self.award = 'test_award'
@@ -100,6 +102,21 @@ def connection_fake():
 @pytest.fixture(scope="module")
 def item_properties():
     return {'@id': {'calculatedProperty': True, 'title': 'ID', 'type': 'string'},
+            "accession": {
+                "serverDefault": "accession",
+                "title": "Accession",
+                "permission": "import_items",
+                "description": "A unique identifier to be used to reference the object.",
+                "format": "accession",
+                "internal_comment": "Only admins are allowed to set or update this value.",
+                "type": "string",
+                "accessionType": "SR"},
+            "schema_version": {
+
+                "pattern": "^\\d+(\\.\\d+)*$",
+                "title": "Schema Version",
+                "default": "2",
+                "type": "string"},
             '@type': {'calculatedProperty': True,
                       'items': {'type': 'string'},
                       'title': 'Type',
@@ -150,7 +167,11 @@ def item_properties():
                                'pattern': '^\\d+(\\.\\d+)*$',
                                'requestMethod': [],
                                'title': 'Schema Version',
-                               'type': 'string'},
+                               'type': 'string',
+                               "exclude_from": [
+                                   "submit4dn",
+                                   "FFedit-create"
+                               ]},
             'start_date': {'anyOf': [{'format': 'date-time'}, {'format': 'date'}],
                            'comment': 'Date can be submitted as YYYY-MM-DD or '
                            'YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone '
@@ -166,6 +187,7 @@ def item_properties():
                                 'replaced',
                                 'released',
                                 'revoked'],
+                       'suggested_enum': ['awesome'],
                        'title': 'Status',
                        'type': 'string'},
             'title': {'description': 'The grant name from the NIH database, if '
@@ -179,7 +201,8 @@ def item_properties():
                     'format': 'uri',
                     'rdfs:subPropertyOf': 'rdfs:seeAlso',
                     'title': 'URL',
-                    'type': 'string'},
+                    'type': 'string',
+                    'suggested_enum': ['https://www.test.com', 'https://www.example.com']},
             'uuid': {'format': 'uuid',
                      'requestMethod': 'POST',
                      'serverDefault': 'uuid4',
@@ -189,7 +212,38 @@ def item_properties():
                               'the user has permission to view.',
                               'enum': ['4DN', 'Not 4DN'],
                               'title': 'View access group',
-                              'type': 'string'}}
+                              'type': 'string'},
+            "file_format_specification": {
+                "type": "object",
+                "properties": {
+                    "download": {
+                        "title": "File Name",
+                        "description": "File Name of the attachment.",
+                        "type": "string"
+                    },
+                    "href": {
+                        "internal_comment": "Internal webapp URL for document file",
+                        "title": "href",
+                        "description": "Path to download the file attached to this Item.",
+                        "type": "string"
+                    }
+                },
+                "title": "File format specification",
+                "description": "Text or pdf file that further explains the file format",
+                "formInput": "file",
+                "ff_flag": "clear clone",
+                "lookup": 1},
+            "guide_rnas": {
+                "description": "The guide RNA sequences used in Crispr targetting.",
+                "type": "array",
+                "items": {
+                    "title": "Guide RNA",
+                    "description": "Sequence of the guide RNA - submit as DNA (i.e. T not U) can include the PAM motif that is not actually part of the transcribed target and should not include the tracrRNA so that the sequence submitted reflects the genomic sequence",
+                    "type": "string",
+                    "pattern": "^[ATGCN]+$"
+                },
+                "lookup": 60,
+                "title": "Guide RNAs"}}
 
 
 @pytest.fixture

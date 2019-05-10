@@ -252,16 +252,33 @@ def test_dotted_field_name_no_parent():
 def test_build_field_list(item_properties):
     field_list = gfi.build_field_list(item_properties, required_fields=["title", "pi"])
     assert field_list
-    assert len(field_list) == 13
+    assert len(field_list) == 15
     names = [i.name for i in field_list]
     assert '*title' in names
 
 
-def test_build_field_list_gets_enum(item_properties):
+def test_build_field_list_excludes_from_and_skip_import_items(item_properties):
+    field_list = gfi.build_field_list(item_properties)
+    assert not [field for field in field_list if field.name == 'schema_version']  # exclude_from
+    assert not [field for field in field_list if field.name == 'accession']  # import_items
+
+
+def test_build_field_list_does_not_skip_import_items_if_admin(item_properties):
+    field_list = gfi.build_field_list(item_properties, admin=True)
+    assert not [field for field in field_list if field.name == 'schema_version']  # exclude_from
+    assert [field for field in field_list if field.name == 'accession']  # import_items
+
+
+def test_build_field_list_gets_enum_or_suggested_enum(item_properties):
     field_list = gfi.build_field_list(item_properties, include_enums=True)
     for field in field_list:
         if field.name == "project":
             assert ['4DN', 'External'] == field.enum
+        if field.name == "url":
+            assert ['https://www.test.com', 'https://www.example.com'] == field.enum
+        if field.name == "status":
+            assert 'awesome' not in field.enum
+            assert 'current' in field.enum
 
     field_list = gfi.build_field_list(item_properties)
     for field in field_list:

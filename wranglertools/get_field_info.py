@@ -265,6 +265,8 @@ def get_field_type(field):
 
 
 def is_subobject(field):
+    if field.get('type') == 'object':
+        return True
     try:
         return field['items']['type'] == 'object'
     except:
@@ -292,14 +294,23 @@ def build_field_list(properties, required_fields=None, include_description=False
         if is_subobject(props):
             if get_field_type(props).startswith('array'):
                 is_member_of_array_of_objects = True
-            fields.extend(build_field_list(props['items']['properties'],
-                                           required_fields,
-                                           include_description,
-                                           include_comment,
-                                           include_enums,
-                                           name,
-                                           is_member_of_array_of_objects)
-                          )
+                fields.extend(build_field_list(props['items']['properties'],
+                                               required_fields,
+                                               include_description,
+                                               include_comment,
+                                               include_enums,
+                                               name,
+                                               is_member_of_array_of_objects)
+                              )
+            else:
+                fields.extend(build_field_list(props['properties'],
+                                               required_fields,
+                                               include_description,
+                                               include_comment,
+                                               include_enums,
+                                               name,
+                                               is_member_of_array_of_objects)
+                              )
         else:
             field_name = dotted_field_name(name, parent)
             if required_fields is not None:
@@ -310,12 +321,16 @@ def build_field_list(properties, required_fields=None, include_description=False
                 field_type = "array of embedded objects, " + field_type
             desc = '' if not include_description else props.get('description', '')
             comm = '' if not include_comment else props.get('comment', '')
-            enum = '' if not include_enums else props.get('enum', '')
+            enum = ''
+            if include_enums:
+                enum = props.get('enum') if 'enum' in props else props.get('suggested_enum', '')
             lookup = props.get('lookup', 500)  # field ordering info
             # if array of string with enum
-            if field_type == "array of strings":
+            if field_type == "array of string":
                 sub_props = props.get('items', '')
-                enum = '' if not include_enums else sub_props.get('enum', '')
+                enum = ''
+                if include_enums:
+                    enum = sub_props.get('enum') if 'enum' in sub_props else sub_props.get('suggested_enum', '')
             # copy paste exp set for ease of keeping track of different types in experiment objects
             fields.append(FieldInfo(field_name, field_type, lookup, desc, comm, enum))
     return fields
