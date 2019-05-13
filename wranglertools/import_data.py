@@ -51,8 +51,11 @@ If there is a single sheet that needs to be posted or patched, you can name the 
 with the object name and use the '--type' argument
 Ex: %(prog)s mydata.xsls --type ExperimentHiC
 
-The name of each sheet should be the names of the fields.
+The name of each sheet should be the names of the object type.
 Ex: Award, Lab, BioFeature, etc.
+
+The column names on the sheets should be the field names
+Ex: aliases, experiment_type, etc.
 
 To upload objects with attachments, use the column titled "attachment"
 containing the full path to the file you wish to attach
