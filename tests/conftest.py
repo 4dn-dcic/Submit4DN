@@ -2,6 +2,7 @@
 import pytest
 from wranglertools.get_field_info import FDN_Key, FDN_Connection
 
+
 class MockedResponse(object):
     def __init__(self, json, status):
         self._json = json
@@ -19,6 +20,7 @@ class MockedConnection(object):
         self.award = 'test_award'
         self.labs = ['test_lab']
         self.email = 'test@test.test'
+        self.admin = False
 
     def set_award(self, lab, dontPrompt=False):
         self.award = 'test_award'
@@ -100,6 +102,21 @@ def connection_fake():
 @pytest.fixture(scope="module")
 def item_properties():
     return {'@id': {'calculatedProperty': True, 'title': 'ID', 'type': 'string'},
+            "accession": {
+                "serverDefault": "accession",
+                "title": "Accession",
+                "permission": "import_items",
+                "description": "A unique identifier to be used to reference the object.",
+                "format": "accession",
+                "internal_comment": "Only admins are allowed to set or update this value.",
+                "type": "string",
+                "accessionType": "SR"},
+            "schema_version": {
+
+                "pattern": "^\\d+(\\.\\d+)*$",
+                "title": "Schema Version",
+                "default": "2",
+                "type": "string"},
             '@type': {'calculatedProperty': True,
                       'items': {'type': 'string'},
                       'title': 'Type',
@@ -150,7 +167,11 @@ def item_properties():
                                'pattern': '^\\d+(\\.\\d+)*$',
                                'requestMethod': [],
                                'title': 'Schema Version',
-                               'type': 'string'},
+                               'type': 'string',
+                               "exclude_from": [
+                                   "submit4dn",
+                                   "FFedit-create"
+                               ]},
             'start_date': {'anyOf': [{'format': 'date-time'}, {'format': 'date'}],
                            'comment': 'Date can be submitted as YYYY-MM-DD or '
                            'YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone '
@@ -166,6 +187,7 @@ def item_properties():
                                 'replaced',
                                 'released',
                                 'revoked'],
+                       'suggested_enum': ['awesome'],
                        'title': 'Status',
                        'type': 'string'},
             'title': {'description': 'The grant name from the NIH database, if '
@@ -179,7 +201,8 @@ def item_properties():
                     'format': 'uri',
                     'rdfs:subPropertyOf': 'rdfs:seeAlso',
                     'title': 'URL',
-                    'type': 'string'},
+                    'type': 'string',
+                    'suggested_enum': ['https://www.test.com', 'https://www.example.com']},
             'uuid': {'format': 'uuid',
                      'requestMethod': 'POST',
                      'serverDefault': 'uuid4',
@@ -189,7 +212,38 @@ def item_properties():
                               'the user has permission to view.',
                               'enum': ['4DN', 'Not 4DN'],
                               'title': 'View access group',
-                              'type': 'string'}}
+                              'type': 'string'},
+            "file_format_specification": {
+                "type": "object",
+                "properties": {
+                    "download": {
+                        "title": "File Name",
+                        "description": "File Name of the attachment.",
+                        "type": "string"
+                    },
+                    "href": {
+                        "internal_comment": "Internal webapp URL for document file",
+                        "title": "href",
+                        "description": "Path to download the file attached to this Item.",
+                        "type": "string"
+                    }
+                },
+                "title": "File format specification",
+                "description": "Text or pdf file that further explains the file format",
+                "formInput": "file",
+                "ff_flag": "clear clone",
+                "lookup": 1},
+            "guide_rnas": {
+                "description": "The guide RNA sequences used in Crispr targetting.",
+                "type": "array",
+                "items": {
+                    "title": "Guide RNA",
+                    "description": "Sequence of the guide RNA - submit as DNA (i.e. T not U) can include the PAM motif that is not actually part of the transcribed target and should not include the tracrRNA so that the sequence submitted reflects the genomic sequence",
+                    "type": "string",
+                    "pattern": "^[ATGCN]+$"
+                },
+                "lookup": 60,
+                "title": "Guide RNAs"}}
 
 
 @pytest.fixture
@@ -309,7 +363,7 @@ def returned_experiment_set_schema():
 
 @pytest.fixture
 def returned_vendor_items():
-    data = {'@id': '/search/?type=Vendor&limit=all&frame=object', 'sort': {'label': {'order': 'asc', 'missing': '_last', 'ignore_unmapped': True}, 'date_created': {'order': 'desc', 'ignore_unmapped': True}}, 'columns': {'@id': 'ID', 'aliases': 'Lab aliases', 'name': 'name', 'description': 'Description', 'title': 'Name'}, 'clear_filters': '/search/?type=Vendor', '@context': '/terms/', 'views': [{'href': '/report/?type=Vendor&limit=all&frame=object', 'title': 'View tabular report', 'icon': 'table'}], 'notification': 'Success', 'filters': [{'field': 'type', 'term': 'Vendor', 'remove': '/search/?limit=all&frame=object'}], '@type': ['Search'], '@graph': [{'url': 'https://www.thermofisher.com/us/en/home/brands/thermo-scientific.html#/legacy=www.fermentas.com', '@id': '/vendors/thermofisher-scientific/', 'aliases': [], 'status': 'in review by lab', 'description': 'previously also Fermentas', 'award': '/awards/1U01CA200059-01/', 'uuid': 'b31106bc-8535-4448-903e-854af460b21f', 'lab': '/labs/4dn-dcic-lab/', 'date_created': '2016-12-08T18:31:47.847660+00:00', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'title': 'ThermoFisher Scientific', 'name': 'thermofisher-scientific', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/'}, {'url': 'https://www.neb.com', '@id': '/vendors/new-england-biolabs/', 'aliases': [], 'status': 'in review by lab', 'description': '', 'award': '/awards/1U01CA200059-01/', 'uuid': 'b31106bc-8535-4448-903e-854af460b21e', 'lab': '/labs/4dn-dcic-lab/', 'date_created': '2016-12-08T18:31:47.824418+00:00', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'title': 'New England Biolabs', 'name': 'new-england-biolabs', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/'}, {'url': 'http://www.worthington-biochem.com', '@id': '/vendors/worthington-biochemical/', 'aliases': [], 'status': 'in review by lab', 'description': '', 'award': '/awards/1U01CA200059-01/', 'uuid': 'b31106bc-8535-4448-903e-854af460b21d', 'lab': '/labs/4dn-dcic-lab/', 'date_created': '2016-12-08T18:31:47.807726+00:00', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'title': 'Worthington Biochemical', 'name': 'worthington-biochemical', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/'}], 'title': 'Search', 'total': 3, 'facets': [{'total': 3, 'title': 'Data Type', 'field': 'type', 'terms': [{'key': 'Vendor', 'doc_count': 3}, {'key': 'AccessKey', 'doc_count': 0}, {'key': 'AnalysisStep', 'doc_count': 0}, {'key': 'Award', 'doc_count': 0}, {'key': 'Biosample', 'doc_count': 0}, {'key': 'BiosampleCellCulture', 'doc_count': 0}, {'key': 'Biosource', 'doc_count': 0}, {'key': 'Construct', 'doc_count': 0}, {'key': 'Document', 'doc_count': 0}, {'key': 'Enzyme', 'doc_count': 0}, {'key': 'Experiment', 'doc_count': 0}, {'key': 'ExperimentCaptureC', 'doc_count': 0}, {'key': 'ExperimentHiC', 'doc_count': 0}, {'key': 'ExperimentRepliseq', 'doc_count': 0}, {'key': 'File', 'doc_count': 0}, {'key': 'FileFasta', 'doc_count': 0}, {'key': 'FileFastq', 'doc_count': 0}, {'key': 'FileProcessed', 'doc_count': 0}, {'key': 'FileReference', 'doc_count': 0}, {'key': 'FileSet', 'doc_count': 0}, {'key': 'Individual', 'doc_count': 0}, {'key': 'IndividualMouse', 'doc_count': 0}, {'key': 'Lab', 'doc_count': 0}, {'key': 'Modification', 'doc_count': 0}, {'key': 'Ontology', 'doc_count': 0}, {'key': 'OntologyTerm', 'doc_count': 0}, {'key': 'Organism', 'doc_count': 0}, {'key': 'Publication', 'doc_count': 0}, {'key': 'Software', 'doc_count': 0}, {'key': 'SopMap', 'doc_count': 0}, {'key': 'Target', 'doc_count': 0}, {'key': 'Treatment', 'doc_count': 0}, {'key': 'TreatmentChemical', 'doc_count': 0}, {'key': 'TreatmentRnai', 'doc_count': 0}, {'key': 'User', 'doc_count': 0}, {'key': 'Workflow', 'doc_count': 0}, {'key': 'WorkflowRun', 'doc_count': 0}]}, {'total': 3, 'title': 'Audit category: DCC ACTION', 'field': 'audit.INTERNAL_ACTION.category', 'terms': [{'key': 'mismatched status', 'doc_count': 0}, {'key': 'validation error', 'doc_count': 0}, {'key': 'validation error: run_status', 'doc_count': 0}]}]}
+    data = {'@id': '/search/?type=Vendor&limit=all&frame=object', 'sort': {'label': {'order': 'asc', 'missing': '_last', 'ignore_unmapped': True}, 'date_created': {'order': 'desc', 'ignore_unmapped': True}}, 'columns': {'@id': 'ID', 'aliases': 'Lab aliases', 'name': 'name', 'description': 'Description', 'title': 'Name'}, 'clear_filters': '/search/?type=Vendor', '@context': '/terms/', 'views': [{'href': '/report/?type=Vendor&limit=all&frame=object', 'title': 'View tabular report', 'icon': 'table'}], 'notification': 'Success', 'filters': [{'field': 'type', 'term': 'Vendor', 'remove': '/search/?limit=all&frame=object'}], '@type': ['Search'], '@graph': [{'url': 'https://www.thermofisher.com/us/en/home/brands/thermo-scientific.html#/legacy=www.fermentas.com', '@id': '/vendors/thermofisher-scientific/', 'aliases': [], 'status': 'in review by lab', 'description': 'previously also Fermentas', 'award': '/awards/1U01CA200059-01/', 'uuid': 'b31106bc-8535-4448-903e-854af460b21f', 'lab': '/labs/4dn-dcic-lab/', 'date_created': '2016-12-08T18:31:47.847660+00:00', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'title': 'ThermoFisher Scientific', 'name': 'thermofisher-scientific', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/'}, {'url': 'https://www.neb.com', '@id': '/vendors/new-england-biolabs/', 'aliases': [], 'status': 'in review by lab', 'description': '', 'award': '/awards/1U01CA200059-01/', 'uuid': 'b31106bc-8535-4448-903e-854af460b21e', 'lab': '/labs/4dn-dcic-lab/', 'date_created': '2016-12-08T18:31:47.824418+00:00', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'title': 'New England Biolabs', 'name': 'new-england-biolabs', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/'}, {'url': 'http://www.worthington-biochem.com', '@id': '/vendors/worthington-biochemical/', 'aliases': [], 'status': 'in review by lab', 'description': '', 'award': '/awards/1U01CA200059-01/', 'uuid': 'b31106bc-8535-4448-903e-854af460b21d', 'lab': '/labs/4dn-dcic-lab/', 'date_created': '2016-12-08T18:31:47.807726+00:00', '@type': ['Vendor', 'Item'], 'schema_version': '1', 'title': 'Worthington Biochemical', 'name': 'worthington-biochemical', 'submitted_by': '/users/986b362f-4eb6-4a9c-8173-3ab267307e3a/'}], 'title': 'Search', 'total': 3, 'facets': [{'total': 3, 'title': 'Data Type', 'field': 'type', 'terms': [{'key': 'Vendor', 'doc_count': 3}, {'key': 'AccessKey', 'doc_count': 0}, {'key': 'AnalysisStep', 'doc_count': 0}, {'key': 'Award', 'doc_count': 0}, {'key': 'Biosample', 'doc_count': 0}, {'key': 'BiosampleCellCulture', 'doc_count': 0}, {'key': 'Biosource', 'doc_count': 0}, {'key': 'Construct', 'doc_count': 0}, {'key': 'Document', 'doc_count': 0}, {'key': 'Enzyme', 'doc_count': 0}, {'key': 'Experiment', 'doc_count': 0}, {'key': 'ExperimentCaptureC', 'doc_count': 0}, {'key': 'ExperimentHiC', 'doc_count': 0}, {'key': 'ExperimentRepliseq', 'doc_count': 0}, {'key': 'File', 'doc_count': 0}, {'key': 'FileFasta', 'doc_count': 0}, {'key': 'FileFastq', 'doc_count': 0}, {'key': 'FileProcessed', 'doc_count': 0}, {'key': 'FileReference', 'doc_count': 0}, {'key': 'FileSet', 'doc_count': 0}, {'key': 'Individual', 'doc_count': 0}, {'key': 'IndividualMouse', 'doc_count': 0}, {'key': 'Lab', 'doc_count': 0}, {'key': 'Modification', 'doc_count': 0}, {'key': 'Ontology', 'doc_count': 0}, {'key': 'OntologyTerm', 'doc_count': 0}, {'key': 'Organism', 'doc_count': 0}, {'key': 'Publication', 'doc_count': 0}, {'key': 'Software', 'doc_count': 0}, {'key': 'SopMap', 'doc_count': 0}, {'key': 'BioFeature', 'doc_count': 0}, {'key': 'Treatment', 'doc_count': 0}, {'key': 'TreatmentChemical', 'doc_count': 0}, {'key': 'TreatmentRnai', 'doc_count': 0}, {'key': 'User', 'doc_count': 0}, {'key': 'Workflow', 'doc_count': 0}, {'key': 'WorkflowRun', 'doc_count': 0}]}, {'total': 3, 'title': 'Audit category: DCC ACTION', 'field': 'audit.INTERNAL_ACTION.category', 'terms': [{'key': 'mismatched status', 'doc_count': 0}, {'key': 'validation error', 'doc_count': 0}, {'key': 'validation error: run_status', 'doc_count': 0}]}]}
     return MockedResponse(data, 200)
 
 

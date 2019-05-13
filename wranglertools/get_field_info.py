@@ -86,6 +86,10 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="will skip attribution prompt \
                         needed for automated submissions")
+    parser.add_argument('--noadmin',
+                        default=False,
+                        action='store_true',
+                        help="Will set an admin user to non-admin for generating sheets")
     args = parser.parse_args()
     return args
 
@@ -127,6 +131,7 @@ class FDN_Connection(object):
             self.user = me_page['@id']
             self.email = me_page['email']
             self.check = True
+            self.admin = True if 'admin' in me_page.get('groups', []) else False
         except:
             print('Can not establish connection, please check your keys')
             me_page = {}
@@ -213,6 +218,7 @@ class FieldInfo(object):
     comm = attr.ib(default=u'')
     enum = attr.ib(default=u'')
 
+
 # additional fields for experiment sheets to capture experiment_set related information
 exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
                     FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
@@ -221,19 +227,11 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3
                     #          'Grouping for non-replicate experiments')
                     ]
 
-fetch_items = {
-    "Document": "document",
-    "Protocol": "protocol",
-    "Enzyme": "enzyme",
-    "Biosource": "biosource",
-    "Publication": "publication",
-    "Vendor": "vendor"
-    }
 
 sheet_order = [
     "User", "Award", "Lab", "Document", "ExperimentType", "Protocol", "Publication", "Organism",
     "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
-    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Target",
+    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Gene", "BioFeature",
     "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
     "Biosample", "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
     "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
@@ -242,7 +240,7 @@ sheet_order = [
     "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
     "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
     "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
-    ]
+]
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
 file_types.remove('FileFormat')
@@ -267,6 +265,8 @@ def get_field_type(field):
 
 
 def is_subobject(field):
+    if field.get('type') == 'object':
+        return True
     try:
         return field['items']['type'] == 'object'
     except:
@@ -281,41 +281,58 @@ def dotted_field_name(field_name, parent_name=None):
 
 
 def build_field_list(properties, required_fields=None, include_description=False,
-                     include_comment=False, include_enums=False, parent='', is_submember=False):
+                     include_comment=False, include_enums=False, parent='', is_submember=False, admin=False):
     fields = []
     for name, props in properties.items():
         is_member_of_array_of_objects = False
-        if not props.get('calculatedProperty', False):
-            if 'submit4dn' not in props.get('exclude_from', [""]):
-                if is_subobject(props):
-                    if get_field_type(props).startswith('array'):
-                        is_member_of_array_of_objects = True
-                    fields.extend(build_field_list(props['items']['properties'],
-                                                   required_fields,
-                                                   include_description,
-                                                   include_comment,
-                                                   include_enums,
-                                                   name,
-                                                   is_member_of_array_of_objects)
-                                  )
-                else:
-                    field_name = dotted_field_name(name, parent)
-                    if required_fields is not None:
-                        if field_name in required_fields:
-                            field_name = '*' + field_name
-                    field_type = get_field_type(props)
-                    if is_submember:
-                        field_type = "array of embedded objects, " + field_type
-                    desc = '' if not include_description else props.get('description', '')
-                    comm = '' if not include_comment else props.get('comment', '')
-                    enum = '' if not include_enums else props.get('enum', '')
-                    lookup = props.get('lookup', 500)  # field ordering info
-                    # if array of string with enum
-                    if field_type == "array of strings":
-                        sub_props = props.get('items', '')
-                        enum = '' if not include_enums else sub_props.get('enum', '')
-                    # copy paste exp set for ease of keeping track of different types in experiment objects
-                    fields.append(FieldInfo(field_name, field_type, lookup, desc, comm, enum))
+        if props.get('calculatedProperty'):
+            continue
+        if 'submit4dn' in props.get('exclude_from', []):
+            continue
+        if ('import_items' in props.get('permission', []) and not admin):
+            continue
+        if is_subobject(props):
+            if get_field_type(props).startswith('array'):
+                is_member_of_array_of_objects = True
+                fields.extend(build_field_list(props['items']['properties'],
+                                               required_fields,
+                                               include_description,
+                                               include_comment,
+                                               include_enums,
+                                               name,
+                                               is_member_of_array_of_objects)
+                              )
+            else:
+                fields.extend(build_field_list(props['properties'],
+                                               required_fields,
+                                               include_description,
+                                               include_comment,
+                                               include_enums,
+                                               name,
+                                               is_member_of_array_of_objects)
+                              )
+        else:
+            field_name = dotted_field_name(name, parent)
+            if required_fields is not None:
+                if field_name in required_fields:
+                    field_name = '*' + field_name
+            field_type = get_field_type(props)
+            if is_submember:
+                field_type = "array of embedded objects, " + field_type
+            desc = '' if not include_description else props.get('description', '')
+            comm = '' if not include_comment else props.get('comment', '')
+            enum = ''
+            if include_enums:
+                enum = props.get('enum') if 'enum' in props else props.get('suggested_enum', '')
+            lookup = props.get('lookup', 500)  # field ordering info
+            # if array of string with enum
+            if field_type == "array of string":
+                sub_props = props.get('items', '')
+                enum = ''
+                if include_enums:
+                    enum = sub_props.get('enum') if 'enum' in sub_props else sub_props.get('suggested_enum', '')
+            # copy paste exp set for ease of keeping track of different types in experiment objects
+            fields.append(FieldInfo(field_name, field_type, lookup, desc, comm, enum))
     return fields
 
 
@@ -348,7 +365,8 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         required_fields,
                                         include_description,
                                         include_comments,
-                                        include_enums)
+                                        include_enums,
+                                        admin=connection.admin)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet') and name != 'ExperimentType':
             fields[name].extend(exp_set_addition)
         if 'extra_files' in properties:
@@ -408,18 +426,18 @@ def get_sheet_names(types_list):
     else:
         presets = {
             'hic': ["image", "filefastq", "experimenthic"],
-            'chipseq': ["target", "antibody", "filefastq", "experimentseq"],
+            'chipseq': ["gene", "biofeature", "antibody", "filefastq", "experimentseq"],
             'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
             'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
-            'damid': ["target", "filefastq", "fileprocessed", "experimentdamid"],
-            'chiapet': ["target", "filefastq", "experimentchiapet"],
-            'capturec': ["genomicregion", "target", "filefastq", "filereference", "experimentcapturec"],
+            'damid': ["gene", "biofeature", "filefastq", "fileprocessed", "experimentdamid"],
+            'chiapet': ["gene", "biofeature", "filefastq", "experimentchiapet"],
+            'capturec': ["genomicregion", "biofeature", "filefastq", "filereference", "experimentcapturec"],
             'fish': [
-                "genomicregion", "target", "antibody", "microscopesettinga1", "filemicroscopy",
+                "genomicregion", "biofeature", "antibody", "microscopesettinga1", "filemicroscopy",
                 "filereference", "fileprocessed", "imagingpath", "experimentmic",
             ],
             'spt': [
-                "target", "modification", "microscopesettinga2",
+                "gene", "biofeature", "modification", "microscopesettinga2",
                 "fileprocessed", "imagingpath", "experimentmic",
             ]}
         for key in presets.keys():
@@ -429,7 +447,7 @@ def get_sheet_names(types_list):
                 lowercase_types += [
                     'protocol', 'publication', 'biosource', 'biosample',
                     'biosamplecellculture', 'image', 'experimentsetreplicate'
-                    ]
+                ]
         sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
         for name in types_list:
             modified_name = name.lower().replace('-', '').replace('_', '')
@@ -444,6 +462,8 @@ def main():  # pragma: no cover
     if key.error:
         sys.exit(1)
     connection = FDN_Connection(key)
+    if args.noadmin:
+        connection.admin = False
     sheets = get_sheet_names(args.type)
     fields = get_uploadable_fields(connection, sheets, args.descriptions, args.comments, args.enums)
 

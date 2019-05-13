@@ -45,14 +45,17 @@ in the document you need to use '--update' for POSTing to occur
 Defining Object type:
     Each "sheet" of the excel file is named after the object type you are uploading,
     with the format used on http://data.4dnucleome.org//profiles/
-Ex: ExperimentHiC, Biosample, Document, Target
+Ex: ExperimentHiC, Biosample, Document, BioFeature
 
 If there is a single sheet that needs to be posted or patched, you can name the single sheet
 with the object name and use the '--type' argument
 Ex: %(prog)s mydata.xsls --type ExperimentHiC
 
-The header of each sheet should be the names of the fields.
-Ex: award, lab, target, etc.
+The name of each sheet should be the names of the object type.
+Ex: Award, Lab, BioFeature, etc.
+
+The column names on the sheets should be the field names
+Ex: aliases, experiment_type, etc.
 
 To upload objects with attachments, use the column titled "attachment"
 containing the full path to the file you wish to attach
