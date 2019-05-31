@@ -1173,6 +1173,15 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
     assert report['NO GO'] == 'Can only check file pairing by aliases'
 
 
+@pytest.mark.file_operation
+def test_file_pair_chk_multiple_aliases():
+    """This file contains multiple aliases and various ways to link the paired files
+    If the check is running properly, should not see any errors."""
+    fastq_rows = imp.reader('./tests/data_files/FileFastq_pairing.xlsx', sheetname='FileFastq')
+    pair_errs = imp.check_file_pairing(fastq_rows)
+    assert not pair_errs
+
+
 @pytest.fixture
 def mock_profiles():
     return {
