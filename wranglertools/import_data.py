@@ -980,7 +980,7 @@ def check_file_pairing(fastq_row):
                             files[an_alias] = {'symlink': aliases[0]}
 
         if not saw_pair and paired_end:
-            files[alias] = {'end': paired_end}
+            files[aliases[0]] = {'end': paired_end}
     for f, info in sorted(files.items()):  # sorted purely for testing
         # skip the aliases that are secondary
         if info.get('symlink'):
