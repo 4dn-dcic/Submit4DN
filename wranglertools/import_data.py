@@ -978,9 +978,16 @@ def check_file_pairing(fastq_row):
                             main = False
                         else:
                             files[an_alias] = {'symlink': aliases[0]}
-
+        # If there are rows without the pair link (expecting link in the other file, FF mirrors the links after post)
         if not saw_pair and paired_end:
-            files[aliases[0]] = {'end': paired_end}
+            main = True
+            for an_alias in aliases:
+                # if this is the first alias, put all info in the dict
+                if main:
+                    files[an_alias] = {'end': paired_end}
+                    main = False
+                else:
+                    files[an_alias] = {'symlink': aliases[0]}
     for f, info in sorted(files.items()):  # sorted purely for testing
         # skip the aliases that are secondary
         if info.get('symlink'):
@@ -994,6 +1001,7 @@ def check_file_pairing(fastq_row):
                 # if the linked one is an symlink, go the the main one
                 if files[fp].get('symlink'):
                     fp = files[fp]['symlink']
+                    files[f]['pair'] = fp
                 # Paired file might not have the mirroring pair info, FF creates that automatically
                 if not files[fp].get('pair'):
                     files[fp]['pair'] = f
