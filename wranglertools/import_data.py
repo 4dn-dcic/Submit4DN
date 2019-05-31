@@ -909,9 +909,12 @@ def _add_e_to_edict(alias, err, errors):
 
 def _pairing_consistency_check(files, errors):
     """checks the datastructure for consistency"""
-    file_list = sorted([f for f in files])
+    file_list = sorted([f for f in files if not files[f].get('symlink')])
     pair_list = []
     for f, info in files.items():
+        # skip links for secondary aliases
+        if info.get('symlink'):
+            continue
         pair = info.get('pair')
         if not pair:
             err = 'no paired file but paired_end = ' + info.get('end')
@@ -919,6 +922,7 @@ def _pairing_consistency_check(files, errors):
         else:
             pair_list.append(pair)
     paircnts = Counter(pair_list)
+    # filelist without symlinks should have the same size as paircnts
     if len(file_list) != len(paircnts):
         err = str(len(file_list)) + " FILES paired with " + str(len(paircnts))
         errors = _add_e_to_edict('MISMATCH', err, errors)
@@ -929,8 +933,10 @@ def check_file_pairing(fastq_row):
     """checks consistency between file pair info within sheet"""
     fields = next(fastq_row)
     fields.pop(0)
+    # make sure we have the aliases field
     if 'aliases' not in fields:
         return {'NO GO': 'Can only check file pairing by aliases'}
+    # find alias and paired_end column indexes
     alias_idx = fields.index("aliases")
     pair_idx = None
     if 'paired_end' in fields:
@@ -946,36 +952,62 @@ def check_file_pairing(fastq_row):
             err = "alias missing - can't check file pairing"
             errors = _add_e_to_edict('unaliased', err, errors)
             continue
+        # look for multiple aliases, treat first alias as the main one, and others as secondary
+        aliases = [x.strip() for x in alias.split(",")]
+        aliases = list(filter(None, aliases))
         paired_end = row[pair_idx] if pair_idx else None
         saw_pair = False
         for i, fld in enumerate(row):
             if fld.strip() == 'paired with':
                 if saw_pair:
                     err = 'single row with multiple paired_with values'
-                    errors = _add_e_to_edict(alias, err, errors)
+                    errors = _add_e_to_edict(aliases[0], err, errors)
                     continue
                 else:
                     pfile = row[i + 1]
                     saw_pair = True
                     if not paired_end:
                         err = 'missing paired_end number'
-                        errors = _add_e_to_edict(alias, err, errors)
-                    files[alias] = {'end': paired_end, 'pair': pfile}
+                        errors = _add_e_to_edict(aliases[0], err, errors)
+                    main = True
+                    # if there are multiple aliases, create symlinks with secondary aliases in the files dictionary
+                    for an_alias in aliases:
+                        # if this is the first alias, put all info in the dict
+                        if main:
+                            files[an_alias] = {'end': paired_end, 'pair': pfile}
+                            main = False
+                        else:
+                            files[an_alias] = {'symlink': aliases[0]}
+
         if not saw_pair and paired_end:
             files[alias] = {'end': paired_end}
     for f, info in sorted(files.items()):  # sorted purely for testing
+        # skip the aliases that are secondary
+        if info.get('symlink'):
+            continue
         if info.get('pair'):
             fp = info.get('pair')
             if fp not in files:
                 err = "paired with not found %s" % fp
                 errors = _add_e_to_edict(f, err, errors)
             else:
-                if files[fp].get('pair') and files[fp]['pair'] != f:
-                    err = 'attempting to alter existing pair %s\t%s' % (fp, files[fp]['pair'])
-                    errors = _add_e_to_edict(f, err, errors)
-                else:
+                # if the linked one is an symlink, go the the main one
+                if files[fp].get('symlink'):
+                    fp = files[fp]['symlink']
+                # Paired file might not have the mirroring pair info, FF creates that automatically
+                if not files[fp].get('pair'):
                     files[fp]['pair'] = f
-
+                # if there is pairing info, check that if linking is mutual
+                else:
+                    mirrored_pair = files[fp]['pair']
+                    # convert the symlink to the main id
+                    if files[mirrored_pair].get('symlink'):
+                        mirrored_pair = files[mirrored_pair]['symlink']
+                        # correct the record in files
+                        files[fp]['pair'] = mirrored_pair
+                    if mirrored_pair != f:
+                        err = 'attempting to alter existing pair %s\t%s' % (fp, files[fp]['pair'])
+                        errors = _add_e_to_edict(f, err, errors)
     return _pairing_consistency_check(files, errors)
 
 
