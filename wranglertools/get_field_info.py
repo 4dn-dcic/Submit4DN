@@ -284,8 +284,6 @@ def build_field_list(properties, required_fields=None, include_description=False
                      include_comment=False, include_enums=False, parent='', is_submember=False, admin=False):
     fields = []
     for name, props in properties.items():
-        #if name == 'attachment':
-        #    import pdb; pdb.set_trace()
         is_member_of_array_of_objects = False
         if props.get('calculatedProperty'):
             continue
