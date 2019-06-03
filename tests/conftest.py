@@ -243,7 +243,76 @@ def item_properties():
                     "pattern": "^[ATGCN]+$"
                 },
                 "lookup": 60,
-                "title": "Guide RNAs"}}
+                "title": "Guide RNAs"},
+            "attachment": {
+                "title": "Attached File",
+                "description": "File attached to this Item.",
+                "type": "object",
+                "lookup": 1,
+                "additionalProperties": False,
+                "formInput": "file",
+                "attachment": True,
+                "ff_flag": "clear clone",
+                "properties": {
+                    "download": {
+                        "title": "File Name",
+                        "description": "File Name of the attachment.",
+                        "type": "string"
+                    },
+                    "href": {
+                        "internal_comment": "Internal webapp URL for document file",
+                        "title": "href",
+                        "description": "Path to download the file attached to this Item.",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Media Type",
+                        "type": "string",
+                        "enum": [
+                            "application/msword",
+                            "application/vnd.ms-excel",
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            "application/pdf",
+                            "application/zip",
+                            "text/plain",
+                            "text/tab-separated-values",
+                            "image/jpeg",
+                            "image/tiff",
+                            "image/gif",
+                            "text/html",
+                            "image/png",
+                            "image/svs",
+                            "text/autosql"
+                        ]
+                    },
+                    "md5sum": {
+                        "title": "MD5 Checksum",
+                        "description": "Use this to ensure that your file was downloaded without errors or corruption.",
+                        "type": "string",
+                        "format": "md5sum"
+                    },
+                    "size": {
+                        "title": "File size",
+                        "description": "Size of the file on disk",
+                        "type": "integer"
+                    },
+                    "width": {
+                        "title": "Image width",
+                        "description": "Width of the image attached, in pixels.",
+                        "type": "integer"
+                    },
+                    "height": {
+                        "title": "Image height",
+                        "description": "Height of the image attached, in pixels.",
+                        "type": "integer"
+                    },
+                    "blob_id": {
+                        "title": "Blob ID",
+                        "type": "string",
+                        "internal_comment": "blob storage ID. Use to like with s3/rds"
+                    }
+                }}
+            }
 
 
 @pytest.fixture

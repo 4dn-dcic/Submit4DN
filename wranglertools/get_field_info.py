@@ -291,7 +291,7 @@ def build_field_list(properties, required_fields=None, include_description=False
             continue
         if ('import_items' in props.get('permission', []) and not admin):
             continue
-        if is_subobject(props):
+        if is_subobject(props) and name != 'attachment':
             if get_field_type(props).startswith('array'):
                 is_member_of_array_of_objects = True
                 fields.extend(build_field_list(props['items']['properties'],
