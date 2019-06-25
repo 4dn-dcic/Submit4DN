@@ -731,7 +731,7 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                     not_found = error_description[1:-11]
                     if not_found in all_aliases:
                         continue
-                error_field = err['name'][0]
+                error_field = err['name']
                 report.append("{sheet:<30}Field '{er}': {des}"
                               .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
     # if there is a an access forbidden error
