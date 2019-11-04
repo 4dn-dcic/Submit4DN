@@ -34,7 +34,7 @@ setup(
     packages=['wranglertools'],
     zip_safe=False,
     author='4DN Team at Harvard Medical School',
-    author_email='jeremy_johnson@hms.harvard.edu',
+    author_email='support@4dnucleome.org',
     url='http://data.4dnucleome.org',
     license='MIT',
     classifiers=[
