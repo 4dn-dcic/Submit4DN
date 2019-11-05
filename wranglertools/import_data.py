@@ -11,6 +11,7 @@ import datetime
 import sys
 import mimetypes
 import requests
+import boto3
 from PIL import Image
 from base64 import b64encode
 import magic  # install me with 'pip install python-magic'
@@ -1365,13 +1366,10 @@ def upload_file(creds, path):  # pragma: no cover
 
     ####################
     # POST file to S3
-    env = os.environ.copy()  # pragma: no cover
     try:
-        env.update({
-            'AWS_ACCESS_KEY_ID': creds['AccessKeyId'],
-            'AWS_SECRET_ACCESS_KEY': creds['SecretAccessKey'],
-            'AWS_SECURITY_TOKEN': creds['SessionToken'],
-        })
+        key_id = creds['AccessKeyId']
+        secret = creds['SecretAccessKey']
+        token = creds['SessionToken']
     except Exception as e:
         raise("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
     # ~10s/GB from Stanford - AWS Oregon
@@ -1379,7 +1377,16 @@ def upload_file(creds, path):  # pragma: no cover
     print("Uploading file.")
     start = time.time()
     try:
-        subprocess.check_call(['aws', 's3', 'cp', '--only-show-errors', path, creds['upload_url']], env=env)
+        # client = boto3.client(
+        #     's3',
+        #     aws_access_key_id=key_id,
+        #     aws_secret_access_key=secret,
+        #     aws_session_token=token
+        # )
+        # bucket = get_bucket_somehow
+        # client.upload_file(path, bucket, name)
+        # XXX: Below will not work now since I wiped the env
+        subprocess.check_call(['aws', 's3', 'cp', '--only-show-errors', path, creds['upload_url']])
     except subprocess.CalledProcessError as e:
         # The aws command returns a non-zero exit code on error.
         print("Upload failed with exit code %d" % e.returncode)
