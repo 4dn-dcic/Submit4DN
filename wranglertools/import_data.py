@@ -1377,18 +1377,16 @@ def upload_file(creds, path):  # pragma: no cover
     print("Uploading file.")
     start = time.time()
     try:
-        # client = boto3.client(
-        #     's3',
-        #     aws_access_key_id=key_id,
-        #     aws_secret_access_key=secret,
-        #     aws_session_token=token
-        # )
-        # bucket = get_bucket_somehow
-        # client.upload_file(path, bucket, name)
-        # XXX: Below will not work now since I wiped the env
-        subprocess.check_call(['aws', 's3', 'cp', '--only-show-errors', path, creds['upload_url']])
-    except subprocess.CalledProcessError as e:
-        # The aws command returns a non-zero exit code on error.
+        client = boto3.client(
+            's3',
+            aws_access_key_id=key_id,
+            aws_secret_access_key=secret,
+            aws_session_token=token
+        )
+        bucket = creds['upload_url'].split('/')[0]
+        fname = ''.join(creds['upload_url'].split('/')[1:])
+        client.upload_file(path, bucket, fname)
+    except Exception as e:
         print("Upload failed with exit code %d" % e.returncode)
         sys.exit(e.returncode)
     else:
