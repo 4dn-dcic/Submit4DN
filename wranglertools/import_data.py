@@ -21,7 +21,6 @@ import attr
 import ast
 import os
 import time
-import subprocess
 import shutil
 import re
 from collections import OrderedDict, Counter
