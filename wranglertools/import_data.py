@@ -198,6 +198,7 @@ def attachment(path):
             'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
         if mime_type in ('application/pdf', "application/zip", 'text/plain',
                          'text/tab-separated-values', 'text/html', 'application/msword',
+                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                          'application/vnd.ms-excel',
                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             # XXX Should use chardet to detect charset for text files here.
@@ -582,6 +583,11 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
         if post_json.get('aliases') and existing_data.get('aliases'):
             aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
             post_json["aliases"] = aliases_to_post
+    # Combine tags
+    if post_json.get('tags') != ['*delete*']:
+        if post_json.get('tags') and existing_data.get('tags'):
+            tags_to_post = list(set(filter(None, post_json.get('tags') + existing_data.get('tags'))))
+            post_json["tags"] = tags_to_post
     # delete calculated property
     if post_json.get('@id'):
         del post_json['@id']
