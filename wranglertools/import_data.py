@@ -11,7 +11,6 @@ import datetime
 import sys
 import mimetypes
 import requests
-from PIL import Image
 from base64 import b64encode
 import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
@@ -181,39 +180,36 @@ def attachment(path):
             with open(path, "wb") as outfile:
                 outfile.write(r.content)
 
-    filename = os.path.basename(path)
-    mime_type = mimetypes.guess_type(path)[0]
-    major, minor = mime_type.split('/')
-    detected_type = magic.from_file(path, mime=True)
-    # XXX This validation logic should move server-side.
-    if not (detected_type == mime_type or
-            detected_type == 'text/plain' and major == 'text'):
-        if not (minor == 'zip' or major == 'text'):  # zip files are special beasts
-            raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
+    allowed_mimes = (
+        'application/pdf',
+        'application/zip',
+        'text/plain',
+        'text/tab-separated-values',
+        'text/html',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/png',
+        'image/jpeg',
+        'image/gif',
+        'image/tiff',
+    )
     attach = {}
+    filename = os.path.basename(path)
+    guessed_mime = mimetypes.guess_type(path)[0]
+    detected_mime = magic.from_file(path, mime=True)
+    if detected_mime != guessed_mime:
+        raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
+    if detected_mime not in allowed_mimes:
+        raise ValueError("Unknown file type for %s" % filename)
+
     with open(path, 'rb') as stream:
         attach = {
             'download': filename,
-            'type': mime_type,
-            'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/pdf', "application/zip", 'text/plain',
-                         'text/tab-separated-values', 'text/html', 'application/msword',
-                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                         'application/vnd.ms-excel',
-                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
-            # XXX Should use chardet to detect charset for text files here.
-            pass
-        elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
-            # XXX we should just convert our tiffs to pngs
-            stream.seek(0, 0)
-            im = Image.open(stream)
-            im.verify()
-            if im.format != minor.upper():  # pragma: no cover
-                msg = "Image file format %r does not match extension for %s"
-                raise ValueError(msg % (im.format, filename))
-            attach['width'], attach['height'] = im.size
-        else:
-            raise ValueError("Unknown file type for %s" % filename)
+            'type': guessed_mime,
+            'href': 'data:%s;base64,%s' % (guessed_mime, b64encode(stream.read()).decode('ascii'))
+        }
     if ftp_attach:
         os.remove(path)
     return attach
