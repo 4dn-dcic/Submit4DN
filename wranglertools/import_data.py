@@ -153,32 +153,42 @@ def md5(path):
 
 
 def attachment(path):
-    """Create an attachment upload object from a filename and embed the attachment as a data url."""
+    """Create an attachment upload object from a filename and embed the attachment as a data url.
+       NOTE: a url or ftp can be used but path must end in filename with extension that will match
+       the magic detected MIME type of that file and be one of the allowed mime types
+    """
     ftp_attach = False
     if not os.path.isfile(path):
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
             print("\nINFO: Attempting to download file from this url %s" % path)
-            with closing(urllib2.urlopen(path)) as r:
-                file_name = path.split("/")[-1]
-                with open(file_name, 'wb') as f:
-                    shutil.copyfileobj(r, f)
-                    path = file_name
-                    ftp_attach = True
+            try:
+                # import pdb; pdb.set_trace()
+                with closing(urllib2.urlopen(path)) as r:
+                    file_name = path.split("/")[-1]
+                    with open(file_name, 'wb') as f:
+                        shutil.copyfileobj(r, f)
+                        path = file_name
+                        ftp_attach = True
+            except urllib2.URLError as e:
+                raise Exception("\nERROR : FTP fetch for 'attachment' failed - {}".format(e))
         else:
             try:
                 r = requests.get(path)
             except requests.exceptions.MissingSchema:
-                print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
-                sys.exit(1)
-            # if it works as a URL, but does not return 200
-            if r.status_code is not 200:  # pragma: no cover
-                print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
-                sys.exit(1)
+                raise Exception("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
+            else:
+                # if it works as a URL, but does not return 200
+                if r.status_code is not 200:  # pragma: no cover
+                    raise Exception("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
             # parse response
             path = path.split("/")[-1]
-            with open(path, "wb") as outfile:
-                outfile.write(r.content)
+            try:
+                with open(path, "wb") as outfile:
+                    outfile.write(r.content)
+                    ftp_attach = True
+            except Exception as e:
+                raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
     allowed_mimes = (
         'application/pdf',
@@ -196,14 +206,16 @@ def attachment(path):
         'image/tiff',
     )
     attach = {}
-    import pdb; pdb.set_trace()
     filename = os.path.basename(path)
     guessed_mime = mimetypes.guess_type(path)[0]
     detected_mime = magic.from_file(path, mime=True)
-    if detected_mime != guessed_mime:
+    # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
+    # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
+    # basically relying on extension with a little verification by magic
+    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
         raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
-    if detected_mime not in allowed_mimes:
-        raise ValueError("Unknown file type for %s" % filename)
+    if guessed_mime not in allowed_mimes:
+        raise ValueError("Unallowed file type for %s" % filename)
 
     with open(path, 'rb') as stream:
         attach = {

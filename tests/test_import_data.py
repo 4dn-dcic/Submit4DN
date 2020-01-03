@@ -4,10 +4,17 @@ import pytest
 
 
 # @pytest.mark.file_operation
-@pytest.mark.ftp
+# @pytest.mark.ftp
 def test_attachment_from_ftp():
     attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
     assert attach
+
+
+# @pytest.mark.ftp
+def test_attachment_ftp_to_nowhere():
+    with pytest.raises(Exception) as e:
+        imp.attachment("ftp://on/a/road/to/nowhere/blah.txt")
+    assert "urlopen error" in str(e.value)
 
 
 @pytest.mark.file_operation
@@ -41,31 +48,30 @@ def test_attachment_image_wrong_extension():
 
 @pytest.mark.file_operation
 def test_attachment_wrong_path():
-    # system exit with wrong file path
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(Exception) as e:
         imp.attachment("./tests/data_files/dontexisit.txt")
-    assert str(excinfo.value) == "1"
+    assert "ERROR : The 'attachment' field contains INVALID FILE PATH or URL" in str(e.value)
 
 
 @pytest.mark.webtest
 def test_attachment_url():
-    import os
-    attach = imp.attachment("https://www.protocols.io/view/cut-amp-run-targeted-in-situ-genome-wide-profiling-zcpf2vn")
-    #attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
-    assert attach['download'] == 'readme.txt'
-    assert attach['type'] == 'text/plain'
-    assert attach['href'].startswith('data:text/plain;base64')
-    try:
-        os.remove('./readme.txt')
-    except OSError:
-        pass
+    attach = imp.attachment("https://www.le.ac.uk/oerresources/bdra/html/page_09.htm")
+    assert attach['download'] == 'page_09.htm'
+    assert attach['type'] == 'text/html'
+    assert attach['href'].startswith('data:text/html;base64')
+
+
+@pytest.mark.webtest
+def test_attachment_url():
+    with pytest.raises(Exception) as excinfo:
+        imp.attachment("https://some/unknown/url.html")
 
 
 @pytest.mark.file_operation
 def test_attachment_not_accepted():
     with pytest.raises(ValueError) as excinfo:
         imp.attachment("./tests/data_files/test.mp3")
-    assert str(excinfo.value) == 'Unknown file type for test.mp3'
+    assert str(excinfo.value) == 'Unallowed file type for test.mp3'
 
 
 @pytest.mark.file_operation
