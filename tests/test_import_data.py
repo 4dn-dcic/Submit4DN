@@ -4,13 +4,13 @@ import pytest
 
 
 # @pytest.mark.file_operation
-# @pytest.mark.ftp
+@pytest.mark.ftp
 def test_attachment_from_ftp():
     attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
     assert attach
 
 
-# @pytest.mark.ftp
+@pytest.mark.ftp
 def test_attachment_ftp_to_nowhere():
     with pytest.raises(Exception) as e:
         imp.attachment("ftp://on/a/road/to/nowhere/blah.txt")
