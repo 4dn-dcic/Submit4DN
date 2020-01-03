@@ -10,7 +10,6 @@ except:
 
 requires = [
     'attrs',
-    'Pillow',
     'py>=1.4.31',
     'python-magic>=0.4.12',
     'wheel>=0.24.0',
