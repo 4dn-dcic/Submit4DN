@@ -175,12 +175,12 @@ def attachment(path):
         else:
             try:
                 r = requests.get(path)
-            except requests.exceptions.MissingSchema:
-                raise Exception("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
+            except Exception:
+                raise Exception("\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
             else:
                 # if it works as a URL, but does not return 200
                 if r.status_code is not 200:  # pragma: no cover
-                    raise Exception("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
+                    raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
             # parse response
             path = path.split("/")[-1]
             try:

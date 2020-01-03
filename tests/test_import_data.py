@@ -50,7 +50,7 @@ def test_attachment_image_wrong_extension():
 def test_attachment_wrong_path():
     with pytest.raises(Exception) as e:
         imp.attachment("./tests/data_files/dontexisit.txt")
-    assert "ERROR : The 'attachment' field contains INVALID FILE PATH or URL" in str(e.value)
+    assert "ERROR : The 'attachment' field has INVALID FILE PATH or URL" in str(e.value)
 
 
 @pytest.mark.webtest
@@ -62,9 +62,10 @@ def test_attachment_url():
 
 
 @pytest.mark.webtest
-def test_attachment_url():
-    with pytest.raises(Exception) as excinfo:
+def test_attachment_bad_url():
+    with pytest.raises(Exception) as e:
         imp.attachment("https://some/unknown/url.html")
+    assert "ERROR : The 'attachment' field has INVALID FILE PATH or URL" in str(e.value)
 
 
 @pytest.mark.file_operation
