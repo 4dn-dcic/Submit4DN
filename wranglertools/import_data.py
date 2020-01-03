@@ -196,6 +196,7 @@ def attachment(path):
         'image/tiff',
     )
     attach = {}
+    import pdb; pdb.set_trace()
     filename = os.path.basename(path)
     guessed_mime = mimetypes.guess_type(path)[0]
     detected_mime = magic.from_file(path, mime=True)

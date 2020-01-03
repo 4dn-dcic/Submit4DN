@@ -19,8 +19,6 @@ def test_md5():
 @pytest.mark.file_operation
 def test_attachment_image():
     attach = imp.attachment("./tests/data_files/test.jpg")
-    assert attach['height'] == 1080
-    assert attach['width'] == 1920
     assert attach['download'] == 'test.jpg'
     assert attach['type'] == 'image/jpeg'
     assert attach['href'].startswith('data:image/jpeg;base64')
@@ -52,7 +50,8 @@ def test_attachment_wrong_path():
 @pytest.mark.webtest
 def test_attachment_url():
     import os
-    attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
+    attach = imp.attachment("https://www.protocols.io/view/cut-amp-run-targeted-in-situ-genome-wide-profiling-zcpf2vn")
+    #attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
     assert attach['download'] == 'readme.txt'
     assert attach['type'] == 'text/plain'
     assert attach['href'].startswith('data:text/plain;base64')
