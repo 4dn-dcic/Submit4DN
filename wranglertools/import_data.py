@@ -211,7 +211,7 @@ def attachment(path):
     detected_mime = magic.from_file(path, mime=True)
     # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
     # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
-    # basically relying on extension with a little verification by magic
+    # basically relying on extension with a little verification by magic for most file types
     if detected_mime != guessed_mime and guessed_mime != 'application/zip':
         raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
     if guessed_mime not in allowed_mimes:
