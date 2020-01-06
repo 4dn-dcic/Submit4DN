@@ -21,7 +21,7 @@ requires = [
 
 tests_require = [
     'pytest>=3.0.1',
-    'pytest-mock',
+    'pytest-mock==1.11.2',
     'pytest-cov',
     'tox>=2.5.0',
 ]
