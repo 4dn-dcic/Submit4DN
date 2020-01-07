@@ -6,66 +6,62 @@
 [![Code Quality](https://api.codacy.com/project/badge/Grade/a4d521b4dd9c49058304606714528538)](https://www.codacy.com/app/jeremy_7/Submit4DN)
 [![PyPI version](https://badge.fury.io/py/Submit4DN.svg)](https://badge.fury.io/py/Submit4DN)
 
-The Submit4DN package is written by the [4DN Data Coordination and Integration Center](http://dcic.4dnucleome.org/) for data submitters from the 4DN Network. Please [contact us](mailto:support@4dnucleome.org) to get access to the system, or if you have any questions or suggestions.  Detailed documentation on data submission can be found [at this link](https://docs.google.com/document/d/1Xh4GxapJxWXCbCaSqKwUd9a2wTiXmfQByzP0P8q5rnE/edit?usp=sharing)
+The Submit4DN package is written by the [4DN Data Coordination and Integration Center](http://dcic.4dnucleome.org/) for data submitters from the 4DN Network. Please [contact us](mailto:support@4dnucleome.org) to get access to the system, or if you have any questions or suggestions.  Detailed documentation on data submission can be found [at this link](https://data.4dnucleome.org/help/submitter-guide/getting-started-with-submissions)
 
 ## Installing the package
 
-The Submit4DN package is registered with Pypi so installation is as simple as:
-
 ```
-pip3 install submit4dn
+pip install submit4dn
 ```
 
 To upgrade to the latest version
 
 ```
-pip3 install submit4dn --upgrade
+pip install submit4dn --upgrade
 ```
 
 ### Troubleshooting
 
-If you encounter an error containing something like:
+This package may install and run on Python v2.7 but using this package with that version is no longer officially supported and your mileage may vary.
+
+It is recommended to install this package in a virtual environment to avoid dependency clashes.
+
+Problems have been reported on recent MacOS X versions having to do with the inablity to find `libmagic`,
+a C library to check file types that is used by the `python-magic` library.
+
+eg. `ImportError: failed to find libmagic.  Check your installation`
+
+First thing to try is:
 
 ```
- Symbol not found: _PyInt_AsLong
+pip uninstall python-magic
+pip install python-magic
 ```
 
-Then it means that the imaging library Pillow / PIL is missing some required libraries.  You can fix it by doing the following.
+If that doesn't work one solution that has worked for some from [here](https://github.com/Yelp/elastalert/issues/1927):
 
-```shell
-$ pip uninstall pillow
-$ brew install libjpeg zlib libtiff littlecms webp openjpeg tcl-tk
-$ pip install pillow
+```
+pip uninstall python-magic
+pip install python-magic-bin==0.4.14
 ```
 
-That should fix it!
+Others have had success using homebrew to install `libmagic`:
 
+```
+brew install libmagic
+brew link libmagic  (if the link is already created is going to fail, don't worry about that)
+```
 
-Once installed then follow the directions below:
-
-
-
-## Connection
-To be able to use the provided tools, you need to have a secure key to access the REST application.
-If you do not have a secure key, please contact [4DN Data Wranglers](mailto:support@4dnucleome.org)
-to get an account and to learn how to generate a key. Place your key in a json file in the following format.
-
-    {
-      "default": {
-        "key": "TheConnectionKey",
-        "secret": "very_secret_key",
-        "server":"www.The4dnWebsite.com"
-      }
-    }
-
-The default location for the keyfile is your home directory `~/keypairs.json`.
-If you prefer to use a different file location or a different key name (not "default"), you can specify your key with the `keyfile` and `key` parameters:
-
-    import_data --keyfile path/to/filename.json --key NotDefault
+## Connecting to the Data Portal
+To be able to use the provided tools, you need to generate an AccessKey on the [data portal](https://data.4dnucleome.org/).
+If you do not yet have access, please contact [4DN Data Wranglers](mailto:support@4dnucleome.org)
+to get an account and [learn how to generate and save a key](https://data.4dnucleome.org/help/submitter-guide/getting-started-with-submissions#getting-connection-keys-for-the-4dn-dcic-servers).
 
 ## Generating data submission forms
 To create the data submission xls forms, you can use `get_field_info`.
+
 It will accept the following parameters:
+~~~~
     --type           use for each sheet that you want to add to the excel workbook
     --descriptions   adds the descriptions in the second line (by default True)
     --enums          adds the enum options in the third line (by default True)
@@ -73,69 +69,68 @@ It will accept the following parameters:
     --writexls       creates the xls file (by default True)
     --outfile        change the default file name "fields.xls" to a specified one
     --order          create an ordered and filtered version of the excel (by default True)
-
+~~~~
 
 Examples generating a single sheet:
-```
+~~~~
 get_field_info --type Biosample
 get_field_info --type Biosample --comments
 get_field_info --type Biosample --comments --outfile biosample.xls
-
-```
-
-Example list of sheets:
-~~~~
-get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualMouse --type ExperimentHiC --type ExperimentSetReplicate --type ExperimentCaptureC --type BioFeature --type GenomicRegion --type ExperimentSet --type Image --comments --outfile MetadataSheets.xls
 ~~~~
 
-Example list of sheets: (using python scripts)
+Example Workbook with all sheets:
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type IndividualHuman --type ExperimentHiC --type ExperimentCaptureC --type BioFeature --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile MetadataSheets.xls
-~~~~
-
-Example list of sheets: (Experiment seq)
-~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Document --type Vendor --type Protocol --type BiosampleCellCulture --type Biosource --type Enzyme --type Construct --type TreatmentAgent --type TreatmentRnai --type Modification --type Biosample --type FileFastq --type ExperimentSeq --type BioFeature --type GenomicRegion --type ExperimentSet --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_all.xls
+get_field_info --type all --outfile MetadataSheets.xls
 ~~~~
 
-Example list of sheets: (Experiment seq simple)
+Examples for Workbooks using a preset option:
 ~~~~
-python3 -m wranglertools.get_field_info --type Publication --type Protocol --type BiosampleCellCulture --type Biosource --type Biosample --type FileFastq --type ExperimentSeq --type ExperimentSetReplicate --type Image --comments --outfile exp_seq_simple.xls
-~~~~
-
-Examples for list of sheets using a preset option:
-~~~~
-python3 -m wranglertools.get_field_info --type HiC --comments --outfile exp_hic_generic.xls
-python3 -m wranglertools.get_field_info --type ChIP-seq --comments --outfile exp_chipseq_generic.xls
-python3 -m wranglertools.get_field_info --type FISH --comments --outfile exp_fish_generic.xls
+get_field_info --type HiC --comments --outfile exp_hic_generic.xls
+get_field_info --type ChIP-seq --comments --outfile exp_chipseq_generic.xls
+get_field_info --type FISH --comments --outfile exp_fish_generic.xls
 ~~~~
 
-
-
+Current presets include: `Hi-C, ChIP-seq, Repli-seq, ATAC-seq, DamID, ChIA-PET, Capture-C, FISH, SPT`
 
 ## Data submission
+
+Please refer to the [submission guidelines](https://data.4dnucleome.org/help/submitter-guide) and become familiar with the metadata structure prior to submission.
+
 After you fill out the data submission forms, you can use `import_data` to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
-
+~~~~
 	import_data filename.xls
+~~~~
 
-**Uploading vs Patching**
+#### Uploading vs Patching
+
+Runnning `import_data` without one of the flags described below will perform a dry run submission that will include several validation checks.
+It is strongly recommended to do a dry run prior to actual submission and if necessary work with a Data Wrangler to correct any errors.
 
 If there are uuid, alias, @id, or accession fields in the xls form that match existing entries in the database, you will be asked if you want to PATCH each object.
 You can use the `--patchall` flag, if you want to patch ALL objects in your document and ignore that message.
 
 If no object identifiers are found in the document, you need to use `--update` for POSTing to occur.
 
-Please refer to the submission guidelines provided by data wranglers, and get familiar with the metadata structure on example excel workbooks, like one for Rao et al data. You can find examples under the folder "Data Files". Once you understand how to fill in the fields in the excel workbook
+**Other Helpful Advanced parameters**
+
+Normally you are asked to verify the **Lab** and **Award** that you are submitting for.  In some cases it may be desirable to skip this prompt so a submission
+can be run by a scheduler or in the background:
+
+`--remote` is an option that will skip any prompt before submission
+
+**However** if you submit for more than one Lab or there is more than one Award associated with your lab you will need to specify these values
+as parameters using `--lab` and/or `--award` followed by the uuids for the appropriate items.
 
 <img src="https://media.giphy.com/media/l0HlN5Y28D9MzzcRy/giphy.gif" width="200" height="200" />
 
-`--remote` is an option that will skip any prompt before submission, and useful if you are submitting LSF jobs where you expect to run automatically. You should take care of your submitting lab and award if you have multiple, since the first ones on your list will be assigned as default.
 
 # Development
 Note if you are attempting to run the scripts in the wranglertools directory without installing the package then in order to get the correct sys.path you need to run the scripts from the parent directory using the following command format:
 
-    python3 -m wranglertools.get_field_info —-type Biosource
-	python3 -m wranglertools.import_data filename.xls
+```
+  python -m wranglertools.get_field_info —-type Biosource
+	python -m wranglertools.import_data filename.xls
+```
 
 pypi page is - https://pypi.python.org/pypi/Submit4DN
 
@@ -163,7 +158,7 @@ To run the mark tests, or exclude them from the tests you can use the following 
     # Run only webtest
     py.test -m webtest
 
-    # Run only tests with file_opration
+    # Run only tests with file_operation
     py.test -m file_operation
 
 For a better testing experienece that also check to ensure sufficient coverage and runs linters use invoke:

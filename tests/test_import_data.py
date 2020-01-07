@@ -10,6 +10,13 @@ def test_attachment_from_ftp():
     assert attach
 
 
+@pytest.mark.ftp
+def test_attachment_ftp_to_nowhere():
+    with pytest.raises(Exception) as e:
+        imp.attachment("ftp://on/a/road/to/nowhere/blah.txt")
+    assert "urlopen error" in str(e.value)
+
+
 @pytest.mark.file_operation
 def test_md5():
     md5_keypairs = imp.md5('./tests/data_files/keypairs.json')
@@ -19,8 +26,6 @@ def test_md5():
 @pytest.mark.file_operation
 def test_attachment_image():
     attach = imp.attachment("./tests/data_files/test.jpg")
-    assert attach['height'] == 1080
-    assert attach['width'] == 1920
     assert attach['download'] == 'test.jpg'
     assert attach['type'] == 'image/jpeg'
     assert attach['href'].startswith('data:image/jpeg;base64')
@@ -43,30 +48,31 @@ def test_attachment_image_wrong_extension():
 
 @pytest.mark.file_operation
 def test_attachment_wrong_path():
-    # system exit with wrong file path
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(Exception) as e:
         imp.attachment("./tests/data_files/dontexisit.txt")
-    assert str(excinfo.value) == "1"
+    assert "ERROR : The 'attachment' field has INVALID FILE PATH or URL" in str(e.value)
 
 
 @pytest.mark.webtest
 def test_attachment_url():
-    import os
-    attach = imp.attachment("https://wordpress.org/plugins/about/readme.txt")
-    assert attach['download'] == 'readme.txt'
-    assert attach['type'] == 'text/plain'
-    assert attach['href'].startswith('data:text/plain;base64')
-    try:
-        os.remove('./readme.txt')
-    except OSError:
-        pass
+    attach = imp.attachment("https://www.le.ac.uk/oerresources/bdra/html/page_09.htm")
+    assert attach['download'] == 'page_09.htm'
+    assert attach['type'] == 'text/html'
+    assert attach['href'].startswith('data:text/html;base64')
+
+
+@pytest.mark.webtest
+def test_attachment_bad_url():
+    with pytest.raises(Exception) as e:
+        imp.attachment("https://some/unknown/url.html")
+    assert "ERROR : The 'attachment' field has INVALID FILE PATH or URL" in str(e.value)
 
 
 @pytest.mark.file_operation
 def test_attachment_not_accepted():
     with pytest.raises(ValueError) as excinfo:
         imp.attachment("./tests/data_files/test.mp3")
-    assert str(excinfo.value) == 'Unknown file type for test.mp3'
+    assert str(excinfo.value) == 'Unallowed file type for test.mp3'
 
 
 @pytest.mark.file_operation
@@ -707,6 +713,7 @@ The validation will only check for schema rules, but not for object relations
             assert out.strip() == message.strip()
 
 
+@pytest.mark.skip  # invalid mock use, needs refactor
 def test_cabin_cross_check_not_remote_w_lab_award_options(mocker, connection_mock, capsys):
     with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
         with mocker.patch.object(connection_mock, 'prompt_for_lab_award', return_value='blah'):
