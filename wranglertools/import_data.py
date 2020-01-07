@@ -197,7 +197,8 @@ def attachment(path):
             try:
                 r = requests.get(path)
             except Exception:
-                raise WebFetchException("\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
+                raise WebFetchException(
+                    "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
             else:
                 # if it works as a URL, but does not return 200
                 if r.status_code is not 200:  # pragma: no cover
