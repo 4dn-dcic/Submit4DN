@@ -13,7 +13,7 @@ before_install:
 install:
 - poetry install
 script:
-- pytest tests
+- pytest tests -m 'not ftp'
 before_deploy:
 - poetry config http-basic.pypi $PYPI_USER $PYPI_PASSWORD
 deploy:
