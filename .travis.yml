@@ -14,7 +14,7 @@ before_install:
 install:
 - poetry install
 script:
-- pytest tests -m 'not ftp'
+- coverage run -m pytest -vv tests -m 'not ftp'
 deploy:
   provider: script
   script: poetry publish --build --username=$PYPI_USER --password=$PYPI_PASSWORD
@@ -22,7 +22,6 @@ deploy:
     tags: true
     condition: "$TRAVIS_PYTHON_VERSION == 3.6"
 after_success:
-- python-codacy-coverage -r coverage.xml
 - coveralls
 env:
   global:
