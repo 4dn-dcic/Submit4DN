@@ -14,7 +14,7 @@ before_install:
 install:
 - poetry install
 script:
-- coverage run -m pytest -vv tests -m 'not ftp'
+- coverage run --source=wranglertools -m pytest -vv tests -m 'not ftp'
 deploy:
   provider: script
   script: poetry publish --build --username=$PYPI_USER --password=$PYPI_PASSWORD
