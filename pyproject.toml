@@ -2,7 +2,7 @@
 name = "Submit4DN"
 version = "1.2.0"
 description = "Utility package for submitting data to the 4DN Data Portal"
-authors = ["William Ronchetti <william_ronchetti@hms.harvard.edu>"]
+authors = ["4DN-DCIC Team <support@4dnucleome.org>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/4dn-dcic/Submit4DN"
