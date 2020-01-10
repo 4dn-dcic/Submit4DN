@@ -13,7 +13,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "~2.7 | ^3.4"
-attrs = "16.0.0"
+attrs = ">=16.0.0"
 py = "1.4.31"
 python-magic = "0.4.12"
 xlrd = "1.0.0"
