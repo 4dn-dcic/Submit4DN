@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Submit4DN"
-version = "1.2.0"
+version = "1.2.1b1"
 description = "Utility package for submitting data to the 4DN Data Portal"
 authors = ["4DN-DCIC Team <support@4dnucleome.org>"]
 license = "MIT"
@@ -28,3 +28,7 @@ pytest-mock = "1.11.2"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+[tool.poetry.scripts]
+import_data = "wranglertools.import_data:main"
+get_field_info = "wranglertools.get_field_info:main"
