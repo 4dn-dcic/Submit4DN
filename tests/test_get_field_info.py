@@ -61,161 +61,166 @@ def test_connection_success(mocker, mkey, returned_user_me_submit_for_one_lab,
     email = 'bil022@ucsd.edu'
     lab2chk = '/labs/bing-ren-lab/'
     awd2chk = '/awards/1U54DK107977-01/'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        assert connection.check is True
-        assert connection.email == email
-        assert lab2chk in connection.labs
-        assert connection.lab == lab2chk
-        assert connection.award == awd2chk
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_one_lab.json(), returned_lab_w_one_award.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    assert connection.check is True
+    assert connection.email == email
+    assert lab2chk in connection.labs
+    assert connection.lab == lab2chk
+    assert connection.award == awd2chk
 
 
 def test_connection_prompt_for_lab_award_no_prompt_for_one_each(
-    mocker, mkey, returned_user_me_submit_for_one_lab,
+        mocker, mkey, returned_user_me_submit_for_one_lab,
         returned_lab_w_one_award):
     lab2chk = '/labs/bing-ren-lab/'
     awd2chk = '/awards/1U54DK107977-01/'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_one_award.json(),
-                                   returned_lab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        connection.prompt_for_lab_award()
-        assert connection.lab == lab2chk
-        assert connection.award == awd2chk
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_one_lab.json(),
+        returned_lab_w_one_award.json(),
+        returned_lab_w_one_award.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    connection.prompt_for_lab_award()
+    assert connection.lab == lab2chk
+    assert connection.award == awd2chk
 
 
-def test_connection_for_user_with_no_submits_for(
-        mocker, mkey, returned_user_me_submit_for_no_lab):
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value=returned_user_me_submit_for_no_lab.json()):
-        connection = gfi.FDN_Connection(mkey)
-        assert connection.check is True
-        assert not connection.labs
+def test_connection_for_user_with_no_submits_for(mocker, mkey, returned_user_me_submit_for_no_lab):
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_user_me_submit_for_no_lab.json())
+    connection = gfi.FDN_Connection(mkey)
+    assert connection.check is True
+    assert not connection.labs
 
 
 def test_connection_prompt_for_lab_award_multi_lab(
-    mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
+        mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
         returned_lab_w_one_award, returned_otherlab_w_one_award):
     defaultlab = '/labs/bing-ren-lab/'
     defaultaward = '/awards/1U54DK107977-01/'
     chosenlab = '/labs/ben-ring-lab/'
     chosenaward = '/awards/1U01ES017166-01/'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_two_labs.json(),
-                                   returned_lab_w_one_award.json(),
-                                   returned_otherlab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        assert connection.lab == defaultlab
-        assert connection.award == defaultaward
-        # monkeypatch the "input" function, so that it returns "2".
-        # This simulates the user entering "2" in the terminal:
-        monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
-        connection.prompt_for_lab_award()
-        assert connection.lab == chosenlab
-        assert connection.award == chosenaward
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_two_labs.json(),
+        returned_lab_w_one_award.json(),
+        returned_otherlab_w_one_award.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    assert connection.lab == defaultlab
+    assert connection.award == defaultaward
+    # monkeypatch the "input" function, so that it returns "2".
+    # This simulates the user entering "2" in the terminal:
+    monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
+    connection.prompt_for_lab_award()
+    assert connection.lab == chosenlab
+    assert connection.award == chosenaward
 
 
 def test_connection_prompt_for_lab_award_multi_lab_bad_choice(
-    mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
+        mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
         returned_lab_w_one_award, returned_otherlab_w_one_award, capsys):
     defaultlab = '/labs/bing-ren-lab/'
     defaultaward = '/awards/1U54DK107977-01/'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_two_labs.json(),
-                                   returned_lab_w_one_award.json(),
-                                   returned_otherlab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        assert connection.lab == defaultlab
-        assert connection.award == defaultaward
-        # monkeypatch the "input" function, so that it returns "2".
-        # This simulates the user entering "2" in the terminal:
-        monkeypatch.setitem(__builtins__, 'input', lambda x: "3")
-        connection.prompt_for_lab_award()
-        assert connection.lab == defaultlab
-        assert connection.award == defaultaward
-        out = capsys.readouterr()
-        assert "Not a valid choice - using" in out[0]
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_two_labs.json(),
+        returned_lab_w_one_award.json(),
+        returned_otherlab_w_one_award.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    assert connection.lab == defaultlab
+    assert connection.award == defaultaward
+    # monkeypatch the "input" function, so that it returns "2".
+    # This simulates the user entering "2" in the terminal:
+    monkeypatch.setitem(__builtins__, 'input', lambda x: "3")
+    connection.prompt_for_lab_award()
+    assert connection.lab == defaultlab
+    assert connection.award == defaultaward
+    out = capsys.readouterr()
+    assert "Not a valid choice - using" in out[0]
 
 
 def test_connection_prompt_for_lab_award_multi_award(
-    mocker, monkeypatch, mkey, returned_user_me_submit_for_one_lab,
+        mocker, monkeypatch, mkey, returned_user_me_submit_for_one_lab,
         returned_lab_w_two_awards):
     '''this not only tests if the correct award is chosen if given the
         choice but also that multiple awards are linked
-        to a lab the first is set as the defaul on init
+        to a lab the first is set as the default on init
     '''
     defaultlab = '/labs/bing-ren-lab/'
     chosenaward = '/awards/1U01ES017166-01/'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_two_awards.json(),
-                                   returned_lab_w_two_awards.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        assert connection.lab == defaultlab
-        assert connection.award is None
-        # monkeypatch the "input" function, so that it returns "2".
-        # This simulates the user entering "2" in the terminal:
-        monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
-        connection.prompt_for_lab_award()
-        assert connection.lab == defaultlab
-        assert connection.award == chosenaward
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_one_lab.json(),
+        returned_lab_w_two_awards.json(),
+        returned_lab_w_two_awards.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    assert connection.lab == defaultlab
+    assert connection.award is None
+    # monkeypatch the "input" function, so that it returns "2".
+    # This simulates the user entering "2" in the terminal:
+    monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
+    connection.prompt_for_lab_award()
+    assert connection.lab == defaultlab
+    assert connection.award == chosenaward
 
 
 def test_connection_prompt_for_lab_award_multi_lab_award(
-    mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
+        mocker, monkeypatch, mkey, returned_user_me_submit_for_two_labs,
         returned_lab_w_two_awards, returned_otherlab_w_two_awards):
     defaultlab = '/labs/bing-ren-lab/'
     chosenlab = '/labs/ben-ring-lab/'
     chosenaward = '/awards/7777777/'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_two_labs.json(),
-                                   returned_lab_w_two_awards.json(),
-                                   returned_otherlab_w_two_awards.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        assert connection.lab == defaultlab
-        assert connection.award is None
-        # monkeypatch the "input" function, so that it returns "2".
-        # This simulates the user entering "2" in the terminal:
-        monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
-        connection.prompt_for_lab_award()
-        assert connection.lab == chosenlab
-        assert connection.award == chosenaward
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_two_labs.json(),
+        returned_lab_w_two_awards.json(),
+        returned_otherlab_w_two_awards.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    assert connection.lab == defaultlab
+    assert connection.award is None
+    # monkeypatch the "input" function, so that it returns "2".
+    # This simulates the user entering "2" in the terminal:
+    monkeypatch.setitem(__builtins__, 'input', lambda x: "2")
+    connection.prompt_for_lab_award()
+    assert connection.lab == chosenlab
+    assert connection.award == chosenaward
 
 
 def test_set_award_no_lab(mocker, mkey, returned_user_me_submit_for_one_lab,
                           returned_lab_w_one_award):
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        connection.set_award(None)
-        assert connection.award is None
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_one_lab.json(), returned_lab_w_one_award.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    connection.set_award(None)
+    assert connection.award is None
 
 
 def test_set_award_one_lab_one_award(mocker, mkey, returned_user_me_submit_for_one_lab,
                                      returned_lab_w_one_award):
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_one_award.json(),
-                                   returned_lab_w_one_award.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        connection.set_award(returned_lab_w_one_award.json()['@id'])
-        assert connection.lab == returned_lab_w_one_award.json()['@id']
-        assert connection.award == returned_lab_w_one_award.json()['awards'][0]['@id']
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_one_lab.json(),
+        returned_lab_w_one_award.json(),
+        returned_lab_w_one_award.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    connection.set_award(returned_lab_w_one_award.json()['@id'])
+    assert connection.lab == returned_lab_w_one_award.json()['@id']
+    assert connection.award == returned_lab_w_one_award.json()['awards'][0]['@id']
 
 
 def test_set_award_multi_awards_dontPrompt(mocker, mkey, returned_user_me_submit_for_one_lab,
                                            returned_lab_w_two_awards):
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[returned_user_me_submit_for_one_lab.json(),
-                                   returned_lab_w_two_awards.json(),
-                                   returned_lab_w_two_awards.json()]):
-        connection = gfi.FDN_Connection(mkey)
-        connection.set_award(returned_lab_w_two_awards.json()['@id'], True)
-        assert connection.award is None
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        returned_user_me_submit_for_one_lab.json(),
+        returned_lab_w_two_awards.json(),
+        returned_lab_w_two_awards.json()
+    ])
+    connection = gfi.FDN_Connection(mkey)
+    connection.set_award(returned_lab_w_two_awards.json()['@id'], True)
+    assert connection.award is None
 
 
 def test_get_field_type():
@@ -325,14 +330,14 @@ def test_build_field_list_embeds_with_dots(embed_properties):
 
 
 def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_schema):
-    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json()):
-        field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
-        for field in field_dict['Vendor']:
-            assert field.name is not None
-            assert field.ftype is not None
-            assert field.desc is not None
-            assert field.comm is not None
-            assert field.enum is not None
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json())
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
+    for field in field_dict['Vendor']:
+        assert field.name is not None
+        assert field.ftype is not None
+        assert field.desc is not None
+        assert field.comm is not None
+        assert field.enum is not None
 
 
 def xls_to_list(xls_file, sheet):
@@ -370,11 +375,11 @@ def test_create_xls_vendor(connection_mock, mocker, returned_vendor_schema):
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json()):
-        field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
-        gfi.create_xls(field_dict, xls_file)
-        assert os.path.isfile(xls_file)
-        assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json())
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
+    gfi.create_xls(field_dict, xls_file)
+    assert os.path.isfile(xls_file)
+    assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
     try:
         os.remove(xls_file)
     except OSError:
@@ -390,11 +395,11 @@ def test_create_xls_lookup_order(connection_mock, mocker, returned_vendor_schema
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema_l.json()):
-        field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
-        gfi.create_xls(field_dict, xls_file)
-        assert os.path.isfile(xls_file)
-        assert xls_field_order(xls_file, "Vendor") == ref_list
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema_l.json())
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
+    gfi.create_xls(field_dict, xls_file)
+    assert os.path.isfile(xls_file)
+    assert xls_field_order(xls_file, "Vendor") == ref_list
     try:
         os.remove(xls_file)
     except OSError:
@@ -410,11 +415,11 @@ def test_create_xls_experiment_set(connection_mock, mocker, returned_experiment_
         os.remove(xls_file)
     except OSError:
         pass
-    with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_experiment_set_schema.json()):
-        field_dict = gfi.get_uploadable_fields(connection_mock, ['ExperimentSet'], True, True, True)
-        gfi.create_xls(field_dict, xls_file)
-        assert os.path.isfile(xls_file)
-        assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_experiment_set_schema.json())
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['ExperimentSet'], True, True, True)
+    gfi.create_xls(field_dict, xls_file)
+    assert os.path.isfile(xls_file)
+    assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
     try:
         os.remove(xls_file)
     except OSError:
