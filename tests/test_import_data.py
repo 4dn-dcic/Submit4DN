@@ -190,9 +190,9 @@ def test_get_existing_uuid(connection_mock, mocker, returned_vendor_existing_ite
                   {'aliases': ['some_acc']},
                   {'@id': 'some_@id'}]
     for post_json in post_jsons:
-        with mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_existing_item.json()):
-            response = imp.get_existing(post_json, connection_mock)
-            assert response == returned_vendor_existing_item.json()
+        mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_existing_item.json())
+        response = imp.get_existing(post_json, connection_mock)
+        assert response == returned_vendor_existing_item.json()
 
 
 def test_combine_set_expsets():
@@ -309,15 +309,15 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     dict_set = {}
     all_aliases = {}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        with mocker.patch('wranglertools.import_data.remove_deleted', return_value={}):
-            # mocking the test post line
-            with mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'}):
-                imp.excel_reader(test_insert, 'Document', False, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True, ['attachment'])
-                args = imp.remove_deleted.call_args
-                attach = args[0][0]['attachment']
-                assert attach['href'].startswith('data:image/jpeg;base64')
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    mocker.patch('wranglertools.import_data.remove_deleted', return_value={})
+    # mocking the test post line
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'})
+    imp.excel_reader(test_insert, 'Document', False, connection_mock, False,
+                     all_aliases, dict_load, dict_rep, dict_set, True, ['attachment'])
+    args = imp.remove_deleted.call_args
+    attach = args[0][0]['attachment']
+    assert attach['href'].startswith('data:image/jpeg;base64')
 
 # @pytest.mark.file_operation
 # def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
@@ -333,12 +333,12 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #                  'title': 'Sample Vendor',
 #                  'url': 'https://www.sample_vendor.com/',
 #                  'aliases': ['dcic:sample_vendor']}
-#     with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
-#         args = imp.get_existing.call_args
-#         assert args[0][0] == post_json
-#         out = capsys.readouterr()[0]
-#         assert out.strip() == message
+#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
+#     imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
+#     args = imp.get_existing.call_args
+#     assert args[0][0] == post_json
+#     out = capsys.readouterr()[0]
+#     assert out.strip() == message
 
 
 # @pytest.mark.file_operation
@@ -356,12 +356,12 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
 #                  'url': 'https://www.sample_vendor.com/',
 #                  'aliases': ['dcic:sample_vendor']}
 #     existing_vendor = {'uuid': 'sample_uuid'}
-#     with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor):
-#         imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
-#         args = imp.get_existing.call_args
-#         assert args[0][0] == post_json
-#         out = capsys.readouterr()[0]
-#         assert out.strip() == message
+#     mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor)
+#     imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
+#     args = imp.get_existing.call_args
+#     assert args[0][0] == post_json
+#     out = capsys.readouterr()[0]
+#     assert out.strip() == message
 
 
 # @pytest.mark.file_operation
@@ -377,20 +377,20 @@ def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
     message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
-            # mock posting new items
-            with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-                imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True, [])
-                args = imp.ff_utils.post_metadata.call_args
-                out = capsys.readouterr()[0]
-                outlist = [i.strip() for i in out.split('\n') if i.strip()]
-                post_json_arg = args[0][0]
-                assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-                assert message0_1 + message0_2 == outlist[0]
-                assert message1 == outlist[1]
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock upload file and skip
+    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+    # mock posting new items
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False,
+                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    args = imp.ff_utils.post_metadata.call_args
+    out = capsys.readouterr()[0]
+    outlist = [i.strip() for i in out.split('\n') if i.strip()]
+    post_json_arg = args[0][0]
+    assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
+    assert message0_1 + message0_2 == outlist[0]
+    assert message1 == outlist[1]
 
 
 # @pytest.mark.file_operation
@@ -406,18 +406,18 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_moc
     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
-            # mock posting new items
-            with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-                imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True, [])
-                out = capsys.readouterr()[0]
-                outlist = [i.strip() for i in out.split('\n') if i.strip()]
-                assert message0 == outlist[0]
-                assert message1 == outlist[1]
-                assert message2 == outlist[2]
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock upload file and skip
+    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+    # mock posting new items
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False,
+                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    out = capsys.readouterr()[0]
+    outlist = [i.strip() for i in out.split('\n') if i.strip()]
+    assert message0 == outlist[0]
+    assert message1 == outlist[1]
+    assert message2 == outlist[2]
 
 
 @pytest.mark.file_operation
@@ -431,20 +431,20 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     message1 = "EXPERIMENTHIC(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
-            # mock posting new items
-            with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-                imp.excel_reader(test_insert, 'ExperimentHiC', True, connection_mock, False, all_aliases,
-                                 dict_load, dict_rep, dict_set, True, [])
-                args = imp.ff_utils.post_metadata.call_args
-                out = capsys.readouterr()[0]
-                outlist = [i.strip() for i in out.split('\n') if i is not ""]
-                post_json_arg = args[0][0]
-                assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
-                assert message0 == outlist[0]
-                assert message1 == outlist[1]
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock upload file and skip
+    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+    # mock posting new items
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.excel_reader(test_insert, 'ExperimentHiC', True, connection_mock, False,
+                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    args = imp.ff_utils.post_metadata.call_args
+    out = capsys.readouterr()[0]
+    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    post_json_arg = args[0][0]
+    assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
+    assert message0 == outlist[0]
+    assert message1 == outlist[1]
 
 
 # a weird test that has filename in an experiment
@@ -465,28 +465,28 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
                      'upload_credentials': 'old_creds',
                      'accession': 'some_accession'}]}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value=existing_exp):
-        # mock upload file and skip
-        with mocker.patch('wranglertools.import_data.upload_file_item', return_value={}):
-            # mock posting new items
-            with mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e):
-                # mock get upload creds
-                with mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds"):
-                    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection_mock, True, all_aliases,
-                                     dict_load, dict_rep, dict_set, True, [])
-                    # check for md5sum
-                    args = imp.ff_utils.patch_metadata.call_args
-                    post_json_arg = args[0][0]
-                    assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
-                    # check for cred getting updated (from old_creds to new_creds)
-                    args_upload = imp.upload_file_item.call_args
-                    updated_post = args_upload[0][0]
-                    assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
-                    # check for output message
-                    out = capsys.readouterr()[0]
-                    outlist = [i.strip() for i in out.split('\n') if i is not ""]
-                    assert message0 == outlist[0]
-                    assert message1 == outlist[1]
+    mocker.patch('wranglertools.import_data.get_existing', return_value=existing_exp)
+    # mock upload file and skip
+    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+    # mock posting new items
+    mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e)
+    # mock get upload creds
+    mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds")
+    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection_mock, True,
+                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    # check for md5sum
+    args = imp.ff_utils.patch_metadata.call_args
+    post_json_arg = args[0][0]
+    assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
+    # check for cred getting updated (from old_creds to new_creds)
+    args_upload = imp.upload_file_item.call_args
+    updated_post = args_upload[0][0]
+    assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
+    # check for output message
+    out = capsys.readouterr()[0]
+    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    assert message0 == outlist[0]
+    assert message1 == outlist[1]
 
 
 @pytest.mark.file_operation
@@ -503,16 +503,16 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection_mock)
                   'award': 'test-award',
                   'file_format': 'fastq'}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock posting new items
-        with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-            imp.excel_reader(test_insert, 'FileFastq', True, connection_mock, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True, [])
-            args = imp.ff_utils.post_metadata.call_args
-            out = capsys.readouterr()[0]
-            print([i for i in args])
-            assert message == out.strip()
-            assert args[0][0] == final_post
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock posting new items
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.excel_reader(test_insert, 'FileFastq', True, connection_mock, False,
+                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    args = imp.ff_utils.post_metadata.call_args
+    out = capsys.readouterr()[0]
+    print([i for i in args])
+    assert message == out.strip()
+    assert args[0][0] == final_post
 
 
 @pytest.mark.file_operation
@@ -528,15 +528,15 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection_m
                   'replicate_exps': [{'bio_rep_no': 1.0, 'tec_rep_no': 1.0, 'replicate_exp': 'awesome_uuid'}],
                   'award': 'test_award', 'lab': 'test_lab'}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock upload file and skip
-        with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-            imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection_mock, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True, [])
-            args = imp.ff_utils.post_metadata.call_args
-            out = capsys.readouterr()[0]
-            assert message == out.strip()
-            assert args[0][0] == final_post
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock upload file and skip
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection_mock,
+                     False, all_aliases, dict_load, dict_rep, dict_set, True, [])
+    args = imp.ff_utils.post_metadata.call_args
+    out = capsys.readouterr()[0]
+    assert message == out.strip()
+    assert args[0][0] == final_post
 
 
 @pytest.mark.file_operation
@@ -551,15 +551,15 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection_
     final_post = {'aliases': ['sample_expset'], 'experiments_in_set': ['awesome_uuid'],
                   'award': 'test_award', 'lab': 'test_lab'}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock upload file and skip
-        with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-            imp.excel_reader(test_insert, 'ExperimentSet', True, connection_mock, False, all_aliases,
-                             dict_load, dict_rep, dict_set, True, [])
-            args = imp.ff_utils.post_metadata.call_args
-            out = capsys.readouterr()[0]
-            assert message == out.strip()
-            assert args[0][0] == final_post
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock upload file and skip
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.excel_reader(test_insert, 'ExperimentSet', True, connection_mock, False,
+                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    args = imp.ff_utils.post_metadata.call_args
+    out = capsys.readouterr()[0]
+    assert message == out.strip()
+    assert args[0][0] == final_post
 
 
 @pytest.mark.file_operation
@@ -601,35 +601,30 @@ def test_user_workflow_reader_wfr_post(capsys, mocker, connection_mock):
                                    'workflow_argument_name': 'input_bams',
                                    'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam']}]}
     # mock fetching existing info, return None
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        # mock getting workflow information
-        with mocker.patch('dcicutils.ff_utils.get_metadata', return_value={}):
-            # mock formating files
-            with mocker.patch('wranglertools.import_data.format_file',
-                              side_effect=[
-                                  {'bucket_name': 'elasticbeanstalk-fourfront-webdev-files',
-                                   'workflow_argument_name': 'chromsize', 'object_key': '4DNFI823LSII.chrom.sizes',
-                                   'uuid': '4a6d10ee-2edb-4402-a98f-0edb1d58f5e9'},
-                                  {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
-                                   'workflow_argument_name': 'input_bams',
-                                   'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam'],
-                                   'uuid': ['11c12207-6684-4346-9038-e7819dfde4e5',
-                                            '4d55623a-1698-44c2-b111-1aa1379edc57']},
-                                  {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
-                                   'workflow_argument_name': 'annotated_bam', 'object_key': '4DNFIVQPE4WT.bam',
-                                   'uuid': 'b0aaf32c-58de-475a-a222-3f16d3cb68f4'},
-                                  {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput',
-                                   'workflow_argument_name': 'filtered_pairs', 'object_key': '4DNFIGOJW3XZ.pairs.gz',
-                                   'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71'}
-                                ]):
-                with mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e):
-                    imp.user_workflow_reader(test_insert, sheet_name, connection_mock)
-                    args = imp.ff_utils.post_metadata.call_args
-                    out = capsys.readouterr()[0]
-                    print([i for i in args])
-                    assert message == out.strip()
-                    for a_key in args[0][0]:
-                        assert args[0][0][a_key] == final_post[a_key]
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    # mock getting workflow information
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value={})
+    # mock formating files
+    mocker.patch('wranglertools.import_data.format_file', side_effect=[
+        {'bucket_name': 'elasticbeanstalk-fourfront-webdev-files', 'workflow_argument_name': 'chromsize',
+         'object_key': '4DNFI823LSII.chrom.sizes','uuid': '4a6d10ee-2edb-4402-a98f-0edb1d58f5e9'},
+        {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput', 'workflow_argument_name': 'input_bams',
+         'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam'], 'uuid': [
+             '11c12207-6684-4346-9038-e7819dfde4e5', '4d55623a-1698-44c2-b111-1aa1379edc57'
+        ]},
+        {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput', 'workflow_argument_name': 'annotated_bam',
+         'object_key': '4DNFIVQPE4WT.bam', 'uuid': 'b0aaf32c-58de-475a-a222-3f16d3cb68f4'},
+        {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput', 'workflow_argument_name': 'filtered_pairs',
+         'object_key': '4DNFIGOJW3XZ.pairs.gz', 'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71'}
+    ])
+    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+    imp.user_workflow_reader(test_insert, sheet_name, connection_mock)
+    args = imp.ff_utils.post_metadata.call_args
+    out = capsys.readouterr()[0]
+    print([i for i in args])
+    assert message == out.strip()
+    for a_key in args[0][0]:
+        assert args[0][0][a_key] == final_post[a_key]
 
 
 def test_order_sorter(capsys):
@@ -653,33 +648,32 @@ def test_loadxl_cycle(capsys, mocker, connection_mock):
     patch_list = {'Experiment': [{"uuid": "some_uuid"}]}
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid'}]}
     message = "EXPERIMENT(phase2): 1 items patched."
-    with mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e):
-        imp.loadxl_cycle(patch_list, connection_mock, [])
-        out = capsys.readouterr()[0]
-        assert message == out.strip()
+    mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e)
+    imp.loadxl_cycle(patch_list, connection_mock, [])
+    out = capsys.readouterr()[0]
+    assert message == out.strip()
 
 
 def test_verify_and_return_item_good_item(mocker, connection_mock, returned_award_objframe):
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value=returned_award_objframe.json()):
-        res = imp._verify_and_return_item('/awards/1U01ES017166-01/', connection_mock)
-        assert res == returned_award_objframe.json()
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_award_objframe.json())
+    res = imp._verify_and_return_item('/awards/1U01ES017166-01/', connection_mock)
+    assert res == returned_award_objframe.json()
 
 
 def test_verify_and_return_item_bad_item(mocker, connection_mock):
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value=None):
-        res = imp._verify_and_return_item('blah', connection_mock)
-        assert res is None
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=None)
+    res = imp._verify_and_return_item('blah', connection_mock)
+    assert res is None
 
 
 @pytest.mark.file_operation
 def test_cabin_cross_check_dryrun(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                      side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
-        imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/Exp_Set_insert.xls', False, None, None)
-        out = capsys.readouterr()[0]
-        message = '''
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
+    ])
+    imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/Exp_Set_insert.xls', False, None, None)
+    out = capsys.readouterr()[0]
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
 Submitting Lab:   test_lab
@@ -690,16 +684,17 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-        assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
-            out = capsys.readouterr()[0]
-            message = '''
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
+    ])
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
+    out = capsys.readouterr()[0]
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
 Submitting Lab:   test_lab
@@ -710,22 +705,22 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-            assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 @pytest.mark.skip  # invalid mock use, needs refactor
 def test_cabin_cross_check_not_remote_w_lab_award_options(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch.object(connection_mock, 'prompt_for_lab_award', return_value='blah'):
-            with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                              side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
-                connection_mock.labs = ['test_lab', 'other_lab']
-                imp.cabin_cross_check(connection_mock, False, False, 'blah', False,
-                                      '795847de-20b6-4f8c-ba8d-185215469cbf',
-                                      'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
-                out = capsys.readouterr()[0]
-                print(out)
-                message = '''
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch.object(connection_mock, 'prompt_for_lab_award', return_value='blah')
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
+    ])
+    connection_mock.labs = ['test_lab', 'other_lab']
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', False,
+                          '795847de-20b6-4f8c-ba8d-185215469cbf', 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
+    out = capsys.readouterr()[0]
+    print(out)
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
 Submitting Lab:   795847de-20b6-4f8c-ba8d-185215469cbf
@@ -736,20 +731,20 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-                assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 def test_cabin_cross_check_remote_w_lab_award_options(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
-            connection_mock.labs = ['test_lab', 'other_lab']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                  '795847de-20b6-4f8c-ba8d-185215469cbf',
-                                  'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
-            out = capsys.readouterr()[0]
-            print(out)
-            message = '''
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
+    ])
+    connection_mock.labs = ['test_lab', 'other_lab']
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+                          '795847de-20b6-4f8c-ba8d-185215469cbf', 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
+    out = capsys.readouterr()[0]
+    print(out)
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
 Submitting Lab:   795847de-20b6-4f8c-ba8d-185215469cbf
@@ -760,23 +755,21 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-            assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
-def test_cabin_cross_check_remote_w_ok_award_and_no_lab_options(mocker, connection_mock, capsys,
-                                                                returned_lab_w_two_awards_objframe,
-                                                                returned_award_objframe):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[{'awards': ['/awards/1U54DK107977-01/', '/awards/1U01ES017166-01/']},
-                                       {'@id': '/awards/1U54DK107977-01/'}]):
-            connection_mock.lab = '/labs/bing-ren-lab/'
-            connection_mock.labs = ['/labs/bing-ren-lab/']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                  None, '/awards/1U54DK107977-01/')
-            out = capsys.readouterr()[0]
-            print(out)
-            message = '''
+def test_cabin_cross_check_remote_w_ok_award_and_no_lab_options(
+        mocker, connection_mock, capsys, returned_lab_w_two_awards_objframe, returned_award_objframe):
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': ['/awards/1U54DK107977-01/', '/awards/1U01ES017166-01/']}, {'@id': '/awards/1U54DK107977-01/'}
+    ])
+    connection_mock.lab = '/labs/bing-ren-lab/'
+    connection_mock.labs = ['/labs/bing-ren-lab/']
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, '/awards/1U54DK107977-01/')
+    out = capsys.readouterr()[0]
+    print(out)
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
 Submitting Lab:   /labs/bing-ren-lab/
@@ -787,21 +780,19 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-            assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 def test_cabin_cross_check_remote_w_multilabs_no_options(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[None, None]):
-            connection_mock.labs = ['/labs/bing-ren-lab/', '/labs/test-lab/']
-            connection_mock.award = None
-            connection_mock.set_award = lambda x, y: None
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                  None, None)
-            out = capsys.readouterr()[0]
-            print(out)
-            message = '''
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[None, None])
+    connection_mock.labs = ['/labs/bing-ren-lab/', '/labs/test-lab/']
+    connection_mock.award = None
+    connection_mock.set_award = lambda x, y: None
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
+    out = capsys.readouterr()[0]
+    print(out)
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting Lab NOT FOUND: None
 Submitting award NOT FOUND: None
@@ -816,19 +807,19 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-            assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 def test_cabin_cross_check_remote_w_labopt_and_lab_has_single_award(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[{'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}]):
-            connection_mock.labs = ['test_lab', 'other_lab']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                  '/labs/test_lab/', None)
-            out = capsys.readouterr()[0]
-            print(out)
-            message = '''
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
+    ])
+    connection_mock.labs = ['test_lab', 'other_lab']
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '/labs/test_lab/', None)
+    out = capsys.readouterr()[0]
+    print(out)
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting User:  test@test.test
 Submitting Lab:   /labs/test_lab/
@@ -839,17 +830,16 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-            assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 def test_cabin_cross_check_remote_w_unknown_lab_and_award(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[None, None]):
-            connection_mock.labs = ['test_lab', 'other_lab']
-            imp.cabin_cross_check(connection_mock, False, False, 'blah', True, 'unknown_lab', 'unknown_award')
-            out = capsys.readouterr()[0]
-            message = '''
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[None, None])
+    connection_mock.labs = ['test_lab', 'other_lab']
+    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, 'unknown_lab', 'unknown_award')
+    out = capsys.readouterr()[0]
+    message = '''
 Running on:       https://data.4dnucleome.org/
 Submitting Lab NOT FOUND: unknown_lab
 Submitting award NOT FOUND: unknown_award
@@ -864,19 +854,17 @@ Since there are no '--update' and/or '--patchall' arguments, you are running the
 The validation will only check for schema rules, but not for object relations
 ##############   DRY-RUN MODE   ################
 '''
-            assert out.strip() == message.strip()
+    assert out.strip() == message.strip()
 
 
 def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection_mock, capsys):
-    with mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True):
-        with mocker.patch('wranglertools.import_data._verify_and_return_item',
-                          side_effect=[{'awards': ['/awards/test_award/', '/awards/1U54DK107977-01/']},
-                                       {'@id': '/awards/non-ren-lab-award/'}]):
-            with pytest.raises(SystemExit):
-                connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
-                imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
-                                      '/labs/bing-ren-lab/',
-                                      '/awards/non-ren-lab-award/')
+    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
+        {'awards': ['/awards/test_award/', '/awards/1U54DK107977-01/']}, {'@id': '/awards/non-ren-lab-award/'}
+    ])
+    with pytest.raises(SystemExit):
+        connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
+        imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '/labs/bing-ren-lab/', '/awards/non-ren-lab-award/')
 
 # with pytest.raises(SystemExit):
 # Disabled - public account is not compatible with the connection object at the moment
@@ -988,45 +976,41 @@ def test_validate_multiple_items_in_alias_dict_incorrect_type(alias_dict, connec
 
 def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection_mock):
     item = 'test:alias1'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value={'@type': ['Biosource']}):
-        msg = imp.validate_item([item], 'Biosource', {}, connection_mock)
-        assert not msg
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value={'@type': ['Biosource']})
+    msg = imp.validate_item([item], 'Biosource', {}, connection_mock)
+    assert not msg
 
 
 def test_validate_item_not_in_alias_dict_alias_indb_long_name(mocker, connection_mock):
     item = '/labs/test-lab'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value={'@type': ['Lab']}):
-        msg = imp.validate_item([item], 'Lab', {}, connection_mock)
-        assert not msg
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value={'@type': ['Lab']})
+    msg = imp.validate_item([item], 'Lab', {}, connection_mock)
+    assert not msg
 
 
 def test_validate_item_not_in_alias_dict_hyphen(mocker, connection_mock):
     item = '/ontology-terms/EFO%3A0006274'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value={'@type': ['OntologyTerm']}):
-        msg = imp.validate_item([item], 'Individual', {}, connection_mock)
-        assert " \'/ontology-terms/EFO%3A0006274\'" in msg
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value={'@type': ['OntologyTerm']})
+    msg = imp.validate_item([item], 'Individual', {}, connection_mock)
+    assert " \'/ontology-terms/EFO%3A0006274\'" in msg
 
 
 def test_validate_item_not_in_alias_dict_alias_not_indb(mocker, connection_mock):
     item = 'test:alias1'
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      return_value={'@type': ['HTTPNotFound']}):
-        msg = imp.validate_item([item], 'Biosource', {}, connection_mock)
-        assert msg.startswith("ERROR")
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value={'@type': ['HTTPNotFound']})
+    msg = imp.validate_item([item], 'Biosource', {}, connection_mock)
+    assert msg.startswith("ERROR")
 
 
 def test_validate_item_one_in_one_not_in_db(mocker, connection_mock):
     items = ['test:alias1', 'test:alias2']
-    with mocker.patch('dcicutils.ff_utils.get_metadata',
-                      side_effect=[{'@type': ['HTTPNotFound']},
-                                   {'@type': ['Biosource', 'Item']}]):
-        msg = imp.validate_item(items, 'Biosource', {}, connection_mock)
-        assert msg.startswith("ERROR")
-        assert 'test:alias1' in msg
-        assert 'test:alias2' not in msg
+    mocker.patch('dcicutils.ff_utils.get_metadata', side_effect=[
+        {'@type': ['HTTPNotFound']}, {'@type': ['Biosource', 'Item']}
+    ])
+    msg = imp.validate_item(items, 'Biosource', {}, connection_mock)
+    assert msg.startswith("ERROR")
+    assert 'test:alias1' in msg
+    assert 'test:alias2' not in msg
 
 
 def test_validate_string_are_strings_not_alias(alias_dict):
@@ -1057,47 +1041,41 @@ def test_convert_to_array_is_string():
 def test_validate_field_single_string(mocker, connection_mock, alias_dict):
     fdata = 'test_string'
     ftype = 'string'
-    with mocker.patch('wranglertools.import_data.validate_string',
-                      return_value=''):
-        assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
+    mocker.patch('wranglertools.import_data.validate_string', return_value='')
+    assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
 
 
 def test_validate_field_array_of_string(mocker, connection_mock, alias_dict):
     fdata = 'test_string'
     ftype = 'array of string'
-    with mocker.patch('wranglertools.import_data.validate_string',
-                      return_value=''):
-        assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
+    mocker.patch('wranglertools.import_data.validate_string', return_value='')
+    assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
 
 
 def test_validate_field_single_item(mocker, connection_mock, alias_dict):
     fdata = 'test_item'
     ftype = 'Item:Biosource'
-    with mocker.patch('wranglertools.import_data.validate_item',
-                      return_value=''):
-        assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
+    mocker.patch('wranglertools.import_data.validate_item', return_value='')
+    assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
 
 
 def test_validate_field_array_of_items(mocker, connection_mock, alias_dict):
     fdata = 'test_item'
     ftype = 'array of Item:Biosource'
-    with mocker.patch('wranglertools.import_data.validate_item',
-                      return_value=''):
-        assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
+    mocker.patch('wranglertools.import_data.validate_item', return_value='')
+    assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
 
 
 def test_validate_field_array_of_embedded_objects(mocker, connection_mock, alias_dict):
     fdata = 'test_item'
     ftype = 'array of embedded objects, Item:File'
-    with mocker.patch('wranglertools.import_data.validate_item',
-                      return_value=''):
-        assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
+    mocker.patch('wranglertools.import_data.validate_item', return_value='')
+    assert not imp.validate_field(fdata, ftype, alias_dict, connection_mock)
 
 
 def test_pre_validate_json(mocker, json2post, fields2type, alias_dict, connection_mock):
-    with mocker.patch('wranglertools.import_data.validate_field',
-                      side_effect=['', '']):
-        assert not imp.pre_validate_json(json2post, fields2type, alias_dict, connection_mock)
+    mocker.patch('wranglertools.import_data.validate_field', side_effect=['', ''])
+    assert not imp.pre_validate_json(json2post, fields2type, alias_dict, connection_mock)
 
 
 @pytest.fixture
@@ -1235,15 +1213,15 @@ def test_check_extra_file_meta_w_format_filename_new_file(mocker):
     md5sum = 'mymd5'
     fsize = 10
     data = {'file_format': ff, 'filename': fn}
-    with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
-        with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
-            result, seen = imp.check_extra_file_meta(data, [], [])
-            assert result['file_format'] == '/file-formats/' + ff + '/'
-            assert result['filename'] == fn
-            assert result['md5sum'] == md5sum
-            assert result['filesize'] == fsize
-            assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-            assert '/file-formats/' + ff + '/' in seen
+    mocker.patch('wranglertools.import_data.md5', return_value=md5sum)
+    mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize)
+    result, seen = imp.check_extra_file_meta(data, [], [])
+    assert result['file_format'] == '/file-formats/' + ff + '/'
+    assert result['filename'] == fn
+    assert result['md5sum'] == md5sum
+    assert result['filesize'] == fsize
+    assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+    assert '/file-formats/' + ff + '/' in seen
 
 
 def test_check_extra_file_meta_w_filename_seen_format(mocker):
@@ -1252,15 +1230,15 @@ def test_check_extra_file_meta_w_filename_seen_format(mocker):
     md5sum = 'mymd5'
     fsize = 10
     data = {'file_format': ff, 'filename': fn}
-    with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
-        with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
-            result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
-            assert result['file_format'] == '/file-formats/' + ff + '/'
-            assert result['filename'] == fn
-            assert result['md5sum'] == md5sum
-            assert result['filesize'] == fsize
-            assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-            assert '/file-formats/' + ff + '/' in seen
+    mocker.patch('wranglertools.import_data.md5', return_value=md5sum)
+    mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize)
+    result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
+    assert result['file_format'] == '/file-formats/' + ff + '/'
+    assert result['filename'] == fn
+    assert result['md5sum'] == md5sum
+    assert result['filesize'] == fsize
+    assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+    assert '/file-formats/' + ff + '/' in seen
 
 
 def test_check_extra_file_meta_malformed_data(capsys):
@@ -1284,17 +1262,17 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
     md5sum = 'mymd5'
     fsize = 10
     data = {'file_format': ff, 'filename': fn}
-    with mocker.patch('wranglertools.import_data.md5', return_value=md5sum):
-        with mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize):
-            result, seen = imp.check_extra_file_meta(data, [], ['/file-formats/pairs_px2/'])
-            out = capsys.readouterr()[0]
-            assert result['file_format'] == '/file-formats/' + ff + '/'
-            assert result['filename'] == fn
-            assert result['md5sum'] == md5sum
-            assert result['filesize'] == fsize
-            assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
-            assert '/file-formats/' + ff + '/' in seen
-            assert 'An extrafile with /file-formats/pairs_px2/ format exists - will attempt to patch' in out
+    mocker.patch('wranglertools.import_data.md5', return_value=md5sum)
+    mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize)
+    result, seen = imp.check_extra_file_meta(data, [], ['/file-formats/pairs_px2/'])
+    out = capsys.readouterr()[0]
+    assert result['file_format'] == '/file-formats/' + ff + '/'
+    assert result['filename'] == fn
+    assert result['md5sum'] == md5sum
+    assert result['filesize'] == fsize
+    assert result['submitted_filename'] == 'test_pairs_index.pairs.gz.px2'
+    assert '/file-formats/' + ff + '/' in seen
+    assert 'An extrafile with /file-formats/pairs_px2/ format exists - will attempt to patch' in out
 
 
 def test_check_extra_file_meta_w_no_filename():
@@ -1337,139 +1315,119 @@ def post_json_w_extf():
 
 def test_populate_post_json_extrafile_no_meta(mocker, connection_mock):
     pj = {'uuid': 'test_uuid', 'extra_files': ['blah']}
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
-                          return_value=(None, None)):
-            pjson, _, _, efiles = imp.populate_post_json(
-                pj, connection_mock, 'FileReference', [])
-            assert 'extra_files' not in pjson
-            assert not efiles
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    mocker.patch('wranglertools.import_data.check_extra_file_meta', return_value=(None, None))
+    pjson, _, _, efiles = imp.populate_post_json(pj, connection_mock, 'FileReference', [])
+    assert 'extra_files' not in pjson
+    assert not efiles
 
 
-def test_populate_post_json_extrafile_2_files_2_filenames(
-        mocker, connection_mock, post_json_w_extf):
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
-                          side_effect=[
-                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
-                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['/file-formats/bai/']),
-                              ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
-                                'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
-                                'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
-                          ]):
-            pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed', [])
-            assert len(pjson['extra_files']) == 2
-            assert len(efiles) == 2
-            for _, fp in efiles.items():
-                assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
-            for ef in pjson['extra_files']:
-                assert 'file_format' in ef
-                assert ef['file_format'] in ['/file-formats/bai/', '/file-formats/pairs_px2/']
-                assert 'filename' not in ef
+def test_populate_post_json_extrafile_2_files_2_filenames(mocker, connection_mock, post_json_w_extf):
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    mocker.patch('wranglertools.import_data.check_extra_file_meta', side_effect=[
+        ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
+          'submitted_filename': 'test_bai.bam.bai', 'filesize': 10, 'md5sum': 'baimd5'},
+         ['/file-formats/bai/']),
+        ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
+          'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20, 'md5sum': 'px2md5'},
+         ['/file-formats/bai/', '/file-formats/pairs_px2/'])
+    ])
+    pjson, _, _, efiles = imp.populate_post_json(post_json_w_extf, connection_mock, 'FileProcessed', [])
+    assert len(pjson['extra_files']) == 2
+    assert len(efiles) == 2
+    for _, fp in efiles.items():
+        assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
+    for ef in pjson['extra_files']:
+        assert 'file_format' in ef
+        assert ef['file_format'] in ['/file-formats/bai/', '/file-formats/pairs_px2/']
+        assert 'filename' not in ef
 
 
-def test_populate_post_json_extrafile_w_existing(
-        mocker, connection_mock, post_json_w_extf):
-    with mocker.patch('wranglertools.import_data.get_existing',
-                      return_value={'uuid': 'pfuuid',
-                                    'extra_files': [
-                                        {'file_format': '/file-formats/pairs_px2/', 'filesize': 30,
-                                         'submitted_filename': 'test2_pairs_index.pairs.gz.px2',
-                                         'md5sum': 'px22md5', 'another_field': 'value'}
-                                    ]}):
-
-        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
-                          side_effect=[
-                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
-                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['bai']),
-                              ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
-                                'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
-                                'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
-                          ]):
-            pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed', [])
-            assert len(pjson['extra_files']) == 2
-            assert len(efiles) == 2
-            for fp in efiles.values():
-                assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
-            for ef in pjson['extra_files']:
-                if ef['file_format'] == '/file-formats/pairs_px2/':
-                    assert not ef['submitted_filename'].startswith('test2')
-                    assert 'another_field' not in ef
-                assert 'filename' not in ef
+def test_populate_post_json_extrafile_w_existing(mocker, connection_mock, post_json_w_extf):
+    mocker.patch('wranglertools.import_data.get_existing', return_value={'uuid': 'pfuuid', 'extra_files': [
+        {'file_format': '/file-formats/pairs_px2/', 'filesize': 30,
+         'submitted_filename': 'test2_pairs_index.pairs.gz.px2',
+         'md5sum': 'px22md5', 'another_field': 'value'}
+    ]})
+    mocker.patch('wranglertools.import_data.check_extra_file_meta', side_effect=[
+        ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
+          'submitted_filename': 'test_bai.bam.bai', 'filesize': 10, 'md5sum': 'baimd5'}, ['bai']),
+        ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
+          'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
+          'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
+    ])
+    pjson, _, _, efiles = imp.populate_post_json(
+        post_json_w_extf, connection_mock, 'FileProcessed', [])
+    assert len(pjson['extra_files']) == 2
+    assert len(efiles) == 2
+    for fp in efiles.values():
+        assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
+    for ef in pjson['extra_files']:
+        if ef['file_format'] == '/file-formats/pairs_px2/':
+            assert not ef['submitted_filename'].startswith('test2')
+            assert 'another_field' not in ef
+        assert 'filename' not in ef
 
 
-def test_populate_post_json_extrafile_w_existing_no_extra_file(
-        mocker, connection_mock, post_json_w_extf):
-    with mocker.patch('wranglertools.import_data.get_existing',
-                      return_value={'uuid': 'pfuuid'}):
-        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
-                          side_effect=[
-                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
-                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['/file-formats/bai/']),
-                              ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
-                                'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
-                                'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
-                          ]):
-            pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed', [])
-            assert len(pjson['extra_files']) == 2
-            assert len(efiles) == 2
-            for _, fp in efiles.items():
-                assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
-            for ef in pjson['extra_files']:
-                assert 'filename' not in ef
+def test_populate_post_json_extrafile_w_existing_no_extra_file(mocker, connection_mock, post_json_w_extf):
+    mocker.patch('wranglertools.import_data.get_existing', return_value={'uuid': 'pfuuid'})
+    mocker.patch('wranglertools.import_data.check_extra_file_meta', side_effect=[
+        ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
+          'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+          'md5sum': 'baimd5'}, ['/file-formats/bai/']),
+        ({'file_format': '/file-formats/pairs_px2/', 'filename': '/test_pairs_index.pairs.gz.px2',
+          'submitted_filename': 'test_pairs_index.pairs.gz.px2', 'filesize': 20,
+          'md5sum': 'px2md5'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
+    ])
+    pjson, _, _, efiles = imp.populate_post_json(post_json_w_extf, connection_mock, 'FileProcessed', [])
+    assert len(pjson['extra_files']) == 2
+    assert len(efiles) == 2
+    for _, fp in efiles.items():
+        assert fp in ['/test_bai.bam.bai', '/test_pairs_index.pairs.gz.px2']
+    for ef in pjson['extra_files']:
+        assert 'filename' not in ef
 
 
-def test_populate_post_json_extrafile_2_files_1_filename(
-        mocker, connection_mock, post_json_w_extf):
+def test_populate_post_json_extrafile_2_files_1_filename(mocker, connection_mock, post_json_w_extf):
     del post_json_w_extf['extra_files'][1]['filename']
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
-                          side_effect=[
-                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
-                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'baimd5'}, ['/file-formats/bai/']),
-                              ({'file_format': '/file-formats/pairs_px2/'},
-                               ['/file-formats/bai/', '/file-formats/pairs_px2/'])
-                          ]):
-            pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed', [])
-            assert len(pjson['extra_files']) == 2
-            assert len(efiles) == 1
-            assert efiles['/file-formats/bai/'] == '/test_bai.bam.bai'
-            for ef in pjson['extra_files']:
-                assert 'file_format' in ef
-                assert ef['file_format'] in ['/file-formats/bai/', '/file-formats/pairs_px2/']
-                assert 'filename' not in ef
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    mocker.patch('wranglertools.import_data.check_extra_file_meta', side_effect=[
+        ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
+          'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
+          'md5sum': 'baimd5'}, ['/file-formats/bai/']),
+        ({'file_format': '/file-formats/pairs_px2/'}, ['/file-formats/bai/', '/file-formats/pairs_px2/'])
+    ])
+    pjson, _, _, efiles = imp.populate_post_json(
+        post_json_w_extf, connection_mock, 'FileProcessed', [])
+    assert len(pjson['extra_files']) == 2
+    assert len(efiles) == 1
+    assert efiles['/file-formats/bai/'] == '/test_bai.bam.bai'
+    for ef in pjson['extra_files']:
+        assert 'file_format' in ef
+        assert ef['file_format'] in ['/file-formats/bai/', '/file-formats/pairs_px2/']
+        assert 'filename' not in ef
 
 
-def test_populate_post_json_extrafile_2_files_same_format(
-        mocker, connection_mock, post_json_w_extf):
+def test_populate_post_json_extrafile_2_files_same_format(mocker, connection_mock, post_json_w_extf):
     post_json_w_extf['extra_files'][1] = {'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai'}
-    with mocker.patch('wranglertools.import_data.get_existing', return_value={}):
-        with mocker.patch('wranglertools.import_data.check_extra_file_meta',
-                          side_effect=[
-                              ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
-                                'submitted_filename': 'test_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'test_baimd5'}, ['/file-formats/bai/']),
-                              ({'file_format': '/file-formats/bai/', 'filename': '/test2_bai.bam.bai',
-                                'submitted_filename': 'test2_bai.bam.bai', 'filesize': 10,
-                                'md5sum': 'test2_baimd5'}, ['/file-formats/bai/', '/file-formats/bai/'])
-                          ]):
-            pjson, _, _, efiles = imp.populate_post_json(
-                post_json_w_extf, connection_mock, 'FileProcessed', [])
-            assert len(pjson['extra_files']) == 2
-            assert len(efiles) == 1
-            assert efiles['/file-formats/bai/'] == '/test2_bai.bam.bai'
-            for ef in pjson['extra_files']:
-                assert 'file_format' in ef
-                assert ef['file_format'] == '/file-formats/bai/'
-                assert 'filename' not in ef
+    mocker.patch('wranglertools.import_data.get_existing', return_value={})
+    mocker.patch('wranglertools.import_data.check_extra_file_meta', side_effect=[
+        ({'file_format': '/file-formats/bai/', 'filename': '/test_bai.bam.bai',
+          'submitted_filename': 'test_bai.bam.bai', 'filesize': 10, 'md5sum': 'test_baimd5'},
+         ['/file-formats/bai/']),
+        ({'file_format': '/file-formats/bai/', 'filename': '/test2_bai.bam.bai',
+          'submitted_filename': 'test2_bai.bam.bai', 'filesize': 10, 'md5sum': 'test2_baimd5'},
+         ['/file-formats/bai/', '/file-formats/bai/'])
+    ])
+    pjson, _, _, efiles = imp.populate_post_json(
+        post_json_w_extf, connection_mock, 'FileProcessed', [])
+    assert len(pjson['extra_files']) == 2
+    assert len(efiles) == 1
+    assert efiles['/file-formats/bai/'] == '/test2_bai.bam.bai'
+    for ef in pjson['extra_files']:
+        assert 'file_format' in ef
+        assert ef['file_format'] == '/file-formats/bai/'
+        assert 'filename' not in ef
 
 
 class MockedException(Exception):
@@ -1485,9 +1443,9 @@ def test_parse_exception_well_formatted_exception():
 
 
 def test_update_item_bad_verb(mocker, connection_mock):
-    with mocker.patch('wranglertools.import_data.parse_exception', return_value={'status': 'error'}):
-        resp = imp.update_item('PUT', False, {}, None, None, connection_mock, 'FileProcessed')
-        assert resp['status'] == 'error'
+    mocker.patch('wranglertools.import_data.parse_exception', return_value={'status': 'error'})
+    resp = imp.update_item('PUT', False, {}, None, None, connection_mock, 'FileProcessed')
+    assert resp['status'] == 'error'
 
 
 @pytest.fixture
@@ -1568,22 +1526,21 @@ def pf_w_extfiles_resp():
 
 def test_update_item_extrafiles(mocker, connection_mock, pf_w_extfiles_resp):
     extrafiles = {'pairs_px2': '/test/file/test_pairs.gz.px2', 'pairsam_px2': '/test/file/testfile.pairs.sam.gz'}
-    with mocker.patch('wranglertools.import_data.ff_utils.post_metadata', return_value=pf_w_extfiles_resp):
-        with mocker.patch('wranglertools.import_data.upload_extra_file', side_effect=[None, None]):
-            with mocker.patch('wranglertools.import_data.ff_utils.get_metadata',
-                              side_effect=[{'uuid': 'd13d06cf-218e-4f61-aaf0-91f226348b2c'},
-                                           {'uuid': 'd13d06cf-218e-6f61-aaf0-91f226248b2c'}]):
-                resp = imp.update_item('POST', False, {}, None, extrafiles, connection_mock, 'FileProcessed')
-                assert 'result' in resp['@type']
-                assert resp['status'] == 'success'
+    mocker.patch('wranglertools.import_data.ff_utils.post_metadata', return_value=pf_w_extfiles_resp)
+    mocker.patch('wranglertools.import_data.upload_extra_file', side_effect=[None, None])
+    mocker.patch('wranglertools.import_data.ff_utils.get_metadata', side_effect=[
+        {'uuid': 'd13d06cf-218e-4f61-aaf0-91f226348b2c'}, {'uuid': 'd13d06cf-218e-6f61-aaf0-91f226248b2c'}
+    ])
+    resp = imp.update_item('POST', False, {}, None, extrafiles, connection_mock, 'FileProcessed')
+    assert 'result' in resp['@type']
+    assert resp['status'] == 'success'
 
 
 def test_get_profiles(mocker, mock_profiles, connection_mock):
     '''just using a simple mock profiles dictionary'''
-    with mocker.patch('wranglertools.import_data.ff_utils.get_metadata',
-                      return_value=mock_profiles):
-        profiles = imp.get_profiles(connection_mock)
-        assert profiles == mock_profiles
+    mocker.patch('wranglertools.import_data.ff_utils.get_metadata', return_value=mock_profiles)
+    profiles = imp.get_profiles(connection_mock)
+    assert profiles == mock_profiles
 
 
 def test_get_attachment_fields(mock_profiles):
