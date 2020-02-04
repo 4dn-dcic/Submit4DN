@@ -121,92 +121,7 @@ class FDN_Connection(object):
         # passed key object stores the key dict in con_key
         self.check = False
         self.key = key4dn.con_key
-        # check connection and find user uuid
-        # TODO: we should not need try/except, since if me page fails, there is
-        # no need to proggress, but the test are failing without this Part
-        # make mocked connections and remove try/except
-        # is public connection using submit4dn a realistic case?
-        try:
-            me_page = ff_utils.get_metadata('me', key=self.key)
-            self.user = me_page['@id']
-            self.email = me_page['email']
-            self.check = True
-            self.admin = True if 'admin' in me_page.get('groups', []) else False
-        except:
-            print('Can not establish connection, please check your keys')
-            me_page = {}
-        if not me_page:
-            sys.exit(1)
-        if me_page.get('submits_for') is not None:
-            # get all the labs that the user making the connection submits_for
-            self.labs = [l['@id'] for l in me_page['submits_for']]
-            # take the first one as default value for the connection - reset in
-            # import_data if needed by calling set_lab_award
-            self.lab = self.labs[0]
-            self.set_award(self.lab, dontPrompt=True)  # set as default first
-        else:
-            self.labs = None
-            self.lab = None
-            self.award = None
-
-    def set_award(self, lab, dontPrompt=False):
-        '''Sets the award for the connection for use in import_data
-           if dontPrompt is False will ask the User to choose if there
-           are more than one award for the connection.lab otherwise
-           the first award for the lab will be used
-        '''
-        self.award = None
-        if lab is not None:
-            labjson = ff_utils.get_metadata(lab, key=self.key)
-            if labjson.get('awards') is not None:
-                awards = labjson.get('awards')
-                if len(awards) == 1:
-                    self.award = awards[0]['@id']
-                    return
-
-                # if don't prompt is active leave None
-                if dontPrompt:
-                    return
-
-                # if there are multiple awards
-                achoices = []
-                print("Multiple awards for {labname}:".format(labname=lab))
-                for i, awd in enumerate(awards):
-                    ch = str(i + 1)
-                    achoices.append(ch)
-                    print("  ({choice}) {awdname}".format(choice=ch, awdname=awd['@id']))
-                # re try the input until a valid choice is input
-                awd_resp = ''
-                while awd_resp not in achoices:
-                    awd_resp = str(input("Select the award for this session {choices}: ".format(choices=achoices)))
-                self.award = awards[int(awd_resp) - 1]['@id']
-        return
-
-    def prompt_for_lab_award(self, lab=None, award=None):
-        '''Check to see if user submits_for multiple labs or the lab
-            has multiple awards and if so prompts for the one to set
-            for the connection
-        '''
-        if lab:
-            if not award:
-                self.set_award(self.lab)
-        else:
-            if self.labs is not None:
-                if len(self.labs) > 1:
-                    lchoices = []
-                    print("Submitting for multiple labs:")
-                    for i, lab in enumerate(self.labs):
-                        ch = str(i + 1)
-                        lchoices.append(ch)
-                        print("  ({choice}) {labname}".format(choice=ch, labname=lab))
-                    lab_resp = str(input("Select the lab for this connection {choices}: ".format(choices=lchoices)))
-                    if lab_resp not in lchoices:
-                        print("Not a valid choice - using {default}".format(default=self.lab))
-                        return
-                    else:
-                        self.lab = self.labs[int(lab_resp) - 1]
-            if not award:
-                self.set_award(self.lab, False)
+        self.admin = True
 
 
 @attr.s
@@ -219,32 +134,21 @@ class FieldInfo(object):
     enum = attr.ib(default=u'')
 
 
-# additional fields for experiment sheets to capture experiment_set related information
-exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
-                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
-                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
-                    # FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
-                    #          'Grouping for non-replicate experiments')
-                    ]
+# # additional fields for experiment sheets to capture experiment_set related information
+# exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
+#                     FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
+#                     FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
+#                     # FieldInfo('experiment_set', 'array of Item:ExperimentSet', 2,
+#                     #          'Grouping for non-replicate experiments')
+#                     ]
 
 
-sheet_order = [
-    "User", "Award", "Lab", "Document", "ExperimentType", "Protocol", "Publication", "Organism",
-    "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Vendor", "Enzyme",
-    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Gene", "BioFeature",
-    "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
-    "Biosample", "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
-    "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
-    "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
-    "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
-    "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
-    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
-]
+sheet_order = ['Case', 'TrackingItem', 'Page', 'Document', 'User', 'Institution', 'Phenotype', 'OntologyTerm', 'Sample',
+               'Disease', 'Ontology', 'StaticSection', 'Sysinfo', 'AccessKey', 'Individual', 'Project']
 
-file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
-file_types.remove('FileFormat')
-exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
+# file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
+# file_types.remove('FileFormat')
+# exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
 
 
 def get_field_type(field):
@@ -287,10 +191,10 @@ def build_field_list(properties, required_fields=None, include_description=False
         is_member_of_array_of_objects = False
         if props.get('calculatedProperty'):
             continue
-        if 'submit4dn' in props.get('exclude_from', []):
-            continue
-        if ('import_items' in props.get('permission', []) and not admin):
-            continue
+        # if 'submit4dn' in props.get('exclude_from', []):
+        #     continue
+        # if ('import_items' in props.get('permission', []) and not admin):
+        #     continue
         if is_subobject(props) and name != 'attachment':
             if get_field_type(props).startswith('array'):
                 is_member_of_array_of_objects = True
@@ -343,14 +247,14 @@ class FDN_Schema(object):
         self.required = None
         if 'required' in response:
             self.required = response['required']
-        if schema_name in file_types and response['properties'].get('file_format'):
-            q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
-            formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
-            response['properties']['file_format']['enum'] = formats
-        elif schema_name in exp_types and response['properties'].get('experiment_type'):
-            q = '/search/?type=ExperimentType&field=title&valid_item_types={}'.format(schema_name)
-            exptypes = [i['title'] for i in ff_utils.search_metadata(q, key=connection.key)]
-            response['properties']['experiment_type']['enum'] = exptypes
+        # if schema_name in file_types and response['properties'].get('file_format'):
+        #     q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
+        #     formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
+        #     response['properties']['file_format']['enum'] = formats
+        # elif schema_name in exp_types and response['properties'].get('experiment_type'):
+        #     q = '/search/?type=ExperimentType&field=title&valid_item_types={}'.format(schema_name)
+        #     exptypes = [i['title'] for i in ff_utils.search_metadata(q, key=connection.key)]
+        #     response['properties']['experiment_type']['enum'] = exptypes
         self.properties = response['properties']
 
 
@@ -367,8 +271,8 @@ def get_uploadable_fields(connection, types, include_description=False,
                                         include_comments,
                                         include_enums,
                                         admin=connection.admin)
-        if name.startswith('Experiment') and not name.startswith('ExperimentSet') and name != 'ExperimentType':
-            fields[name].extend(exp_set_addition)
+        # if name.startswith('Experiment') and not name.startswith('ExperimentSet') and name != 'ExperimentType':
+        #     fields[name].extend(exp_set_addition)
         if 'extra_files' in properties:
             if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
                 fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
@@ -424,30 +328,30 @@ def get_sheet_names(types_list):
     if lowercase_types == ['all']:
         sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
     else:
-        presets = {
-            'hic': ["image", "filefastq", "experimenthic"],
-            'chipseq': ["gene", "biofeature", "antibody", "filefastq", "experimentseq"],
-            'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
-            'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
-            'damid': ["gene", "biofeature", "filefastq", "fileprocessed", "experimentdamid"],
-            'chiapet': ["gene", "biofeature", "filefastq", "experimentchiapet"],
-            'capturec': ["genomicregion", "biofeature", "filefastq", "filereference", "experimentcapturec"],
-            'fish': [
-                "genomicregion", "biofeature", "antibody", "microscopesettinga1", "filemicroscopy",
-                "filereference", "fileprocessed", "imagingpath", "experimentmic",
-            ],
-            'spt': [
-                "gene", "biofeature", "modification", "microscopesettinga2",
-                "fileprocessed", "imagingpath", "experimentmic",
-            ]}
-        for key in presets.keys():
-            if key in lowercase_types:
-                lowercase_types.remove(key)
-                lowercase_types += presets[key]
-                lowercase_types += [
-                    'protocol', 'publication', 'biosource', 'biosample',
-                    'biosamplecellculture', 'image', 'experimentsetreplicate'
-                ]
+        # presets = {
+        #     'hic': ["image", "filefastq", "experimenthic"],
+        #     'chipseq': ["gene", "biofeature", "antibody", "filefastq", "experimentseq"],
+        #     'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
+        #     'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
+        #     'damid': ["gene", "biofeature", "filefastq", "fileprocessed", "experimentdamid"],
+        #     'chiapet': ["gene", "biofeature", "filefastq", "experimentchiapet"],
+        #     'capturec': ["genomicregion", "biofeature", "filefastq", "filereference", "experimentcapturec"],
+        #     'fish': [
+        #         "genomicregion", "biofeature", "antibody", "microscopesettinga1", "filemicroscopy",
+        #         "filereference", "fileprocessed", "imagingpath", "experimentmic",
+        #     ],
+        #     'spt': [
+        #         "gene", "biofeature", "modification", "microscopesettinga2",
+        #         "fileprocessed", "imagingpath", "experimentmic",
+        #     ]}
+        # for key in presets.keys():
+        #     if key in lowercase_types:
+        #         lowercase_types.remove(key)
+        #         lowercase_types += presets[key]
+        #         lowercase_types += [
+        #             'protocol', 'publication', 'biosource', 'biosample',
+        #             'biosamplecellculture', 'image', 'experimentsetreplicate'
+        #         ]
         sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
         for name in types_list:
             modified_name = name.lower().replace('-', '').replace('_', '')
