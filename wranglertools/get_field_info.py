@@ -229,7 +229,7 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3
 
 
 sheet_order = [
-    "User", "Award", "Lab", "Document", "ExperimentType", "Protocol",
+    "User", "Award", "Lab", "Document", "Protocol", "ExperimentType",
     "Publication", "Organism", "Vendor", "IndividualChicken", "IndividualFly",
     "IndividualHuman", "IndividualMouse", "IndividualPrimate",
     "IndividualZebrafish", "FileFormat", "Enzyme", "Gene", "BioFeature",
