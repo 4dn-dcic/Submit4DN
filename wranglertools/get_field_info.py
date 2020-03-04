@@ -229,17 +229,21 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3
 
 
 sheet_order = [
-    "User", "Award", "Lab", "Document", "ExperimentType", "Protocol", "Publication", "Organism",
-    "Vendor", "IndividualMouse", "IndividualFly", "IndividualHuman", "FileFormat", "Enzyme",
-    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion", "Gene", "BioFeature",
+    "User", "Award", "Lab", "Document", "Protocol", "ExperimentType",
+    "Publication", "Organism", "Vendor", "IndividualChicken", "IndividualFly",
+    "IndividualHuman", "IndividualMouse", "IndividualPrimate",
+    "IndividualZebrafish", "FileFormat", "Enzyme", "Gene", "BioFeature",
+    "Construct", "TreatmentRnai", "TreatmentAgent", "GenomicRegion",
     "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
-    "Biosample", "FileFastq", "FileProcessed", "FileReference", "FileCalibration",
-    "FileSet", "FileSetCalibration", "MicroscopeSettingD1", "MicroscopeSettingD2",
-    "MicroscopeSettingA1", "MicroscopeSettingA2", "FileMicroscopy", "FileSetMicroscopeQc",
-    "ImagingPath", "ExperimentMic", "ExperimentMic_Path", "ExperimentHiC",
-    "ExperimentCaptureC", "ExperimentRepliseq", "ExperimentAtacseq",
-    "ExperimentChiapet", "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem", "OntologyTerm"
+    "Biosample", "FileFastq", "FileProcessed", "FileReference",
+    "FileCalibration", "FileSet", "FileSetCalibration", "MicroscopeSettingD1",
+    "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
+    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic",
+    "ExperimentMic_Path", "ExperimentHiC", "ExperimentCaptureC",
+    "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
+    "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
+    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
+    "OntologyTerm"
 ]
 
 file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]

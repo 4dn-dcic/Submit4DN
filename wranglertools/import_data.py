@@ -140,6 +140,13 @@ list_of_loadxl_fields = [
     ['FileCalibration', ['related_files']],
     ['FileMicroscopy', ['related_files']],
     ['FileProcessed', ['related_files', 'produced_from']],
+    ['Individual', ['individual_relation']],
+    ['IndividualChicken', ['individual_relation']],
+    ['IndividualFly', ['individual_relation']],
+    ['IndividualHuman', ['individual_relation']],
+    ['IndividualMouse', ['individual_relation']],
+    ['IndividualPrimate', ['individual_relation']],
+    ['IndividualZebrafish', ['individual_relation']],
     ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
 ]
 
