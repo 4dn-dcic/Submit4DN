@@ -11,7 +11,6 @@ import datetime
 import sys
 import mimetypes
 import requests
-from PIL import Image
 from base64 import b64encode
 import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
@@ -153,66 +152,84 @@ def md5(path):
     return md5sum.hexdigest()
 
 
+class WebFetchException(Exception):
+    """
+    custom exception to raise if ftp or http fetch fails
+    """
+    pass
+
+
 def attachment(path):
-    """Create an attachment upload object from a filename and embed the attachment as a data url."""
+    """Create an attachment upload object from a filename and embed the attachment as a data url.
+       NOTE: a url or ftp can be used but path must end in filename with extension that will match
+       the magic detected MIME type of that file and be one of the allowed mime types
+    """
+    ALLOWED_MIMES = (
+        'application/pdf',
+        'application/zip',
+        'text/plain',
+        'text/tab-separated-values',
+        'text/html',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/png',
+        'image/jpeg',
+        'image/gif',
+        'image/tiff',
+    )
     ftp_attach = False
     if not os.path.isfile(path):
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
             print("\nINFO: Attempting to download file from this url %s" % path)
-            with closing(urllib2.urlopen(path)) as r:
-                file_name = path.split("/")[-1]
-                with open(file_name, 'wb') as f:
-                    shutil.copyfileobj(r, f)
-                    path = file_name
-                    ftp_attach = True
+            try:
+                with closing(urllib2.urlopen(path)) as r:
+                    file_name = path.split("/")[-1]
+                    with open(file_name, 'wb') as f:
+                        shutil.copyfileobj(r, f)
+                        path = file_name
+                        ftp_attach = True
+            except urllib2.URLError as e:
+                raise WebFetchException("\nERROR : FTP fetch for 'attachment' failed - {}".format(e))
         else:
             try:
                 r = requests.get(path)
-            except requests.exceptions.MissingSchema:
-                print("\nERROR : The 'attachment' field contains INVALID FILE PATH or URL ({})\n".format(path))
-                sys.exit(1)
-            # if it works as a URL, but does not return 200
-            if r.status_code is not 200:  # pragma: no cover
-                print("\nERROR : The 'attachment' field contains INVALID URL ({})\n".format(path))
-                sys.exit(1)
+            except Exception:
+                raise WebFetchException(
+                    "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
+            else:
+                # if it works as a URL, but does not return 200
+                if r.status_code is not 200:  # pragma: no cover
+                    raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
             # parse response
             path = path.split("/")[-1]
-            with open(path, "wb") as outfile:
-                outfile.write(r.content)
+            try:
+                with open(path, "wb") as outfile:
+                    outfile.write(r.content)
+                    ftp_attach = True
+            except Exception as e:
+                raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
-    filename = os.path.basename(path)
-    mime_type = mimetypes.guess_type(path)[0]
-    major, minor = mime_type.split('/')
-    detected_type = magic.from_file(path, mime=True)
-    # XXX This validation logic should move server-side.
-    if not (detected_type == mime_type or
-            detected_type == 'text/plain' and major == 'text'):
-        if not (minor == 'zip' or major == 'text'):  # zip files are special beasts
-            raise ValueError('Wrong extension for %s: %s' % (detected_type, filename))
     attach = {}
+    filename = os.path.basename(path)
+    guessed_mime = mimetypes.guess_type(path)[0]
+    detected_mime = magic.from_file(path, mime=True)
+    # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
+    # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
+    # basically relying on extension with a little verification by magic for most file types
+    if guessed_mime not in ALLOWED_MIMES:
+        raise ValueError("Unallowed file type for %s" % filename)
+    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
+        raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
+
     with open(path, 'rb') as stream:
         attach = {
             'download': filename,
-            'type': mime_type,
-            'href': 'data:%s;base64,%s' % (mime_type, b64encode(stream.read()).decode('ascii'))}
-        if mime_type in ('application/pdf', "application/zip", 'text/plain',
-                         'text/tab-separated-values', 'text/html', 'application/msword',
-                         'application/vnd.ms-excel',
-                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
-            # XXX Should use chardet to detect charset for text files here.
-            pass
-        elif major == 'image' and minor in ('png', 'jpeg', 'gif', 'tiff'):
-            # XXX we should just convert our tiffs to pngs
-            stream.seek(0, 0)
-            im = Image.open(stream)
-            im.verify()
-            if im.format != minor.upper():  # pragma: no cover
-                msg = "Image file format %r does not match extension for %s"
-                raise ValueError(msg % (im.format, filename))
-            attach['width'], attach['height'] = im.size
-        else:
-            raise ValueError("Unknown file type for %s" % filename)
+            'type': guessed_mime,
+            'href': 'data:%s;base64,%s' % (guessed_mime, b64encode(stream.read()).decode('ascii'))
+        }
     if ftp_attach:
         os.remove(path)
     return attach
@@ -582,6 +599,11 @@ def populate_post_json(post_json, connection, sheet, attach_fields):  # , existi
         if post_json.get('aliases') and existing_data.get('aliases'):
             aliases_to_post = list(set(filter(None, post_json.get('aliases') + existing_data.get('aliases'))))
             post_json["aliases"] = aliases_to_post
+    # Combine tags
+    if post_json.get('tags') != ['*delete*']:
+        if post_json.get('tags') and existing_data.get('tags'):
+            tags_to_post = list(set(filter(None, post_json.get('tags') + existing_data.get('tags'))))
+            post_json["tags"] = tags_to_post
     # delete calculated property
     if post_json.get('@id'):
         del post_json['@id']
