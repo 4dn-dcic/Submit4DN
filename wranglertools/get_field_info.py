@@ -7,6 +7,7 @@ import attr
 import xlwt
 import sys
 import json
+import xlsxwriter, pandas
 # import sys
 
 
@@ -143,9 +144,44 @@ class FieldInfo(object):
 #                     ]
 
 
-sheet_order = ['Case', 'TrackingItem', 'Page', 'Document', 'User', 'Institution', 'Phenotype', 'OntologyTerm', 'Sample',
-               'Disease', 'Ontology', 'StaticSection', 'Sysinfo', 'AccessKey', 'Individual', 'Project']
-
+sheet_order = [
+    'Project',
+    'Institution',
+    'Family',
+    'FilterSet',
+    'Nexus',
+    'User',
+    'Workflow',
+    'WorkflowRunAwsem',
+    'VariantConsequence',
+    'Disorder',
+    'FileFormat',
+    'FileFastq',
+    'FileProcessed',
+    'FileReference',
+    'Image',
+    'Gene',
+    'Phenotype',
+    'Individual',
+    'Case',
+    'Report',
+    'Document',
+    'QualityMetricBamcheck',
+    'QualityMetricFastqc',
+    'QualityMetricQclist',
+    'QualityMetricWgsBamqc',
+    'QualityMetricCmphet',
+    'QualityMetricWorkflowrun',
+    'QualityMetricVcfcheck',
+    'Software',
+    'Sample',
+    'SampleProcessing',
+    'StaticSection',
+    'Page',
+    'Variant',
+    'VariantSample',
+    # 'Page'
+]
 # file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
 # file_types.remove('FileFormat')
 # exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
@@ -184,10 +220,20 @@ def dotted_field_name(field_name, parent_name=None):
         return field_name
 
 
+avoidme = ['last_modified',
+           'notes',
+           'schema_version',
+           'date_created',
+           'submitted_by'
+           ]
+
 def build_field_list(properties, required_fields=None, include_description=False,
                      include_comment=False, include_enums=False, parent='', is_submember=False, admin=False):
     fields = []
     for name, props in properties.items():
+        for avoid in avoidme:
+            if name.startswith(avoid):
+                continue
         is_member_of_array_of_objects = False
         if props.get('calculatedProperty'):
             continue
@@ -207,14 +253,17 @@ def build_field_list(properties, required_fields=None, include_description=False
                                                is_member_of_array_of_objects)
                               )
             else:
-                fields.extend(build_field_list(props['properties'],
-                                               required_fields,
-                                               include_description,
-                                               include_comment,
-                                               include_enums,
-                                               name,
-                                               is_member_of_array_of_objects)
-                              )
+                try:
+                    fields.extend(build_field_list(props['properties'],
+                                                   required_fields,
+                                                   include_description,
+                                                   include_comment,
+                                                   include_enums,
+                                                   name,
+                                                   is_member_of_array_of_objects))
+                except:
+                    print('Can not process', props)
+                    continue
         else:
             field_name = dotted_field_name(name, parent)
             if required_fields is not None:
@@ -262,6 +311,7 @@ def get_uploadable_fields(connection, types, include_description=False,
                           include_comments=False, include_enums=False):
     fields = {}
     for name in types:
+        print(name)
         schema_grabber = FDN_Schema(connection, name)
         required_fields = schema_grabber.required
         properties = schema_grabber.properties
@@ -277,6 +327,7 @@ def get_uploadable_fields(connection, types, include_description=False,
             if 'submit4dn' not in properties['extra_files'].get('exclude_from', [""]):
                 fields[name].extend([FieldInfo('extra_files.filename', 'array of embedded objects, string',
                                                401, 'Full Path to Extrafile to upload')])
+        print(len(fields[name]))
     return fields
 
 
@@ -323,35 +374,10 @@ def create_xls(all_fields, filename):
 
 
 def get_sheet_names(types_list):
-    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list if
-                       item != 'ExperimentMic_Path']
+    lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list]
     if lowercase_types == ['all']:
-        sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
+        sheets = [sheet for sheet in sheet_order]
     else:
-        # presets = {
-        #     'hic': ["image", "filefastq", "experimenthic"],
-        #     'chipseq': ["gene", "biofeature", "antibody", "filefastq", "experimentseq"],
-        #     'repliseq': ["filefastq", "experimentrepliseq", "experimentset"],
-        #     'atacseq': ["enzyme", "filefastq", "experimentatacseq"],
-        #     'damid': ["gene", "biofeature", "filefastq", "fileprocessed", "experimentdamid"],
-        #     'chiapet': ["gene", "biofeature", "filefastq", "experimentchiapet"],
-        #     'capturec': ["genomicregion", "biofeature", "filefastq", "filereference", "experimentcapturec"],
-        #     'fish': [
-        #         "genomicregion", "biofeature", "antibody", "microscopesettinga1", "filemicroscopy",
-        #         "filereference", "fileprocessed", "imagingpath", "experimentmic",
-        #     ],
-        #     'spt': [
-        #         "gene", "biofeature", "modification", "microscopesettinga2",
-        #         "fileprocessed", "imagingpath", "experimentmic",
-        #     ]}
-        # for key in presets.keys():
-        #     if key in lowercase_types:
-        #         lowercase_types.remove(key)
-        #         lowercase_types += presets[key]
-        #         lowercase_types += [
-        #             'protocol', 'publication', 'biosource', 'biosample',
-        #             'biosamplecellculture', 'image', 'experimentsetreplicate'
-        #         ]
         sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
         for name in types_list:
             modified_name = name.lower().replace('-', '').replace('_', '')
