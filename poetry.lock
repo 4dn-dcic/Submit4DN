@@ -155,26 +155,6 @@ toml = ["toml"]
 
 [[package]]
 category = "main"
-description = "Utility modules shared amongst several repos in the 4dn-dcic organization"
-name = "dcicutils"
-optional = false
-python-versions = "*"
-version = "0.8.5"
-
-[package.dependencies]
-aws-requests-auth = ">=0.4.1"
-boto3 = ">=1.7.42"
-botocore = ">=1.10.42"
-elasticsearch = "5.5.3"
-requests = ">=2.20.0"
-structlog = ">=18.1.0"
-urllib3 = ">=1.23"
-
-[package.extras]
-test = ["pytest", "pytest-mock", "pytest-cov", "flaky"]
-
-[[package]]
-category = "main"
 description = "Utility package for interacting with the 4DN Data Portal and other 4DN resources"
 name = "dcicutils"
 optional = false
@@ -215,24 +195,6 @@ urllib3 = ">=1.21.1"
 
 [package.extras]
 develop = ["requests (>=2.0.0,<3.0.0)", "nose", "coverage", "mock", "pyaml", "nosexcover", "sphinx", "sphinx-rtd-theme"]
-
-[[package]]
-category = "dev"
-description = "Python function signatures from PEP362 for Python 2.6, 2.7 and 3.2+"
-marker = "python_version < \"3.0\""
-name = "funcsigs"
-optional = false
-python-versions = "*"
-version = "1.0.2"
-
-[[package]]
-category = "main"
-description = "Backport of the concurrent.futures package from Python 3"
-marker = "python_version == \"2.7\""
-name = "futures"
-optional = false
-python-versions = ">=2.6, <3"
-version = "3.3.0"
 
 [[package]]
 category = "main"
@@ -279,27 +241,6 @@ name = "jmespath"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "0.10.0"
-
-[[package]]
-category = "dev"
-description = "Rolling backport of unittest.mock for all Pythons"
-marker = "python_version < \"3.0\""
-name = "mock"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "3.0.5"
-
-[package.dependencies]
-six = "*"
-
-[package.dependencies.funcsigs]
-python = "<3.3"
-version = ">=1"
-
-[package.extras]
-build = ["twine", "wheel", "blurb"]
-docs = ["sphinx"]
-test = ["pytest", "pytest-cov"]
 
 [[package]]
 category = "main"
@@ -352,10 +293,6 @@ version = "2.0.0"
 
 [package.dependencies]
 pytest = ">=2.7"
-
-[package.dependencies.mock]
-python = "<3.0"
-version = "*"
 
 [package.extras]
 dev = ["pre-commit", "tox"]
@@ -476,10 +413,6 @@ version = "0.3.3"
 [package.dependencies]
 botocore = ">=1.12.36,<2.0a.0"
 
-[package.dependencies.futures]
-python = ">=2.7,<2.8"
-version = ">=2.2.0,<4.0.0"
-
 [[package]]
 category = "main"
 description = "Python 2 and 3 compatibility utilities"
@@ -520,23 +453,6 @@ azure-pipelines = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=3.3.
 dev = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=3.3.0)", "simplejson", "sphinx", "twisted", "pre-commit", "python-rapidjson"]
 docs = ["sphinx", "twisted"]
 tests = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=3.3.0)", "simplejson", "python-rapidjson"]
-
-[[package]]
-category = "main"
-description = "Structured Logging for Python"
-name = "structlog"
-optional = false
-python-versions = "*"
-version = "20.1.0"
-
-[package.dependencies]
-six = "*"
-
-[package.extras]
-azure-pipelines = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=3.3.0)", "simplejson", "pytest-azurepipelines", "python-rapidjson", "pytest-asyncio"]
-dev = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=3.3.0)", "simplejson", "sphinx", "twisted", "pre-commit", "python-rapidjson", "pytest-asyncio"]
-docs = ["sphinx", "twisted"]
-tests = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=3.3.0)", "simplejson", "python-rapidjson", "pytest-asyncio"]
 
 [[package]]
 category = "main"
@@ -585,6 +501,18 @@ testing = ["nose", "coverage (>=5.0)"]
 
 [[package]]
 category = "main"
+description = "Waitress WSGI server"
+name = "waitress"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
+version = "1.4.4"
+
+[package.extras]
+docs = ["Sphinx (>=1.8.1)", "docutils", "pylons-sphinx-themes (>=1.0.9)"]
+testing = ["pytest", "pytest-cover", "coverage (>=5.0)"]
+
+[[package]]
+category = "main"
 description = "WSGI request and response object"
 name = "webob"
 optional = false
@@ -630,9 +558,9 @@ python-versions = "*"
 version = "1.3.0"
 
 [metadata]
-content-hash = "061523b7d97edae3e50e615540cc2c1a20bbad5816e42112a5fcaf16f70446f8"
+content-hash = "128bc1634d66d803ee0cfe7f5a369b498823924e9b7038a630ea213755bd60ac"
 lock-version = "1.0"
-python-versions = "~2.7 | ^3.4"
+python-versions = ">=3.4,<3.8"
 
 [metadata.files]
 attrs = [
@@ -742,8 +670,6 @@ coverage = [
     {file = "coverage-5.2.1.tar.gz", hash = "sha256:a34cb28e0747ea15e82d13e14de606747e9e484fb28d63c999483f5d5188e89b"},
 ]
 dcicutils = [
-    {file = "dcicutils-0.8.5-py3-none-any.whl", hash = "sha256:cd21a61dce5f3f7ca324785b4f746122973dd63b71d66017b1422af52cb77d28"},
-    {file = "dcicutils-0.8.5.tar.gz", hash = "sha256:ebfd8b67247364d460494a68e123583f786a35e6cd9fd5e9ce2877d1bea3d1c5"},
     {file = "dcicutils-0.40.0-py3-none-any.whl", hash = "sha256:f306450bb32d72426fe635a453065d51782d8e3d0150d6e0fc38042944d388f9"},
     {file = "dcicutils-0.40.0.tar.gz", hash = "sha256:331cd9c5d6c492f3d83e78448aeb6924d52f733141cff9256c517de98769d4a9"},
 ]
@@ -755,14 +681,6 @@ docutils = [
 elasticsearch = [
     {file = "elasticsearch-5.5.3-py2.py3-none-any.whl", hash = "sha256:658380fd60bdaf746fef12958f0abc49063218ce93ee1ae4ca1fe6291c896433"},
     {file = "elasticsearch-5.5.3.tar.gz", hash = "sha256:ae91b089f2f2b5b3daa04297949e5f805ab12d187218cb587273f472656fd250"},
-]
-funcsigs = [
-    {file = "funcsigs-1.0.2-py2.py3-none-any.whl", hash = "sha256:330cc27ccbf7f1e992e69fef78261dc7c6569012cf397db8d3de0234e6c937ca"},
-    {file = "funcsigs-1.0.2.tar.gz", hash = "sha256:a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50"},
-]
-futures = [
-    {file = "futures-3.3.0-py2-none-any.whl", hash = "sha256:49b3f5b064b6e3afc3316421a3f25f66c137ae88f068abbf72830170033c5e16"},
-    {file = "futures-3.3.0.tar.gz", hash = "sha256:7e033af76a5e35f58e56da7a91e687706faf4e7bdfb2cbc3f2cca6b9bcda9794"},
 ]
 gitdb = [
     {file = "gitdb-4.0.5-py3-none-any.whl", hash = "sha256:91f36bfb1ab7949b3b40e23736db18231bf7593edada2ba5c3a174a7b23657ac"},
@@ -781,10 +699,6 @@ idna = [
 jmespath = [
     {file = "jmespath-0.10.0-py2.py3-none-any.whl", hash = "sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f"},
     {file = "jmespath-0.10.0.tar.gz", hash = "sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9"},
-]
-mock = [
-    {file = "mock-3.0.5-py2.py3-none-any.whl", hash = "sha256:d157e52d4e5b938c550f39eb2fd15610db062441a9c2747d3dbfa9298211d0f8"},
-    {file = "mock-3.0.5.tar.gz", hash = "sha256:83657d894c90d5681d62155c82bda9c1187827525880eda8ff5df4ec813437c3"},
 ]
 py = [
     {file = "py-1.4.31-py2.py3-none-any.whl", hash = "sha256:4a3e4f3000c123835ac39cab5ccc510642153bc47bc1f13e2bbb53039540ae69"},
@@ -883,8 +797,6 @@ soupsieve = [
 structlog = [
     {file = "structlog-19.2.0-py2.py3-none-any.whl", hash = "sha256:6640e6690fc31d5949bc614c1a630464d3aaa625284aeb7c6e486c3010d73e12"},
     {file = "structlog-19.2.0.tar.gz", hash = "sha256:4287058cf4ce1a59bc5dea290d6386d37f29a37529c9a51cdf7387e51710152b"},
-    {file = "structlog-20.1.0-py2.py3-none-any.whl", hash = "sha256:8a672be150547a93d90a7d74229a29e765be05bd156a35cdcc527ebf68e9af92"},
-    {file = "structlog-20.1.0.tar.gz", hash = "sha256:7a48375db6274ed1d0ae6123c486472aa1d0890b08d314d2b016f3aa7f35990b"},
 ]
 toml = [
     {file = "toml-0.10.1-py2.py3-none-any.whl", hash = "sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88"},
@@ -899,6 +811,8 @@ urllib3 = [
 waitress = [
     {file = "waitress-1.4.3-py2.py3-none-any.whl", hash = "sha256:77ff3f3226931a1d7d8624c5371de07c8e90c7e5d80c5cc660d72659aaf23f38"},
     {file = "waitress-1.4.3.tar.gz", hash = "sha256:045b3efc3d97c93362173ab1dfc159b52cfa22b46c3334ffc805dbdbf0e4309e"},
+    {file = "waitress-1.4.4-py2.py3-none-any.whl", hash = "sha256:3d633e78149eb83b60a07dfabb35579c29aac2d24bb803c18b26fb2ab1a584db"},
+    {file = "waitress-1.4.4.tar.gz", hash = "sha256:1bb436508a7487ac6cb097ae7a7fe5413aefca610550baf58f0940e51ecfb261"},
 ]
 webob = [
     {file = "WebOb-1.8.6-py2.py3-none-any.whl", hash = "sha256:a3c89a8e9ba0aeb17382836cdb73c516d0ecf6630ec40ec28288f3ed459ce87b"},
