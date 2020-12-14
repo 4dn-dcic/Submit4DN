@@ -37,5 +37,5 @@ jobs:
 
       - name: QA
         run: |
-          coverage run --source=wranglertools -m pytest -vv tests -m 'not ftp'
-          coveralls
+          poetry run coverage run --source=wranglertools -m pytest -vv tests -m 'not ftp'
+          poetry run coveralls
