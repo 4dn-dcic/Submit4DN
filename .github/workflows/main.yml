@@ -36,6 +36,8 @@ jobs:
           pip install poetry coveralls codacy-coverage
 
       - name: QA
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           poetry install
           poetry run coverage run --source=wranglertools -m pytest -vv tests -m 'not ftp'
