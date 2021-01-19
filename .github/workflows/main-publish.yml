@@ -1,8 +1,8 @@
 # PyPi publish for Submit4DN
 
-name: publish 
+name: publish
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
 
   # Publish on all tags
@@ -28,4 +28,6 @@ jobs:
         env:
           PYPI_USER: ${{ secrets.PYPI_USER }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: make publish
+        run: |
+          pip install poetry
+          poetry publish --no-interaction --build --username=$PYPI_USER --password=$PYPI_PASSWORD
