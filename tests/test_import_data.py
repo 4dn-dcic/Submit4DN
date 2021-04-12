@@ -55,8 +55,8 @@ def test_attachment_wrong_path():
 
 @pytest.mark.webtest
 def test_attachment_url():
-    attach = imp.attachment("https://www.le.ac.uk/oerresources/bdra/html/page_09.htm")
-    assert attach['download'] == 'page_09.htm'
+    attach = imp.attachment("http://example.com/index.html")
+    assert attach['download'] == 'index.html'
     assert attach['type'] == 'text/html'
     assert attach['href'].startswith('data:text/html;base64')
 
