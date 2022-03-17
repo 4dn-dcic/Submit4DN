@@ -1,16 +1,16 @@
 import wranglertools.get_field_info as gfi
 import pytest
-from six import string_types
 
 # test data is in conftest.py
 
 keypairs = {
-            "default":
-            {"server": "https://data.4dnucleome.org/",
-             "key": "keystring",
-             "secret": "secretstring"
-             }
-            }
+    "default":
+        {
+            "server": "https://data.4dnucleome.org/",
+            "key": "keystring",
+            "secret": "secretstring"
+        }
+}
 
 
 @pytest.fixture
@@ -21,18 +21,18 @@ def mkey():
 def test_key():
     key = gfi.FDN_Key(keypairs, "default")
     assert(key)
-    assert isinstance(key.con_key["server"], string_types)
-    assert isinstance(key.con_key['key'], string_types)
-    assert isinstance(key.con_key['secret'], string_types)
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
 
 
 @pytest.mark.file_operation
 def test_key_file():
     key = gfi.FDN_Key('./tests/data_files/keypairs.json', "default")
     assert(key)
-    assert isinstance(key.con_key["server"], string_types)
-    assert isinstance(key.con_key['key'], string_types)
-    assert isinstance(key.con_key['secret'], string_types)
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
 
 
 def test_key_error_wrong_format(capsys):
