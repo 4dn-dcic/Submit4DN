@@ -6,7 +6,7 @@ import os.path
 import hashlib
 from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
 from dcicutils import ff_utils
-import xlrd
+import xlrd3 as xlrd
 import datetime
 import sys
 import mimetypes
@@ -250,7 +250,7 @@ def reader(filename, sheetname=None):
             print(sheetname)
             print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
             return
-    datemode = sheet.book.datemode
+    datemode = sheet.book.date_mode
     for index in range(sheet.nrows):
         yield [cell_value(cell, datemode) for cell in sheet.row(index)]
 
