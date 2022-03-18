@@ -343,9 +343,9 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
     from operator import itemgetter
-    import xlrd
+    import xlrd3
     return_list = []
-    wb = xlrd.open_workbook(xls_file)
+    wb = xlrd3.open_workbook(xls_file)
     read_sheet = wb.sheet_by_name(sheet)
     cols = read_sheet.ncols
     rows = read_sheet.nrows
@@ -361,8 +361,8 @@ def xls_to_list(xls_file, sheet):
 
 def xls_field_order(xls_file, sheet):
     # returns list of fields (in order) in an excel sheet
-    import xlrd
-    wb = xlrd.open_workbook(xls_file).sheet_by_name(sheet)
+    import xlrd3
+    wb = xlrd3.open_workbook(xls_file).sheet_by_name(sheet)
     return [str(wb.cell_value(0, col)) for col in range(1, wb.ncols)]
 
 
