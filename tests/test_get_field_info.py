@@ -1,16 +1,18 @@
 import wranglertools.get_field_info as gfi
 import pytest
-from six import string_types
+from operator import itemgetter
+import xlrd3
 
 # test data is in conftest.py
 
 keypairs = {
-            "default":
-            {"server": "https://data.4dnucleome.org/",
-             "key": "keystring",
-             "secret": "secretstring"
-             }
-            }
+    "default":
+        {
+            "server": "https://data.4dnucleome.org/",
+            "key": "keystring",
+            "secret": "secretstring"
+        }
+}
 
 
 @pytest.fixture
@@ -21,18 +23,18 @@ def mkey():
 def test_key():
     key = gfi.FDN_Key(keypairs, "default")
     assert(key)
-    assert isinstance(key.con_key["server"], string_types)
-    assert isinstance(key.con_key['key'], string_types)
-    assert isinstance(key.con_key['secret'], string_types)
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
 
 
 @pytest.mark.file_operation
 def test_key_file():
     key = gfi.FDN_Key('./tests/data_files/keypairs.json', "default")
     assert(key)
-    assert isinstance(key.con_key["server"], string_types)
-    assert isinstance(key.con_key['key'], string_types)
-    assert isinstance(key.con_key['secret'], string_types)
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
 
 
 def test_key_error_wrong_format(capsys):
@@ -342,10 +344,8 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
 
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
-    from operator import itemgetter
-    import xlrd
     return_list = []
-    wb = xlrd.open_workbook(xls_file)
+    wb = xlrd3.open_workbook(xls_file)
     read_sheet = wb.sheet_by_name(sheet)
     cols = read_sheet.ncols
     rows = read_sheet.nrows
@@ -361,8 +361,7 @@ def xls_to_list(xls_file, sheet):
 
 def xls_field_order(xls_file, sheet):
     # returns list of fields (in order) in an excel sheet
-    import xlrd
-    wb = xlrd.open_workbook(xls_file).sheet_by_name(sheet)
+    wb = xlrd3.open_workbook(xls_file).sheet_by_name(sheet)
     return [str(wb.cell_value(0, col)) for col in range(1, wb.ncols)]
 
 

@@ -6,7 +6,7 @@ import os.path
 import hashlib
 from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
 from dcicutils import ff_utils
-import xlrd
+import xlrd3 as xlrd
 import datetime
 import sys
 import mimetypes
@@ -15,7 +15,6 @@ from base64 import b64encode
 import magic  # install me with 'pip install python-magic'
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
-import attr
 import ast
 import os
 import time
@@ -23,10 +22,7 @@ import subprocess
 import shutil
 import re
 from collections import OrderedDict, Counter
-try:
-    import urllib2
-except:
-    from urllib import request as urllib2
+from urllib import request as urllib2
 from contextlib import closing
 
 
@@ -208,7 +204,7 @@ def attachment(path):
                     "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
             else:
                 # if it works as a URL, but does not return 200
-                if r.status_code is not 200:  # pragma: no cover
+                if r.status_code != 200:  # pragma: no cover
                     raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
             # parse response
             path = path.split("/")[-1]
@@ -254,7 +250,7 @@ def reader(filename, sheetname=None):
             print(sheetname)
             print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
             return
-    datemode = sheet.book.datemode
+    datemode = sheet.book.date_mode
     for index in range(sheet.nrows):
         yield [cell_value(cell, datemode) for cell in sheet.row(index)]
 
@@ -342,11 +338,11 @@ def get_sub_field_number(field_name):
         return 0
 
 
-@attr.s
-class FieldInfo(object):
-    name = attr.ib()
-    field_type = attr.ib(default=u'')
-    value = attr.ib(default=u'')
+# @attr.s
+# class FieldInfo(object):
+#     name = attr.ib()
+#     field_type = attr.ib(default=u'')
+#     value = attr.ib(default=u'')
 
 
 def build_field(field, field_data, field_type):
