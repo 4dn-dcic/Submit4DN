@@ -1268,7 +1268,7 @@ def test_check_extra_file_meta_w_filename_existing_format(mocker, capsys):
     fsize = 10
     data = {'file_format': ff, 'filename': fn}
     mocker.patch('wranglertools.import_data.md5', return_value=md5sum)
-    mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize)
+    mocker.patch('wranglertools.import_data.pp.Path.stat', return_value=MockedOsStatResult(fsize))
     result, seen = imp.check_extra_file_meta(data, [], ['/file-formats/pairs_px2/'])
     out = capsys.readouterr()[0]
     assert result['file_format'] == '/file-formats/' + ff + '/'
@@ -1541,7 +1541,7 @@ def test_update_item_extrafiles(mocker, connection_mock, pf_w_extfiles_resp):
     assert resp['status'] == 'success'
 
 
-def test_get_profiles(mocker, profiles, connection_mock):
+def test_get_profiles(mocker, mock_profiles, connection_mock):
     '''just using a simple mock profiles dictionary'''
     mocker.patch('wranglertools.import_data.ff_utils.get_metadata', return_value=mock_profiles)
     profiles = imp.get_profiles(connection_mock)
