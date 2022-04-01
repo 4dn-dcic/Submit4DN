@@ -204,7 +204,7 @@ def attachment(path):
                 raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
     attach = {}
-    filename = pp.PurePath(path).name()
+    filename = pp.PurePath(path).name
     guessed_mime = mimetypes.guess_type(path)[0]
     detected_mime = magic.from_file(path, mime=True)
     # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
