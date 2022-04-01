@@ -102,7 +102,7 @@ class FDN_Key:
         if isinstance(keyfile, dict):
             keys = keyfile
         # is the keyfile a file (the expected case)
-        elif os.path.isfile(str(keyfile)):
+        elif pp.Path(str(keyfile)).is_file():
             keys_f = open(keyfile, 'r')
             keys_json_string = keys_f.read()
             keys_f.close()
@@ -475,7 +475,7 @@ def main():  # pragma: no cover
         from pprint import pprint
         pprint(fields)
 
-    if args.writexls:
+    if args.outfile:
         file_name = args.outfile
         create_xls(fields, file_name)
 
