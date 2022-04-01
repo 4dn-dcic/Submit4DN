@@ -688,7 +688,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
@@ -710,7 +710,7 @@ The validation will only check for schema rules, but not for object relations
 
 @pytest.mark.skip  # invalid mock use, needs refactor
 def test_cabin_cross_check_not_remote_w_lab_award_options(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch.object(connection_mock, 'prompt_for_lab_award', return_value='blah')
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
@@ -735,7 +735,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_lab_award_options(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
@@ -760,7 +760,7 @@ The validation will only check for schema rules, but not for object relations
 
 def test_cabin_cross_check_remote_w_ok_award_and_no_lab_options(
         mocker, connection_mock, capsys, returned_lab_w_two_awards_objframe, returned_award_objframe):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': ['/awards/1U54DK107977-01/', '/awards/1U01ES017166-01/']}, {'@id': '/awards/1U54DK107977-01/'}
     ])
@@ -784,7 +784,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_multilabs_no_options(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[None, None])
     connection_mock.labs = ['/labs/bing-ren-lab/', '/labs/test-lab/']
     connection_mock.award = None
@@ -811,7 +811,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_labopt_and_lab_has_single_award(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
@@ -834,7 +834,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_unknown_lab_and_award(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[None, None])
     connection_mock.labs = ['test_lab', 'other_lab']
     imp.cabin_cross_check(connection_mock, False, False, 'blah', True, 'unknown_lab', 'unknown_award')
@@ -858,7 +858,7 @@ The validation will only check for schema rules, but not for object relations
 
 
 def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection_mock, capsys):
-    mocker.patch('wranglertools.import_data.os.path.isfile', return_value=True)
+    mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': ['/awards/test_award/', '/awards/1U54DK107977-01/']}, {'@id': '/awards/non-ren-lab-award/'}
     ])
@@ -1207,6 +1207,11 @@ def mock_profiles():
     }
 
 
+class MockedOsStatResult(object):
+    def __init__(self, fsize):
+        self.st_size = fsize
+
+
 def test_check_extra_file_meta_w_format_filename_new_file(mocker):
     fn = '/test/path/to/file/test_pairs_index.pairs.gz.px2'
     ff = 'pairs_px2'
@@ -1214,7 +1219,7 @@ def test_check_extra_file_meta_w_format_filename_new_file(mocker):
     fsize = 10
     data = {'file_format': ff, 'filename': fn}
     mocker.patch('wranglertools.import_data.md5', return_value=md5sum)
-    mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize)
+    mocker.patch('wranglertools.import_data.pp.Path.stat', return_value=MockedOsStatResult(fsize))
     result, seen = imp.check_extra_file_meta(data, [], [])
     assert result['file_format'] == '/file-formats/' + ff + '/'
     assert result['filename'] == fn
@@ -1231,7 +1236,7 @@ def test_check_extra_file_meta_w_filename_seen_format(mocker):
     fsize = 10
     data = {'file_format': ff, 'filename': fn}
     mocker.patch('wranglertools.import_data.md5', return_value=md5sum)
-    mocker.patch('wranglertools.import_data.os.path.getsize', return_value=fsize)
+    mocker.patch('wranglertools.import_data.pp.Path.stat', return_value=MockedOsStatResult(fsize))
     result, seen = imp.check_extra_file_meta(data, ['pairs_px2'], [])
     assert result['file_format'] == '/file-formats/' + ff + '/'
     assert result['filename'] == fn
@@ -1536,7 +1541,7 @@ def test_update_item_extrafiles(mocker, connection_mock, pf_w_extfiles_resp):
     assert resp['status'] == 'success'
 
 
-def test_get_profiles(mocker, mock_profiles, connection_mock):
+def test_get_profiles(mocker, profiles, connection_mock):
     '''just using a simple mock profiles dictionary'''
     mocker.patch('wranglertools.import_data.ff_utils.get_metadata', return_value=mock_profiles)
     profiles = imp.get_profiles(connection_mock)
