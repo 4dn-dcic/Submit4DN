@@ -43,6 +43,17 @@ EPILOG = '''
     '''
 
 
+def _remove_all_from_types(args):
+    ''' helper method to remove the default 'all' argument that is automatically
+        add by having a default with the append action for types option
+    '''
+    if len(args.type) > 1:
+        types = args.type
+        types.remove('all')
+        setattr(args, 'type', types)
+    #return args
+
+
 def create_common_arg_parser():
     home = pp.Path.home()
     parser = argparse.ArgumentParser(add_help=False)
@@ -62,7 +73,7 @@ def create_common_arg_parser():
                         or to submit a specified subset of sheets from a multi-sheet workbook with import_data \
                         specify each sheet by --type",
                         action="append",
-                        default='all')
+                        default=['all'])
     return parser
 
 
@@ -92,6 +103,7 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="Will set an admin user to non-admin for generating sheets")
     args = parser.parse_args()
+    _remove_all_from_types(args)
     return args
 
 
@@ -461,6 +473,7 @@ def get_sheet_names(types_list):
 
 def main():  # pragma: no cover
     args = getArgs()
+    import pdb; pdb.set_trace()
     key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)

@@ -5,7 +5,8 @@ import argparse
 import pathlib as pp
 import hashlib
 from wranglertools.get_field_info import (
-    sheet_order, FDN_Key, FDN_Connection, create_common_arg_parser)
+    sheet_order, FDN_Key, FDN_Connection,
+    create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import xlrd3 as xlrd
 import datetime
@@ -99,6 +100,7 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="Will skip pre-validation of workbook")
     args = parser.parse_args()
+    _remove_all_from_types(args)
     return args
 
 
@@ -1590,8 +1592,8 @@ def main():  # pragma: no cover
     cabin_cross_check(connection, args.patchall, args.update, args.infile,
                       args.remote, args.lab, args.award)
     # This is not in our documentation, but if single sheet is used, file name can be the collection
-    if args.type and args.type != 'all':
-        names = [args.type]
+    if args.type and 'all' not in args.type:
+        names = args.type
     else:
         book = xlrd.open_workbook(args.infile)
         names = book.sheet_names()
