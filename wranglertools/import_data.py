@@ -30,7 +30,7 @@ from contextlib import closing
 
 EPILOG = '''
 This script takes in an Excel file with the data
-This is a dryrun-default script, run with --update, --patchall or both (--update --patchall) to
+This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
 to actually submit data to the portal
 
 By DEFAULT:

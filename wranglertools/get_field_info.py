@@ -51,7 +51,6 @@ def _remove_all_from_types(args):
         types = args.type
         types.remove('all')
         setattr(args, 'type', types)
-    #return args
 
 
 def create_common_arg_parser():
@@ -94,7 +93,7 @@ def getArgs():  # pragma: no cover
     parser.add_argument('--noenums',
                         default=False,
                         action='store_true',
-                        help="Oo not include enums (or suggestions) for fields.")
+                        help="Do not include enums (or suggestions) for fields.")
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
@@ -473,7 +472,6 @@ def get_sheet_names(types_list):
 
 def main():  # pragma: no cover
     args = getArgs()
-    import pdb; pdb.set_trace()
     key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
