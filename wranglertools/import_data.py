@@ -7,6 +7,7 @@ import hashlib
 from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
 from dcicutils import ff_utils
 import xlrd3 as xlrd
+import openpyxl
 import datetime
 import sys
 import mimetypes
@@ -238,21 +239,29 @@ def attachment(path):
     return attach
 
 
-def reader(filename, sheetname=None):
+def digest_xlsx(filename):
+    book = openpyxl.load_workbook(filename)
+    sheets = book.sheetnames
+    return book, sheets
+
+
+def reader(workbook, sheetname=None):
     """Read named sheet or first and only sheet from xlsx file."""
-    book = xlrd.open_workbook(filename)
     if sheetname is None:
-        sheet, = book.sheets()
+        sheet = workbook.worksheets[0]
     else:
         try:
-            sheet = book.sheet_by_name(sheetname)
-        except xlrd.XLRDError:
+            sheet = workbook[sheetname]
+        except Exception as e:
+            print(e)
             print(sheetname)
-            print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
+            print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
             return
-    datemode = sheet.book.date_mode
-    for index in range(sheet.nrows):
-        yield [cell_value(cell, datemode) for cell in sheet.row(index)]
+    # Generator that gets rows from excel sheet
+    # NB we have a lot of empty no formatting rows added (can we get rid of that)
+    # or do we need to be careful to check for the first totally emptyvalue row?
+    for row in sheet.rows:
+        yield [cell_value(cell) for cell in row]
 
 
 def cell_value(cell, datemode):
@@ -1601,12 +1610,13 @@ def main():  # pragma: no cover
     connection = FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile,
                       args.remote, args.lab, args.award)
-    # This is not in our documentation, but if single sheet is used, file name can be the collection
+    # support for xlsx only - adjust if allowing different formats
+    workbook, sheetnames = digest_xlsx(args.infile)
+    # import pdb; pdb.set_trace()
     if args.type:
         names = [args.type]
     else:
-        book = xlrd.open_workbook(args.infile)
-        names = book.sheet_names()
+        names = sheetnames
     # get me a list of all the data_types in the system
     profiles = get_profiles(connection)
     supported_collections = get_collections(profiles)
@@ -1614,7 +1624,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-    aliases_by_type = get_all_aliases(args.infile, sorted_names)
+    aliases_by_type = get_all_aliases(workbook, sorted_names)
     # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
