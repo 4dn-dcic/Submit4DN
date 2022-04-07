@@ -2,9 +2,11 @@
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
 import argparse
-import os.path
+import pathlib as pp
 import hashlib
-from wranglertools.get_field_info import sheet_order, FDN_Key, FDN_Connection
+from wranglertools.get_field_info import (
+    sheet_order, FDN_Key, FDN_Connection,
+    create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import xlrd3 as xlrd
 import openpyxl
@@ -29,7 +31,8 @@ from contextlib import closing
 
 EPILOG = '''
 This script takes in an Excel file with the data
-This is a dryrun-default script, run with --update, --patchall or both (--update --patchall) to work
+This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
+to actually submit data to the portal
 
 By DEFAULT:
 If there is a uuid, @id, accession, or previously submitted alias in the document:
@@ -43,14 +46,13 @@ Defining Object type:
     with the format used on http://data.4dnucleome.org//profiles/
 Ex: ExperimentHiC, Biosample, Document, BioFeature
 
-If there is a single sheet that needs to be posted or patched, you can name the single sheet
-with the object name and use the '--type' argument
-Ex: %(prog)s mydata.xsls --type ExperimentHiC
+If you only want to submit a subset of sheets in a workbook use the --type option with the
+sheet name Ex: %(prog)s mydata.xsls --type ExperimentHiC
 
 The name of each sheet should be the names of the object type.
 Ex: Award, Lab, BioFeature, etc.
 
-The column names on the sheets should be the field names
+The first row of the sheets should be the field names
 Ex: aliases, experiment_type, etc.
 
 To upload objects with attachments, use the column titled "attachment"
@@ -65,26 +67,13 @@ please see README.rst
 
 def getArgs():  # pragma: no cover
     parser = argparse.ArgumentParser(
+        parents=[create_common_arg_parser()],
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     parser.add_argument('infile',
                         help="the datafile containing object data to import")
-    parser.add_argument('--type',
-                        help="the type of the objects to import")
-    parser.add_argument('--key',
-                        default='default',
-                        help="The keypair identifier from the keyfile.  \
-                        Default is --key=default")
-    parser.add_argument('--keyfile',
-                        default=os.path.expanduser("~/keypairs.json"),
-                        help="The keypair file.  Default is --keyfile=%s" %
-                             (os.path.expanduser("~/keypairs.json")))
-    parser.add_argument('--debug',
-                        default=False,
-                        action='store_true',
-                        help="Print debug messages.  Default is False.")
     parser.add_argument('--update',
                         default=False,
                         action='store_true',
@@ -112,6 +101,7 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="Will skip pre-validation of workbook")
     args = parser.parse_args()
+    _remove_all_from_types(args)
     return args
 
 
@@ -184,7 +174,7 @@ def attachment(path):
         'image/tiff',
     )
     ftp_attach = False
-    if not os.path.isfile(path):
+    if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
             print("\nINFO: Attempting to download file from this url %s" % path)
@@ -217,7 +207,7 @@ def attachment(path):
                 raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
     attach = {}
-    filename = os.path.basename(path)
+    filename = pp.PurePath(path).name
     guessed_mime = mimetypes.guess_type(path)[0]
     detected_mime = magic.from_file(path, mime=True)
     # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
@@ -235,7 +225,7 @@ def attachment(path):
             'href': 'data:%s;base64,%s' % (guessed_mime, b64encode(stream.read()).decode('ascii'))
         }
     if ftp_attach:
-        os.remove(path)
+        pp.Path(path).unlink()
     return attach
 
 
@@ -593,7 +583,7 @@ def check_extra_file_meta(ef_info, seen_formats, existing_formats):
         if not ef_info.get('md5sum'):
             ef_info['md5sum'] = md5(filepath)
         if not ef_info.get('filesize'):
-            ef_info['filesize'] = os.path.getsize(filepath)
+            ef_info['filesize'] = pp.Path(filepath).stat().st_size
     seen_formats.append(ef_format)
     return ef_info, seen_formats
 
@@ -853,7 +843,7 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
         # upload
         upload_file_item(e, filename_to_post)
         if ftp_download:
-            os.remove(filename_to_post)
+            pp.Path(filename_to_post).unlink()
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_files_creds')
         for fformat, filepath in extrafiles.items():
@@ -1238,8 +1228,8 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
         dict_patch_loadxl[sheet] = patch_loadxl
 
     if pre_validate_errors:
-        for l in pre_validate_errors:
-            print(l)
+        for le in pre_validate_errors:
+            print(le)
     # dryrun report
     if dryrun:
         if skip_dryrun:
@@ -1476,8 +1466,8 @@ def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, aw
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
     # check input file (xls)
-    if not os.path.isfile(infile):
-        print("File {filename} not found!".format(filename=infile))
+    if not pp.Path(infile).is_file():
+        print(f"File {infile} not found!")
         sys.exit(1)
 
     # check for multi labs and awards and reset connection appropriately
@@ -1613,8 +1603,10 @@ def main():  # pragma: no cover
     # support for xlsx only - adjust if allowing different formats
     workbook, sheetnames = digest_xlsx(args.infile)
     # import pdb; pdb.set_trace()
-    if args.type:
-        names = [args.type]
+
+    # This is not in our documentation, but if single sheet is used, file name can be the collection
+    if args.type and 'all' not in args.type:
+        names = args.type
     else:
         names = sheetnames
     # get me a list of all the data_types in the system

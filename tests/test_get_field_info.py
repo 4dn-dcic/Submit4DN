@@ -277,7 +277,7 @@ def test_build_field_list_does_not_skip_import_items_if_admin(item_properties):
 
 
 def test_build_field_list_gets_enum_or_suggested_enum(item_properties):
-    field_list = gfi.build_field_list(item_properties, include_enums=True)
+    field_list = gfi.build_field_list(item_properties)
     for field in field_list:
         if field.name == "project":
             assert ['4DN', 'External'] == field.enum
@@ -287,19 +287,19 @@ def test_build_field_list_gets_enum_or_suggested_enum(item_properties):
             assert 'awesome' not in field.enum
             assert 'current' in field.enum
 
-    field_list = gfi.build_field_list(item_properties)
+    field_list = gfi.build_field_list(item_properties, no_enums=True)
     for field in field_list:
         if field.name == "project":
             assert not field.enum
 
 
 def test_build_field_list_gets_desc(item_properties):
-    field_list = gfi.build_field_list(item_properties, include_description=True)
+    field_list = gfi.build_field_list(item_properties)
     for field in field_list:
         if field.name == "name":
             assert "official grant" in field.desc
 
-    field_list = gfi.build_field_list(item_properties)
+    field_list = gfi.build_field_list(item_properties, no_description=True)
     for field in field_list:
         if field.name == "name":
             assert len(field.comm) == 0

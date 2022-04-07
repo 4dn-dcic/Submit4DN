@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
-import os.path
+import pathlib as pp
 import argparse
 from dcicutils import ff_utils
 import attr
@@ -11,14 +11,17 @@ import json
 
 EPILOG = '''
     To create an xls file with sheets to be filled use the example and modify to your needs.
-    It will accept the following parameters.
+    It will accept the following optional parameters.
+        --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
+        --key            the name of the key identifier for the access key and secret in your keys file (default=default)
         --type           use for each sheet that you want to add to the excel workbook
-        --descriptions   adds the descriptions in the second line (by default True)
-        --enums          adds the list of options for a fields if it has a controlled vocabulary (by default True)
-        --comments       adds the comments together with enums (by default False)
-        --writexls       creates the xls file (by default True)
+        --nodesc         do not add the descriptions in the second line (by default they are added)
+        --noenums        do not add the list of options for a field if they are specified (by default they are added)
+        --comments       adds any (usually internal) comments together with enums (by default False)
         --outfile        change the default file name "fields.xls" to a specified one
-        --order          create an ordered and filtered version of the excel (by default True)
+        --debug          to add more debugging output
+        --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
+
 
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
@@ -40,56 +43,66 @@ EPILOG = '''
     '''
 
 
-def getArgs():  # pragma: no cover
-    parser = argparse.ArgumentParser(
-        description=__doc__, epilog=EPILOG,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument('--type',
-                        help="Add a separate --type for each type you want to get or use 'all' to get all sheets.",
-                        action="append")
-    parser.add_argument('--descriptions',
-                        default=True,
-                        action='store_true',
-                        help="Include descriptions for fields.")
-    parser.add_argument('--comments',
-                        default=False,
-                        action='store_true',
-                        help="Include comments for fields")
-    parser.add_argument('--enums',
-                        default=True,
-                        action='store_true',
-                        help="Include enums for fields.")
-    parser.add_argument('--writexls',
-                        default=True,
-                        action='store_true',
-                        help="Create an xls with the columns and sheets"
-                             "based on the data returned from this command.")
+def _remove_all_from_types(args):
+    ''' helper method to remove the default 'all' argument that is automatically
+        add by having a default with the append action for types option
+    '''
+    if len(args.type) > 1:
+        types = args.type
+        types.remove('all')
+        setattr(args, 'type', types)
+
+
+def create_common_arg_parser():
+    home = pp.Path.home()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--key',
                         default='default',
                         help="The keypair identifier from the keyfile.  \
                         Default is --key=default")
     parser.add_argument('--keyfile',
-                        default=os.path.expanduser("~/keypairs.json"),
-                        help="The keypair file.  Default is --keyfile=%s" %
-                             (os.path.expanduser("~/keypairs.json")))
+                        default=f"{home}/keypairs.json",
+                        help=f"The keypair file.  Default is --keyfile={home}/keypairs.json")
     parser.add_argument('--debug',
                         default=False,
                         action='store_true',
                         help="Print debug messages.  Default is False.")
+    parser.add_argument('--type',
+                        help="To generate a workbook with specific sheets with get_field_info \
+                        or to submit a specified subset of sheets from a multi-sheet workbook with import_data \
+                        specify each sheet by --type",
+                        action="append",
+                        default=['all'])
+    return parser
+
+
+def getArgs():  # pragma: no cover
+    parser = argparse.ArgumentParser(
+        parents=[create_common_arg_parser()],
+        description=__doc__, epilog=EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('--nodesc',
+                        default=False,
+                        action='store_true',
+                        help="Do not include descriptions for fields.")
+    parser.add_argument('--comments',
+                        default=False,
+                        action='store_true',
+                        help="Include comments for fields")
+    parser.add_argument('--noenums',
+                        default=False,
+                        action='store_true',
+                        help="Do not include enums (or suggestions) for fields.")
     parser.add_argument('--outfile',
                         default='fields.xls',
                         help="The name of the output file. Default is fields.xls")
-    parser.add_argument('--remote',
-                        default=False,
-                        action='store_true',
-                        help="will skip attribution prompt \
-                        needed for automated submissions")
     parser.add_argument('--noadmin',
                         default=False,
                         action='store_true',
                         help="Will set an admin user to non-admin for generating sheets")
     args = parser.parse_args()
+    _remove_all_from_types(args)
     return args
 
 
@@ -100,7 +113,7 @@ class FDN_Key:
         if isinstance(keyfile, dict):
             keys = keyfile
         # is the keyfile a file (the expected case)
-        elif os.path.isfile(str(keyfile)):
+        elif pp.Path(str(keyfile)).is_file():
             keys_f = open(keyfile, 'r')
             keys_json_string = keys_f.read()
             keys_f.close()
@@ -281,8 +294,8 @@ def dotted_field_name(field_name, parent_name=None):
         return field_name
 
 
-def build_field_list(properties, required_fields=None, include_description=False,
-                     include_comment=False, include_enums=False, parent='', is_submember=False, admin=False):
+def build_field_list(properties, required_fields=None, no_description=False,
+                     include_comment=False, no_enums=False, parent='', is_submember=False, admin=False):
     fields = []
     for name, props in properties.items():
         is_member_of_array_of_objects = False
@@ -297,18 +310,18 @@ def build_field_list(properties, required_fields=None, include_description=False
                 is_member_of_array_of_objects = True
                 fields.extend(build_field_list(props['items']['properties'],
                                                required_fields,
-                                               include_description,
+                                               no_description,
                                                include_comment,
-                                               include_enums,
+                                               no_enums,
                                                name,
                                                is_member_of_array_of_objects)
                               )
             else:
                 fields.extend(build_field_list(props['properties'],
                                                required_fields,
-                                               include_description,
+                                               no_description,
                                                include_comment,
-                                               include_enums,
+                                               no_enums,
                                                name,
                                                is_member_of_array_of_objects)
                               )
@@ -320,17 +333,17 @@ def build_field_list(properties, required_fields=None, include_description=False
             field_type = get_field_type(props)
             if is_submember:
                 field_type = "array of embedded objects, " + field_type
-            desc = '' if not include_description else props.get('description', '')
+            desc = '' if no_description else props.get('description', '')
             comm = '' if not include_comment else props.get('comment', '')
             enum = ''
-            if include_enums:
+            if not no_enums:
                 enum = props.get('enum') if 'enum' in props else props.get('suggested_enum', '')
             lookup = props.get('lookup', 500)  # field ordering info
             # if array of string with enum
             if field_type == "array of string":
                 sub_props = props.get('items', '')
                 enum = ''
-                if include_enums:
+                if not no_enums:
                     enum = sub_props.get('enum') if 'enum' in sub_props else sub_props.get('suggested_enum', '')
             # copy paste exp set for ease of keeping track of different types in experiment objects
             fields.append(FieldInfo(field_name, field_type, lookup, desc, comm, enum))
@@ -355,8 +368,8 @@ class FDN_Schema(object):
         self.properties = response['properties']
 
 
-def get_uploadable_fields(connection, types, include_description=False,
-                          include_comments=False, include_enums=False):
+def get_uploadable_fields(connection, types, no_description=False,
+                          include_comments=False, no_enums=False):
     fields = {}
     for name in types:
         schema_grabber = FDN_Schema(connection, name)
@@ -364,9 +377,9 @@ def get_uploadable_fields(connection, types, include_description=False,
         properties = schema_grabber.properties
         fields[name] = build_field_list(properties,
                                         required_fields,
-                                        include_description,
+                                        no_description,
                                         include_comments,
-                                        include_enums,
+                                        no_enums,
                                         admin=connection.admin)
         if name.startswith('Experiment') and not name.startswith('ExperimentSet') and name != 'ExperimentType':
             fields[name].extend(exp_set_addition)
@@ -466,14 +479,14 @@ def main():  # pragma: no cover
     if args.noadmin:
         connection.admin = False
     sheets = get_sheet_names(args.type)
-    fields = get_uploadable_fields(connection, sheets, args.descriptions, args.comments, args.enums)
+    fields = get_uploadable_fields(connection, sheets, args.nodesc, args.comments, args.noenums)
 
     if args.debug:
         print("retrieved fields as")
         from pprint import pprint
         pprint(fields)
 
-    if args.writexls:
+    if args.outfile:
         file_name = args.outfile
         create_xls(fields, file_name)
 
