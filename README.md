@@ -22,7 +22,7 @@ pip install submit4dn --upgrade
 
 ### Troubleshooting
 
-This package may install and run on Python v2.7 but using this package with that version is no longer officially supported and your mileage may vary.
+This package is not supported on older Python versions and is supported and tested for versions 3.6 - 3.9.  It may work with other python versions but your mileage may vary.
 
 It is recommended to install this package in a virtual environment to avoid dependency clashes.
 
@@ -62,13 +62,15 @@ To create the data submission xls forms, you can use `get_field_info`.
 
 It will accept the following parameters:
 ~~~~
+    --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
+    --key            the name of the key identifier for the access key and secret in your keys file (default=default)
     --type           use for each sheet that you want to add to the excel workbook
-    --descriptions   adds the descriptions in the second line (by default True)
-    --enums          adds the enum options in the third line (by default True)
-    --comments       adds the comments together with enums (by default False)
-    --writexls       creates the xls file (by default True)
+    --nodesc         do not add the descriptions in the second line (by default they are added)
+    --noenums        do not add the list of options for a field if they are specified (by default they are added)
+    --comments       adds any (usually internal) comments together with enums (by default False)
     --outfile        change the default file name "fields.xls" to a specified one
-    --order          create an ordered and filtered version of the excel (by default True)
+    --debug          to add more debugging output
+    --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
 ~~~~
 
 Examples generating a single sheet:
@@ -80,7 +82,7 @@ get_field_info --type Biosample --comments --outfile biosample.xls
 
 Example Workbook with all sheets:
 ~~~~
-get_field_info --type all --outfile MetadataSheets.xls
+get_field_info --outfile MetadataSheets.xls
 ~~~~
 
 Examples for Workbooks using a preset option:
@@ -134,12 +136,7 @@ Note if you are attempting to run the scripts in the wranglertools directory wit
 
 pypi page is - https://pypi.python.org/pypi/Submit4DN
 
-
-The proper way to create a new release is `invoke deploy` which will prompt
-you to update the release number, then tag the code with that version number
-and push it to github, which will trigger travis to build and test and if
-tests pass it will deploy to production version of pypi. Note that travis will
-automatically deploy the new version if you push a tag to git.
+Submit4DN is packaged with poetry.  New versions can be released and submitted to pypi using `poetry publish`
 
 # Pytest
 Every function is tested by pytest implementation. It can be run in terminal in submit4dn folder by:
