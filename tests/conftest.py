@@ -1,6 +1,8 @@
 # flake8: noqa
 import pytest
 from wranglertools.get_field_info import FDN_Key, FDN_Connection
+from pathlib import Path
+import openpyxl
 
 
 class MockedResponse(object):
@@ -363,6 +365,16 @@ def embed_properties():
                                     'title': 'Experiment relations',
                                     'type': 'array'},
             }
+
+
+@pytest.fixture
+def workbooks():
+    workbooks = {}
+    WORKBOOK_DIR = './tests/data_files/workbooks/'
+    filenames = Path(WORKBOOK_DIR).glob('*.xlsx')
+    for fn in filenames:
+        workbooks[fn.name] = openpyxl.load_workbook(fn)
+    return workbooks
 
 
 @pytest.fixture

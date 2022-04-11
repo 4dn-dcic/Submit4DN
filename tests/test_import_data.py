@@ -77,6 +77,7 @@ def test_attachment_not_accepted():
 
 @pytest.mark.file_operation
 def test_reader(vendor_raw_xls_fields):
+    import pdb; pdb.set_trace()
     readxls = imp.reader('./tests/data_files/Vendor.xls')
     for n, row in enumerate(readxls):
         # reader deletes the trailing space in description (at index 3.8)
@@ -298,12 +299,20 @@ def test_fix_attribution(connection_mock):
     assert result_json['award'] == 'test_award'
 
 
-# these tests will be replaced with dryrun tests
-
 @pytest.mark.file_operation
-def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection_mock):
+def test_digest_xlsx(workbooks):
+    WORKBOOK_DIR = './tests/data_files/workbooks/'
+    for fn, workbook in workbooks.items():
+        book, sheets = imp.digest_xlsx(WORKBOOK_DIR + fn)
+        assert sheets == workbook.sheetnames
+        for sheet in sheets:
+            assert book[sheet].max_row == workbook[sheet].max_row
+            assert book[sheet].max_column == workbook[sheet].max_column
+
+
+def test_workbooks_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection_mock, workbooks):
     # test new item submission without patchall update tags and check the return message
-    test_insert = './tests/data_files/Document_insert.xls'
+    test_insert = 'Document_insert.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
@@ -313,55 +322,35 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     mocker.patch('wranglertools.import_data.remove_deleted', return_value={})
     # mocking the test post line
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'})
-    imp.excel_reader(test_insert, 'Document', False, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, ['attachment'])
+    imp.workbook_reader(workbooks.get(test_insert), 'Document', False, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, ['attachment'])
     args = imp.remove_deleted.call_args
     attach = args[0][0]['attachment']
     assert attach['href'].startswith('data:image/jpeg;base64')
 
-# @pytest.mark.file_operation
-# def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
-#     # test new item submission without patchall update tags and check the return message
-#     test_insert = './tests/data_files/Vendor_insert.xls'
-#     dict_load = {}
-#     dict_rep = {}
-#     dict_set = {}
-#     message = "This looks like a new row but the update flag wasn't passed, use --update to post new data"
-#     post_json = {'lab': 'sample-lab',
-#                  'description': 'Sample description',
-#                  'award': 'SampleAward',
-#                  'title': 'Sample Vendor',
-#                  'url': 'https://www.sample_vendor.com/',
-#                  'aliases': ['dcic:sample_vendor']}
-#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
-#     imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
-#     args = imp.get_existing.call_args
-#     assert args[0][0] == post_json
-#     out = capsys.readouterr()[0]
-#     assert out.strip() == message
 
-
-# @pytest.mark.file_operation
-# def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
-#     # test exisiting item submission without patchall update tags and check the return message
-#     test_insert = "./tests/data_files/Vendor_insert.xls"
-#     dict_load = {}
-#     dict_rep = {}
-#     dict_set = {}
-#     message = "VENDOR(1)                  :  0 posted / 0 not posted       0 patched / 1 not patched, 0 errors"
-#     post_json = {'lab': 'sample-lab',
-#                  'description': 'Sample description',
-#                  'award': 'SampleAward',
-#                  'title': 'Sample Vendor',
-#                  'url': 'https://www.sample_vendor.com/',
-#                  'aliases': ['dcic:sample_vendor']}
-#     existing_vendor = {'uuid': 'sample_uuid'}
-#     mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor)
-#     imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
-#     args = imp.get_existing.call_args
-#     assert args[0][0] == post_json
-#     out = capsys.readouterr()[0]
-#     assert out.strip() == message
+def test_workbook_reader_no_update_no_patchall_existing_item(capsys, mocker, connection_mock, workbooks):
+    # test exisiting item submission without patchall update tags and check the return message
+    test_insert = "Vendor_insert.xlsx"
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {}
+    message = "VENDOR(1)                  :  0 posted / 0 not posted           0 patched / 1 not patched, 0 errors\n"
+    post_json = {'lab': 'sample-lab',
+                 'description': 'Sample description',
+                 'award': 'SampleAward',
+                 'title': 'Sample Vendor',
+                 'url': 'https://www.sample_vendor.com/',
+                 'aliases': ['dcic:sample_vendor']}
+    existing_vendor = {'uuid': 'sample_uuid'}
+    mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor)
+    mocker.patch('wranglertools.import_data.ff_utils.patch_metadata',
+                 return_value={'status': 'success', '@graph': [{'uuid': 'uid1', '@id': '/vendor/test'}]})
+    imp.workbook_reader(workbooks.get(test_insert), 'Vendor', False, connection_mock, False, {}, dict_load, dict_rep, dict_set, True, [])
+    out = capsys.readouterr()
+    args = imp.get_existing.call_args
+    assert args[0][0] == post_json
+    assert out[0] == message
 
 
 # @pytest.mark.file_operation
