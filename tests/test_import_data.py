@@ -77,7 +77,6 @@ def test_attachment_not_accepted():
 
 @pytest.mark.file_operation
 def test_reader(vendor_raw_xls_fields):
-    import pdb; pdb.set_trace()
     readxls = imp.reader('./tests/data_files/Vendor.xls')
     for n, row in enumerate(readxls):
         # reader deletes the trailing space in description (at index 3.8)
@@ -353,33 +352,31 @@ def test_workbook_reader_no_update_no_patchall_existing_item(capsys, mocker, con
     assert out[0] == message
 
 
-# @pytest.mark.file_operation
-@pytest.mark.ftp
-def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Ftp_file_test_md5.xls'
+def test_workbook_reader_post_ftp_file_upload(capsys, mocker, connection_mock, workbooks):
+    test_insert = 'Ftp_file_test_md5.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
     all_aliases = {}
-    message0_1 = "INFO: Attempting to download file from this url to your computer before upload "
-    message0_2 = "ftp://speedtest.tele2.net/1KB.zip"
-    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
+    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors\n"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock upload file and skip
     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+    # mock the ftp copy - this should get it's own tests
+    mocker.patch('wranglertools.import_data.ftp_copy', return_value=(True, {'md5sum': '0f343b0931126a20f133d67c2b018a3b'}, '1KB.zip'))
+    # mock file deletion
+    mocker.patch('wranglertools.import_data.pp.Path.unlink')
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'FileCalibration', True, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i.strip()]
     post_json_arg = args[0][0]
     assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-    assert message0_1 + message0_2 == outlist[0]
-    assert message1 == outlist[1]
+    assert message1 == out
 
 
 # @pytest.mark.file_operation
