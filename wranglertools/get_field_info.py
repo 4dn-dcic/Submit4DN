@@ -5,12 +5,13 @@ import argparse
 from dcicutils import ff_utils
 import attr
 import xlwt
+import openpyxl
 import sys
 import json
 
 
 EPILOG = '''
-    To create an xls file with sheets to be filled use the example and modify to your needs.
+    To create an test_digest_xlsx file with sheets to be filled use the example and modify to your needs.
     It will accept the following optional parameters.
         --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
         --key            the name of the key identifier for the access key and secret in your keys file (default=default)
@@ -392,31 +393,38 @@ def get_uploadable_fields(connection, types, no_description=False,
 
 def create_xls(all_fields, filename):
     '''
-    fields being a dictionary of sheet -> FieldInfo(objects)
-    create one sheet per dictionary item, with three columns of fields
-    for fieldname, description and enum
+    all_fields being a dictionary of sheet/Item names -> list of FieldInfo(objects)
+    create one sheet per dictionary item, that inserts 4 commented header rows for each column
+    that corresponds to one of the FieldInfo objects in the list
+    header rows are for fieldname, fieldtype, description and comments/enums
     '''
-    wb = xlwt.Workbook()
+    wb = openpyxl.Workbook()
     # text styling for all columns
-    style = xlwt.XFStyle()
-    style.num_format_str = "@"
+    # style = xlwt.XFStyle()
+    # style.num_format_str = "@"
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
-        ws = wb.add_sheet(obj_name)
-        ws.write(0, 0, "#Field Name:")
-        ws.write(1, 0, "#Field Type:")
-        ws.write(2, 0, "#Description:")
-        ws.write(3, 0, "#Additional Info:")
+        ws = wb.create_sheet(title=obj_name)
+        ws.cell(row=1, column=1, value="#Field Name:")
+        ws.cell(row=2, column=1, value="#Field Type:")
+        ws.cell(row=3, column=1, value="#Description:")
+        ws.cell(row=4, column=1, value="#Additional Info:")
+        for x in range(1, 101):
+            for y in range(1, 101):
+                ws.cell(row=x, column=y)
+
         # add empty formatting for first column
-        for i in range(100):
-            ws.write(4+i, 0, '', style)
+        # for i in range(100):
+        #    ws.write(4+i, 0, '', style)
         # order fields in sheet based on lookup numbers, then alphabetically
         for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
-            ws.write(0, col+1, str(field.name), style)
-            ws.write(1, col+1, str(field.ftype), style)
+            ws.cell(row=1, column=col+1, value=str(field.name))
+            ws.cell(row=2, column=col+1, value=str(field.ftype))
+            description = ''
             if field.desc:
-                ws.write(2, col+1, str(field.desc), style)
+                description = str(field.desc)
+            ws.cell(row=3, column=col+1, value=description)
             # combine comments and Enum
             add_info = ''
             if field.comm:
@@ -425,10 +433,10 @@ def create_xls(all_fields, filename):
                 add_info += "Choices:" + str(field.enum)
             if not field.comm and not field.enum:
                 add_info = "-"
-            ws.write(3, col+1, add_info, style)
+            ws.cell(row=4, column=col+1, value=add_info)
             # add empty formatting for all columns
-            for i in range(100):
-                ws.write(4+i, col+1, '', style)
+            # for i in range(100):
+            #    ws.write(4+i, col+1, '', style)
     wb.save(filename)
 
 

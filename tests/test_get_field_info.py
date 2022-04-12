@@ -1,7 +1,7 @@
 import wranglertools.get_field_info as gfi
 import pytest
 from operator import itemgetter
-import xlrd3
+import openpyxl
 
 # test data is in conftest.py
 
@@ -345,13 +345,13 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
     return_list = []
-    wb = xlrd3.open_workbook(xls_file)
-    read_sheet = wb.sheet_by_name(sheet)
-    cols = read_sheet.ncols
-    rows = read_sheet.nrows
-    for row_idx in range(rows):
+    wb = openpyxl.load_workbook(xls_file)
+    read_sheet = wb[sheet]
+    cols = read_sheet.max_column
+    rows = read_sheet.max_row
+    for row_idx in range(1, rows):
         row_val = []
-        for col_idx in range(cols):
+        for col_idx in range(1, cols):
             cell_value = str(read_sheet.cell(row_idx, col_idx))
 
             row_val.append(cell_value)
@@ -361,28 +361,29 @@ def xls_to_list(xls_file, sheet):
 
 def xls_field_order(xls_file, sheet):
     # returns list of fields (in order) in an excel sheet
-    wb = xlrd3.open_workbook(xls_file).sheet_by_name(sheet)
-    return [str(wb.cell_value(0, col)) for col in range(1, wb.ncols)]
+    wb = xlrd3.load_workbook(xls_file)
+    ws = wb[sheet]
+    return [str(ws.cell(row=0, column=col).value) for col in range(1, ws.max_column)]
 
 
 @pytest.mark.file_operation
 def test_create_xls_vendor(connection_mock, mocker, returned_vendor_schema):
-    xls_file = "./tests/data_files/GFI_test_vendor.xls"
-    xls_ref_file = "./tests/data_files/GFI_test_vendor_reference.xls"
-    import os
-    try:
-        os.remove(xls_file)
-    except OSError:
-        pass
+    xls_file = "./tests/data_files/workbooks/GFI_test_vendor.xlsx"
+    xls_ref_file = "./tests/data_files/workbooks/GFI_test_vendor_reference.xlsx"
+    # import os
+    # try:
+    #     os.remove(xls_file)
+    # except OSError:
+    #     pass
     mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json())
     field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
     gfi.create_xls(field_dict, xls_file)
-    assert os.path.isfile(xls_file)
+    #assert os.path.isfile(xls_file)
     assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
-    try:
-        os.remove(xls_file)
-    except OSError:
-        pass
+    # try:
+    #     os.remove(xls_file)
+    # except OSError:
+    #     pass
 
 
 @pytest.mark.file_operation
