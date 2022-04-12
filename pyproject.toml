@@ -15,7 +15,7 @@ packages = [
 python = ">=3.6.1,<3.10"
 python-magic = ">=0.4.12"
 attrs = ">=21.4"
-xlrd3 = "1.1.0"
+openpyxl = "^3.0.9"
 xlwt = "1.3.0"
 dcicutils = ">=3.11.0"
 # awscli is not directly imported but is required for aws cp operation
