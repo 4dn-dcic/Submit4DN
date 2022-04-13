@@ -276,7 +276,13 @@ def cell_value(cell):
     if ctype == openpyxl.cell.cell.TYPE_ERROR:  # pragma: no cover
         raise ValueError('Cell %s contains a cell error' % str(cell.coordinate))
     elif ctype == openpyxl.cell.cell.TYPE_BOOL:
-        return str(value).upper().strip()
+        boolstr = str(value).title().strip()
+        if boolstr == 'True':
+            return True
+        elif boolstr == 'False':
+            return False
+        else:
+            return value
     elif ctype in (openpyxl.cell.cell.TYPE_NUMERIC, openpyxl.cell.cell.TYPE_NULL):
         if isinstance(value, float):
             if value.is_integer():
@@ -312,6 +318,8 @@ def data_formatter(value, val_type, field=None):
         elif val_type in ["list", "array"]:
             data_list = value.strip("[\']").split(",")
             return [data.strip() for data in data_list]
+        elif val_type == 'boolean':
+            return value
         else:
             # default assumed to be string
             return str(value).strip()
@@ -357,15 +365,10 @@ def get_sub_field_number(field_name):
         return 0
 
 
-# @attr.s
-# class FieldInfo(object):
-#     name = attr.ib()
-#     field_type = attr.ib(default=u'')
-#     value = attr.ib(default=u'')
-
-
 def build_field(field, field_data, field_type):
-    if not field_data or not field:
+    if field_data is False:
+        pass
+    elif not field_data or not field:
         return None
     patch_field_name = get_field_name(field)
     if not field_type:
@@ -523,6 +526,8 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
     elif 'string' in field_type:
         strings = _convert_to_array(field_data, is_array)
         msg = validate_string(strings, aliases_by_type)
+    elif 'boolean' in field_type:
+        pass  # for now
     return msg
 
 
@@ -1103,16 +1108,21 @@ def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_ty
 
     # iterate over the rows
     for values in row:
-        # Delete trailing commas and spaces
-        values = [item.strip(', ') for item in values]
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
         # Get rid of the first empty cell
         values.pop(0)
         total += 1
+        clean_values = []
+        for item in values:
+            try:
+                # strip trailing commas and spaces if a str
+                clean_values.append(item.strip(', '))
+            except AttributeError:
+                clean_values.append(item)
         # build post_json and get existing if available
-        post_json = OrderedDict(zip(keys, values))
+        post_json = OrderedDict(zip(keys, clean_values))
         # Get existing data if available
         # existing_data = get_existing(post_json, connection)
 
@@ -1624,7 +1634,6 @@ def main():  # pragma: no cover
                       args.remote, args.lab, args.award)
     # support for xlsx only - adjust if allowing different formats
     workbook, sheetnames = digest_xlsx(args.infile)
-    # import pdb; pdb.set_trace()
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:

@@ -76,8 +76,10 @@ def test_attachment_not_accepted():
 
 
 @pytest.mark.file_operation
-def test_reader(vendor_raw_xls_fields):
-    readxls = imp.reader('./tests/data_files/Vendor.xls')
+def test_reader_no_sheet_name(vendor_raw_xls_fields, workbooks):
+    sheet = 'Vendor'
+    sheetkey = "{}.xlsx".format(sheet)
+    readxls = imp.reader(workbooks.get(sheetkey))
     for n, row in enumerate(readxls):
         # reader deletes the trailing space in description (at index 3.8)
         if n == 2:
@@ -87,8 +89,10 @@ def test_reader(vendor_raw_xls_fields):
 
 
 @pytest.mark.file_operation
-def test_reader_with_sheetname(vendor_raw_xls_fields):
-    readxls = imp.reader('./tests/data_files/Vendor.xls', 'Vendor')
+def test_reader_with_sheetname(vendor_raw_xls_fields, workbooks):
+    sheet = 'Vendor'
+    sheetkey = "{}.xlsx".format(sheet)
+    readxls = imp.reader(workbooks.get(sheetkey), sheet)
     for n, row in enumerate(readxls):
         # reader deletes the trailing space in description (at index 3.8)
         if n == 2:
@@ -98,16 +102,20 @@ def test_reader_with_sheetname(vendor_raw_xls_fields):
 
 
 @pytest.mark.file_operation
-def test_reader_wrong_sheetname():
-    readxls = imp.reader('./tests/data_files/Vendor.xls', 'Enzyme')
-    list_readxls = list(readxls)
-    assert list_readxls == []
+def test_reader_wrong_sheetname(capsys, workbooks):
+    msg = "string indices must be integers\nEnzyme\nERROR: Can not find the collection sheet in excel file (openpyxl error)\n"
+    sheet = 'Vendor'
+    sheetkey = "{}.xlsx".format(sheet)
+    readxls = imp.reader(sheetkey, 'Enzyme')
+    assert readxls is None
+    out = capsys.readouterr()[0]
+    assert out == msg
 
 
-@pytest.mark.file_operation
-def test_cell_value():
-    readxls = imp.reader('./tests/data_files/test_cell_values.xls')
+def test_cell_value(workbooks):
+    readxls = imp.reader(workbooks.get('test_cell_values.xlsx'))
     list_readxls = list(readxls)
+    import pdb; pdb.set_trace()
     assert list_readxls == [['BOOLEAN', '1'], ['NUMBER', '10'], ['DATE', '2016-09-02']]
 
 

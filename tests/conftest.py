@@ -373,6 +373,8 @@ def workbooks():
     WORKBOOK_DIR = './tests/data_files/workbooks/'
     filenames = Path(WORKBOOK_DIR).glob('*.xlsx')
     for fn in filenames:
+        if fn.name.startswith('~'):
+            continue
         workbooks[fn.name] = openpyxl.load_workbook(fn)
     return workbooks
 
