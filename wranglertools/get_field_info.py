@@ -399,9 +399,7 @@ def create_xls(all_fields, filename):
     header rows are for fieldname, fieldtype, description and comments/enums
     '''
     wb = openpyxl.Workbook()
-    # text styling for all columns
-    # style = xlwt.XFStyle()
-    # style.num_format_str = "@"
+    wb.remove(wb.active)  # removes the by default created empty sheet named Sheet
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
@@ -410,21 +408,14 @@ def create_xls(all_fields, filename):
         ws.cell(row=2, column=1, value="#Field Type:")
         ws.cell(row=3, column=1, value="#Description:")
         ws.cell(row=4, column=1, value="#Additional Info:")
-        for x in range(1, 101):
-            for y in range(1, 101):
-                ws.cell(row=x, column=y)
-
-        # add empty formatting for first column
-        # for i in range(100):
-        #    ws.write(4+i, 0, '', style)
         # order fields in sheet based on lookup numbers, then alphabetically
         for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
-            ws.cell(row=1, column=col+1, value=str(field.name))
-            ws.cell(row=2, column=col+1, value=str(field.ftype))
+            ws.cell(row=1, column=col+2, value=str(field.name))
+            ws.cell(row=2, column=col+2, value=str(field.ftype))
             description = ''
             if field.desc:
                 description = str(field.desc)
-            ws.cell(row=3, column=col+1, value=description)
+            ws.cell(row=3, column=col+2, value=description)
             # combine comments and Enum
             add_info = ''
             if field.comm:
@@ -433,10 +424,7 @@ def create_xls(all_fields, filename):
                 add_info += "Choices:" + str(field.enum)
             if not field.comm and not field.enum:
                 add_info = "-"
-            ws.cell(row=4, column=col+1, value=add_info)
-            # add empty formatting for all columns
-            # for i in range(100):
-            #    ws.write(4+i, col+1, '', style)
+            ws.cell(row=4, column=col+2, value=add_info)
     wb.save(filename)
 
 
