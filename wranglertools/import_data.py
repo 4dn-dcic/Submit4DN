@@ -256,9 +256,6 @@ def row_generator(sheet):
     """Generator that gets rows from excel sheet
     Note that this currently checks to see if a row is empty and if so stops
     This is needed as plain text formatting of cells is recognized as data
-    get_field_info adds many rows with this formatting to deal with unexpected
-    excel transforms - maybe this is no longer needed and therefore this function
-    can be simplified - AJS 2022-04-11
     """
     for row in sheet.rows:
         vals = [cell_value(cell) for cell in row]
