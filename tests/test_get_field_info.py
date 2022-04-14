@@ -426,7 +426,7 @@ def test_create_xlsx_non_defaults(connection_mock, mocker, returned_bcc_schema):
 
 @pytest.mark.file_operation
 def test_create_xls_lookup_order(connection_mock, mocker, returned_vendor_schema_l):
-    xls_file = "./tests/data_files/GFI_test_vendor_lookup.xlsx"
+    xls_file = "./tests/data_files/workbooks/GFI_test_vendor_lookup.xlsx"
     ref_list = ['aliases', '*title', 'description', 'contributing_labs', 'tags', 'url']
     try:
         os.remove(xls_file)

@@ -270,16 +270,15 @@ def row_generator(sheet):
 
 def cell_value(cell):
     """Get cell value from excel. [From Submit4DN]"""
-    # This should be always returning text format
     ctype = cell.data_type
     value = cell.value
     if ctype == openpyxl.cell.cell.TYPE_ERROR:  # pragma: no cover
         raise ValueError('Cell %s contains a cell error' % str(cell.coordinate))
     elif ctype == openpyxl.cell.cell.TYPE_BOOL:
-        boolstr = str(value).title().strip()
-        if boolstr == 'True':
+        boolstr = str(value).strip()
+        if boolstr == 'TRUE':
             return True
-        elif boolstr == 'False':
+        elif boolstr == 'FALSE':
             return False
         else:
             return value
@@ -288,8 +287,8 @@ def cell_value(cell):
             if value.is_integer():
                 value = int(value)
         if not value:
-            value = ''
-        return str(value).strip()
+            return ''
+        return value
     elif isinstance(value, openpyxl.cell.cell.TIME_TYPES):
         if isinstance(value, datetime.datetime):
             if value.time() == datetime.time(0, 0, 0):
