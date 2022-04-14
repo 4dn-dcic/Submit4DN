@@ -4,7 +4,6 @@ import pathlib as pp
 import argparse
 from dcicutils import ff_utils
 import attr
-import xlwt
 import openpyxl
 import sys
 import json
