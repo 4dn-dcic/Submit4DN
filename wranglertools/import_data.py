@@ -9,6 +9,7 @@ from wranglertools.get_field_info import (
     create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import openpyxl
+from openpyxl.utils.exceptions import InvalidFileException
 import datetime
 import sys
 import mimetypes
@@ -229,7 +230,14 @@ def attachment(path):
 
 
 def digest_xlsx(filename):
-    book = openpyxl.load_workbook(filename)
+    try:
+        book = openpyxl.load_workbook(filename)
+    except InvalidFileException as e:
+        if filename.endswith('.xls'):
+            print("WARNING - Old xls format not supported - please save your workbook as xlsx")
+        else:
+            print("ERROR - ", e)
+        sys.exit(1)
     sheets = book.sheetnames
     return book, sheets
 
@@ -1628,7 +1636,7 @@ def main():  # pragma: no cover
     connection = FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile,
                       args.remote, args.lab, args.award)
-    # support for xlsx only - adjust if allowing different formats
+    # support for xlsx only - adjust if allowing different
     workbook, sheetnames = digest_xlsx(args.infile)
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
