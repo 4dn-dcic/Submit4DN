@@ -9,6 +9,7 @@ from wranglertools.get_field_info import (
     create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import openpyxl
+import warnings  # to suppress openpxl warning about headers
 from openpyxl.utils.exceptions import InvalidFileException
 import datetime
 import sys
@@ -231,7 +232,9 @@ def attachment(path):
 
 def digest_xlsx(filename):
     try:
-        book = openpyxl.load_workbook(filename)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            book = openpyxl.load_workbook(filename)
     except InvalidFileException as e:
         if filename.endswith('.xls'):
             print("WARNING - Old xls format not supported - please save your workbook as xlsx")
