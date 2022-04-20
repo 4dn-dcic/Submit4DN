@@ -9,6 +9,7 @@ from wranglertools.get_field_info import (
     create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import openpyxl
+import gspread
 import datetime
 import sys
 import mimetypes
@@ -137,6 +138,23 @@ list_of_loadxl_fields = [
 ]
 
 
+ALLOWED_MIMES = (
+    'application/pdf',
+    'application/zip',
+    'text/plain',
+    'text/tab-separated-values',
+    'text/html',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/tiff',
+)
+
+
 def md5(path):
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
@@ -152,26 +170,27 @@ class WebFetchException(Exception):
     pass
 
 
+def mime_allowed(path, ok_mimes):
+    filename = pp.PurePath(path).name
+    guessed_mime = mimetypes.guess_type(path)[0]
+    detected_mime = magic.from_file(path, mime=True)
+    if guessed_mime not in ok_mimes:
+        print("Unallowed file type for %s" % filename)
+        return False
+    # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
+    # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
+    # basically relying on extension with a little verification by magic for most file types
+    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
+        print('Wrong extension for %s: %s' % (detected_mime, filename))
+        return False
+    return guessed_mime
+
+
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url.
        NOTE: a url or ftp can be used but path must end in filename with extension that will match
        the magic detected MIME type of that file and be one of the allowed mime types
     """
-    ALLOWED_MIMES = (
-        'application/pdf',
-        'application/zip',
-        'text/plain',
-        'text/tab-separated-values',
-        'text/html',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'image/png',
-        'image/jpeg',
-        'image/gif',
-        'image/tiff',
-    )
     ftp_attach = False
     if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
@@ -207,15 +226,9 @@ def attachment(path):
 
     attach = {}
     filename = pp.PurePath(path).name
-    guessed_mime = mimetypes.guess_type(path)[0]
-    detected_mime = magic.from_file(path, mime=True)
-    # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
-    # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
-    # basically relying on extension with a little verification by magic for most file types
-    if guessed_mime not in ALLOWED_MIMES:
-        raise ValueError("Unallowed file type for %s" % filename)
-    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
-        raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
+    guessed_mime = mime_allowed(path, ALLOWED_MIMES)
+    if not guessed_mime:
+        sys.exit(1)
 
     with open(path, 'rb') as stream:
         attach = {
@@ -234,25 +247,53 @@ def digest_xlsx(filename):
     return book, sheets
 
 
-def reader(workbook, sheetname=None):
-    """Read named sheet or first and only sheet from xlsx file."""
-    if sheetname is None:
-        sheet = workbook.worksheets[0]
-    else:
-        try:
-            sheet = workbook[sheetname]
-        except Exception as e:
-            print(e)
-            print(sheetname)
-            print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
-            return
+def open_gsheets(gsid):
+    gc = gspread.service_account(filename='credentials.json')
+    wkbk = gc.open_by_key(gsid)
+    sheets = [sh.title for sh in wkbk.worksheets()]
+    return wkbk, sheets
+
+
+def get_workbook(inputname, booktype):
+    if booktype == 'excel':
+        return digest_xlsx(inputname)
+    elif booktype == 'gsheet':
+        return open_gsheets(inputname)
+
+
+def reader(workbook, sheetname=None, booktype=None):
+    """Read named sheet or first and only sheet from xlsx or google sheets file.
+        Assume excel by default - will choke if no booktype and not excel"""
+    sheet = None
+    if not booktype or booktype == 'excel':
+        if sheetname is None:
+            sheet = workbook.worksheets[0]
+        else:
+            try:
+                sheet = workbook[sheetname]
+            except Exception as e:
+                print(e)
+                print(sheetname)
+                print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
+                return
+    elif booktype == 'gsheet':
+        if sheetname is None:
+            sheet = workbook.get_worksheet(0)
+        else:
+            try:
+                sheet = workbook.worksheet(sheetname)
+            except Exception as e:
+                print(e)
+                print(sheetname)
+                print("ERROR: Can not find the collection sheet in excel file (gspread error)")
+                return
     # Generator that gets rows from excel sheet
     # NB we have a lot of empty no formatting rows added (can we get rid of that)
     # or do we need to be careful to check for the first totally emptyvalue row?
-    return row_generator(sheet)
+    return row_generator(sheet, booktype)
 
 
-def row_generator(sheet):
+def row_generator(sheet, booktype=None):
     """Generator that gets rows from excel sheet
     Note that this currently checks to see if a row is empty and if so stops
     This is needed as plain text formatting of cells is recognized as data
@@ -260,12 +301,18 @@ def row_generator(sheet):
     excel transforms - maybe this is no longer needed and therefore this function
     can be simplified - AJS 2022-04-11
     """
-    for row in sheet.rows:
-        vals = [cell_value(cell) for cell in row]
-        if not any([v for v in vals]):
-            return
-        else:
-            yield vals
+    if not booktype or booktype == 'excel':
+        for row in sheet.rows:
+            vals = [cell_value(cell) for cell in row]
+            if not any([v for v in vals]):
+                return
+            else:
+                yield vals
+    else:
+        # no formatting here assuming all are strings
+        all_vals = sheet.get_values()
+        for row in all_vals:
+            yield row
 
 
 def cell_value(cell):
@@ -1067,7 +1114,7 @@ def check_file_pairing(fastq_row):
     return _pairing_consistency_check(files, errors)
 
 
-def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_type,
+def workbook_reader(workbook, booktype, sheet, update, connection, patchall, aliases_by_type,
                     dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate, attach_fields):
     """takes an openpyxl workbook object and posts, patches or does a dry run on the data depending
     on the options passed in.
@@ -1077,7 +1124,7 @@ def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_ty
     all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
-    row = reader(workbook, sheetname=sheet)
+    row = reader(workbook, sheetname=sheet, booktype=booktype)
     skip_dryrun = False
     if sheet == "ExperimentMic_Path":
         skip_dryrun = True
@@ -1347,9 +1394,9 @@ def build_tibanna_json(keys, types, values, connection):
     return template
 
 
-def user_workflow_reader(workbook, sheet, connection):
+def user_workflow_reader(workbook, booktype, sheet, connection):
     """takes the user workflow runsheet and ony post it to fourfront endpoint."""
-    row = reader(workbook, sheetname=sheet)
+    row = reader(workbook, sheetname=sheet, booktype=booktype)
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
     # remove title column
@@ -1493,14 +1540,30 @@ def _verify_and_return_item(item, connection):
     return res
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, award=None):
-    """Set of check for connection, file, dryrun, and prompt."""
-    print("Running on:       {server}".format(server=connection.key['server']))
-    # check input file (xls)
-    if not pp.Path(infile).is_file():
-        print(f"File {infile} not found!")
+def check_and_return_input_type(inputname):
+    if pp.Path(inputname).is_file():
+        xlsx_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        # specific check for xlsx
+        if not mime_allowed(inputname, xlsx_mime):
+            print(f"ERROR: File {infile} not recognized as excel file")
+            sys.exit(1)
+        return inputname, 'excel'
+    elif inputname.startswith('http'):
+        # assume a url to google sheet and look for google?
+        if 'google' not in inputname:
+            print("ERROR: URL provided does not appear to be google sheet url")
+            sys.exit(1)
+        # parse out the bookId
+        inputname = re.search("/d/([A-Za-z0-9_-]+)/*", inputname).group(1)
+    if not re.match("^[A-Za-z0-9_-]+$", inputname):
+        print("ERROR: invalid format of the google sheet ID in input - {}".format(inputname))
         sys.exit(1)
+    return inputname, 'gsheet'
 
+
+def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None):
+    """Set of check for connection, input, dryrun, and prompt."""
+    print("Running on:       {server}".format(server=connection.key['server']))
     # check for multi labs and awards and reset connection appropriately
     # if lab and/or award options used modify connection accordingly and check for conflict later
     if lab or award:
@@ -1590,7 +1653,7 @@ def get_collections(profiles):
     return supported_collections
 
 
-def get_all_aliases(workbook, sheets):
+def get_all_aliases(workbook, sheets, booktype):
     """Extracts all aliases existing in the workbook to later check object connections
        Checks for same aliases that are used for different items and gives warning."""
     aliases_by_type = {}
@@ -1598,7 +1661,7 @@ def get_all_aliases(workbook, sheets):
         if sheet == 'ExperimentMic_Path':
             continue
         alias_col = ""
-        rows = reader(workbook, sheetname=sheet)
+        rows = reader(workbook, sheetname=sheet, booktype=booktype)
         keys = next(rows)  # grab the first row of headers
         try:
             alias_col = keys.index("aliases")
@@ -1629,10 +1692,11 @@ def main():  # pragma: no cover
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
-    cabin_cross_check(connection, args.patchall, args.update, args.infile,
+    cabin_cross_check(connection, args.patchall, args.update,
                       args.remote, args.lab, args.award)
-    # support for xlsx only - adjust if allowing different formats
-    workbook, sheetnames = digest_xlsx(args.infile)
+    # support for xlsx and google sheet url or sheets id
+    inputname, booktype = check_and_return_input_type(args.infile)
+    workbook, sheetnames = get_workbook(inputname, booktype)
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
@@ -1646,7 +1710,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-    aliases_by_type = get_all_aliases(workbook, sorted_names)
+    aliases_by_type = get_all_aliases(workbook, sorted_names, booktype)
     # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
@@ -1656,14 +1720,14 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            workbook_reader(workbook, n, args.update, connection, args.patchall, aliases_by_type,
+            workbook_reader(workbook, booktype, n, args.update, connection, args.patchall, aliases_by_type,
                             dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower() == "experimentmic_path":
-            workbook_reader(workbook, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
+            workbook_reader(workbook, booktype, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
                             dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower().startswith('user_workflow'):
             if args.update:
-                user_workflow_reader(workbook, n, connection)
+                user_workflow_reader(workbook, booktype, n, connection)
             else:
                 print('user workflow sheets will only be processed with the --update argument')
         else:
