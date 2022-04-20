@@ -522,6 +522,7 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
     to_trim = 'array of embedded objects, '
     is_array = False
     msg = None
+    field_data = data_formatter(field_data, field_type)
     if field_type.startswith(to_trim):
         field_type = field_type.replace(to_trim, '')
     if 'array' in field_type:
@@ -1014,7 +1015,7 @@ def check_file_pairing(fastq_row):
         paired_end = row[pair_idx] if pair_idx else None
         saw_pair = False
         for i, fld in enumerate(row):
-            if fld.strip() == 'paired with':
+            if isinstance(fld, str) and fld.strip() == 'paired with':
                 if saw_pair:
                     err = 'single row with multiple paired_with values'
                     errors = _add_e_to_edict(aliases[0], err, errors)
@@ -1144,6 +1145,15 @@ def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_ty
 
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
+
+        # # validate the row by fields and data_types
+        # if not novalidate:
+        #     row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+        #     if row_errors:
+        #         error += 1
+        #         pre_validate_errors.extend(row_errors)
+        #         invalid = True
+        #         continue
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload, extrafiles = populate_post_json(
             post_json, connection, sheet, attach_fields)
