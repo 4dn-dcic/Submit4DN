@@ -10,7 +10,7 @@ import json
 
 
 EPILOG = '''
-    To create an test_digest_xlsx file with sheets to be filled use the example and modify to your needs.
+    To create an excel workbook file with sheets to be filled use the examples below and modify to your needs.
     It will accept the following optional parameters.
         --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
         --key            the name of the key identifier for the access key and secret in your keys file (default=default)
@@ -38,7 +38,7 @@ EPILOG = '''
     To change the result filename use --outfile flag followed by the new file name
 
             %(prog)s --type Biosample --outfile biosample_only.xls
-            %(prog)s --type Biosample --type Experiment --outfile my_selection.xls
+            %(prog)s --type Biosample --type Experiment --outfile my_selection.xlsx
 
     '''
 
@@ -96,7 +96,7 @@ def getArgs():  # pragma: no cover
                         help="Do not include enums (or suggestions) for fields.")
     parser.add_argument('--outfile',
                         default='fields.xls',
-                        help="The name of the output file. Default is fields.xls")
+                        help="The name of the output file. Default is fields.xlsx")
     parser.add_argument('--noadmin',
                         default=False,
                         action='store_true',
@@ -151,7 +151,7 @@ class FDN_Connection(object):
             sys.exit(1)
         if me_page.get('submits_for') is not None:
             # get all the labs that the user making the connection submits_for
-            self.labs = [l['@id'] for l in me_page['submits_for']]
+            self.labs = [lp['@id'] for lp in me_page['submits_for']]
             # take the first one as default value for the connection - reset in
             # import_data if needed by calling set_lab_award
             self.lab = self.labs[0]

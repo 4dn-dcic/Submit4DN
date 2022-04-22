@@ -346,7 +346,6 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
 
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
-    return_list = []
     wb = openpyxl.load_workbook(xls_file)
     return sorted([value for row in wb[sheet].values for value in row if value])
 
@@ -387,7 +386,6 @@ def test_create_xlsx_default_options(connection_mock, mocker, returned_bcc_schem
     field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'])
     gfi.create_xls(field_dict, xls_file)
     assert Path(xls_file).is_file()
-    expected = xls_to_list(xls_file, "BiosampleCellCulture")
     assert xls_to_list(xls_file, "BiosampleCellCulture") == EXPECTED
     try:
         os.remove(xls_file)

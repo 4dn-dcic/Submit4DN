@@ -102,7 +102,7 @@ def test_reader_with_sheetname(vendor_raw_xls_fields, workbooks):
 
 
 @pytest.mark.file_operation
-def test_reader_wrong_sheetname(capsys, workbooks):
+def test_reader_wrong_sheetname(capsys):
     msg = "string indices must be integers\nEnzyme\nERROR: Can not find the collection sheet in excel file (openpyxl error)\n"
     sheet = 'Vendor'
     sheetkey = "{}.xlsx".format(sheet)
@@ -256,12 +256,12 @@ def test_error_report(connection_mock):
     err_dict = {"title": "Unprocessable Entity",
                 "status": "error",
                 "errors": [
-                  {"name": "protocol_documents",
-                   "description": "'dcic:insituhicagar' not found", "location": "body"},
-                  {"name": "age",
-                   "description": "'at' is not of type 'number'", "location": "body"},
-                  {"name": "sex",
-                   "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
+                    {"name": "protocol_documents",
+                     "description": "'dcic:insituhicagar' not found", "location": "body"},
+                    {"name": "age",
+                     "description": "'at' is not of type 'number'", "location": "body"},
+                    {"name": "sex",
+                     "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
                 "code": 422,
                 "@type": ["ValidationFailure", "Error"],
                 "description": "Failed validation"}
