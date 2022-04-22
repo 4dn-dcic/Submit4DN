@@ -1,9 +1,0 @@
- {
-    "status": "uploaded",
-    "submitted_by": "4dndcic@gmail.com",
-    "file_format": "bwaIndex",
-    "notes": "reference genome index for hg38, for bwa",
-    "filename": "hg38.bwaIndex.tgz",
-    "lab": "4dn-dcic-lab",
-    "award": "1U01CA200059-01"
- }

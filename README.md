@@ -58,7 +58,7 @@ If you do not yet have access, please contact [4DN Data Wranglers](mailto:suppor
 to get an account and [learn how to generate and save a key](https://data.4dnucleome.org/help/submitter-guide/getting-started-with-submissions#getting-connection-keys-for-the-4dn-dcic-servers).
 
 ## Generating data submission forms
-To create the data submission xls forms, you can use `get_field_info`.
+To create the data submission excel workbook, you can use `get_field_info`.
 
 It will accept the following parameters:
 ~~~~
@@ -68,7 +68,7 @@ It will accept the following parameters:
     --nodesc         do not add the descriptions in the second line (by default they are added)
     --noenums        do not add the list of options for a field if they are specified (by default they are added)
     --comments       adds any (usually internal) comments together with enums (by default False)
-    --outfile        change the default file name "fields.xls" to a specified one
+    --outfile        change the default file name "fields.xlsx" to a specified one
     --debug          to add more debugging output
     --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
 ~~~~
@@ -77,19 +77,19 @@ Examples generating a single sheet:
 ~~~~
 get_field_info --type Biosample
 get_field_info --type Biosample --comments
-get_field_info --type Biosample --comments --outfile biosample.xls
+get_field_info --type Biosample --comments --outfile biosample.xlsx
 ~~~~
 
 Example Workbook with all sheets:
 ~~~~
-get_field_info --outfile MetadataSheets.xls
+get_field_info --outfile MetadataSheets.xlsx
 ~~~~
 
 Examples for Workbooks using a preset option:
 ~~~~
-get_field_info --type HiC --comments --outfile exp_hic_generic.xls
-get_field_info --type ChIP-seq --comments --outfile exp_chipseq_generic.xls
-get_field_info --type FISH --comments --outfile exp_fish_generic.xls
+get_field_info --type HiC --comments --outfile exp_hic_generic.xlsx
+get_field_info --type ChIP-seq --comments --outfile exp_chipseq_generic.xlsx
+get_field_info --type FISH --comments --outfile exp_fish_generic.xlsx
 ~~~~
 
 Current presets include: `Hi-C, ChIP-seq, Repli-seq, ATAC-seq, DamID, ChIA-PET, Capture-C, FISH, SPT`
@@ -100,7 +100,7 @@ Please refer to the [submission guidelines](https://data.4dnucleome.org/help/sub
 
 After you fill out the data submission forms, you can use `import_data` to submit the metadata. The method can be used both to create new metadata items and to patch fields of existing items.
 ~~~~
-	import_data filename.xls
+	import_data filename.xlsx
 ~~~~
 
 #### Uploading vs Patching
@@ -108,7 +108,7 @@ After you fill out the data submission forms, you can use `import_data` to submi
 Runnning `import_data` without one of the flags described below will perform a dry run submission that will include several validation checks.
 It is strongly recommended to do a dry run prior to actual submission and if necessary work with a Data Wrangler to correct any errors.
 
-If there are uuid, alias, @id, or accession fields in the xls form that match existing entries in the database, you will be asked if you want to PATCH each object.
+If there are uuid, alias, @id, or accession fields in the excel form that match existing entries in the database, you will be asked if you want to PATCH each object.
 You can use the `--patchall` flag, if you want to patch ALL objects in your document and ignore that message.
 
 If no object identifiers are found in the document, you need to use `--update` for POSTing to occur.
@@ -131,7 +131,7 @@ Note if you are attempting to run the scripts in the wranglertools directory wit
 
 ```
   python -m wranglertools.get_field_info —-type Biosource
-	python -m wranglertools.import_data filename.xls
+	python -m wranglertools.import_data filename.xlsx
 ```
 
 pypi page is - https://pypi.python.org/pypi/Submit4DN
@@ -158,10 +158,5 @@ To run the mark tests, or exclude them from the tests you can use the following 
     # Run only tests with file_operation
     py.test -m file_operation
 
-For a better testing experienece that also check to ensure sufficient coverage and runs linters use invoke:
-
-```
-   invoke test
-```
-
-This will first run linters, if linters pass, tests will be run and if tests achieve specified minimum coverage (89% as of time of writting) pass the tests.
+    # skip tests that use ftp (do this when testing locally)
+    py.test -m "not ftp"

@@ -1,7 +1,0 @@
-{
-    "title": "md5",
-    "name": "md5",
-    "workflow_type": "Data QC", 
-    "workflow_diagram": "", 
-    "description": "md5 on uncompressed file"
-}
