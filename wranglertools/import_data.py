@@ -28,9 +28,11 @@ from collections import OrderedDict, Counter
 from urllib import request as urllib2
 from contextlib import closing
 
+# for gsheet authentication
+
 
 EPILOG = '''
-This script takes in an Excel file with the data
+This script takes in a spreadsheet workbook file with the data
 This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
 to actually submit data to the portal
 
@@ -153,6 +155,8 @@ ALLOWED_MIMES = (
     'image/gif',
     'image/tiff',
 )
+
+G_API_CLIENT_ID = '258037973854-vgk9qvfsnps2gaca354bmrk80mmtf3do.apps.googleusercontent.com'
 
 
 def md5(path):
@@ -1561,7 +1565,7 @@ def check_and_return_input_type(inputname):
     return inputname, 'gsheet'
 
 
-def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None):
+def cabin_cross_check(connection, patchall, update, remote, booktype='excel', lab=None, award=None):
     """Set of check for connection, input, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
     # check for multi labs and awards and reset connection appropriately
@@ -1602,6 +1606,10 @@ def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None
             if award_json.get('@id') not in labawards:
                 print("Award {} not associated with lab {} - exiting!".format(submit_award, submit_lab))
                 sys.exit(1)
+
+    # if workbook is google sheet then do auth here and return credentials
+    if booktype == 'gsheet':
+        creds = do_authentication()
 
     print("Submitting User:  {}".format(connection.email))
     missing = []
@@ -1692,11 +1700,12 @@ def main():  # pragma: no cover
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
-    cabin_cross_check(connection, args.patchall, args.update,
-                      args.remote, args.lab, args.award)
     # support for xlsx and google sheet url or sheets id
     inputname, booktype = check_and_return_input_type(args.infile)
     workbook, sheetnames = get_workbook(inputname, booktype)
+
+    cabin_cross_check(connection, args.patchall, args.update,
+                      args.remote, booktype, args.lab, args.award)
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
