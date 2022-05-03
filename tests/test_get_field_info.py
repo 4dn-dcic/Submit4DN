@@ -346,7 +346,6 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
 
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
-    return_list = []
     wb = openpyxl.load_workbook(xls_file)
     return sorted([value for row in wb[sheet].values for value in row if value])
 
@@ -385,9 +384,8 @@ def test_create_xlsx_default_options(connection_mock, mocker, returned_bcc_schem
         pass
     mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_bcc_schema.json())
     field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'])
-    gfi.create_xls(field_dict, xls_file)
+    gfi.create_excel(field_dict, xls_file)
     assert Path(xls_file).is_file()
-    expected = xls_to_list(xls_file, "BiosampleCellCulture")
     assert xls_to_list(xls_file, "BiosampleCellCulture") == EXPECTED
     try:
         os.remove(xls_file)
@@ -414,7 +412,7 @@ def test_create_xlsx_non_defaults(connection_mock, mocker, returned_bcc_schema):
         pass
     mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_bcc_schema.json())
     field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'], no_description=True, include_comments=True, no_enums=True)
-    gfi.create_xls(field_dict, xls_file)
+    gfi.create_excel(field_dict, xls_file)
     assert os.path.isfile(xls_file)
     assert xls_to_list(xls_file, "BiosampleCellCulture") == EXPECTED
     try:
@@ -434,7 +432,7 @@ def test_create_xls_lookup_order(connection_mock, mocker, returned_vendor_schema
         pass
     mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema_l.json())
     field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
-    gfi.create_xls(field_dict, xls_file)
+    gfi.create_excel(field_dict, xls_file)
     assert Path(xls_file).is_file()
     assert xls_field_order(xls_file, "Vendor") == ref_list
     try:

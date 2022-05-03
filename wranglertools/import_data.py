@@ -9,7 +9,12 @@ from wranglertools.get_field_info import (
     create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import openpyxl
+<<<<<<< HEAD
 import gspread
+=======
+import warnings  # to suppress openpxl warning about headers
+from openpyxl.utils.exceptions import InvalidFileException
+>>>>>>> master
 import datetime
 import sys
 import mimetypes
@@ -246,7 +251,16 @@ def attachment(path):
 
 
 def digest_xlsx(filename):
-    book = openpyxl.load_workbook(filename)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            book = openpyxl.load_workbook(filename)
+    except InvalidFileException as e:
+        if filename.endswith('.xls'):
+            print("WARNING - Old xls format not supported - please save your workbook as xlsx")
+        else:
+            print("ERROR - ", e)
+        sys.exit(1)
     sheets = book.sheetnames
     return book, sheets
 
@@ -301,9 +315,6 @@ def row_generator(sheet, booktype=None):
     """Generator that gets rows from excel sheet
     Note that this currently checks to see if a row is empty and if so stops
     This is needed as plain text formatting of cells is recognized as data
-    get_field_info adds many rows with this formatting to deal with unexpected
-    excel transforms - maybe this is no longer needed and therefore this function
-    can be simplified - AJS 2022-04-11
     """
     if not booktype or booktype == 'excel':
         for row in sheet.rows:
@@ -565,6 +576,7 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
     to_trim = 'array of embedded objects, '
     is_array = False
     msg = None
+    field_data = data_formatter(field_data, field_type)
     if field_type.startswith(to_trim):
         field_type = field_type.replace(to_trim, '')
     if 'array' in field_type:
@@ -1057,7 +1069,7 @@ def check_file_pairing(fastq_row):
         paired_end = row[pair_idx] if pair_idx else None
         saw_pair = False
         for i, fld in enumerate(row):
-            if fld.strip() == 'paired with':
+            if isinstance(fld, str) and fld.strip() == 'paired with':
                 if saw_pair:
                     err = 'single row with multiple paired_with values'
                     errors = _add_e_to_edict(aliases[0], err, errors)
@@ -1187,6 +1199,15 @@ def workbook_reader(workbook, booktype, sheet, update, connection, patchall, ali
 
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
+
+        # # validate the row by fields and data_types
+        # if not novalidate:
+        #     row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+        #     if row_errors:
+        #         error += 1
+        #         pre_validate_errors.extend(row_errors)
+        #         invalid = True
+        #         continue
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload, extrafiles = populate_post_json(
             post_json, connection, sheet, attach_fields)
@@ -1700,12 +1721,19 @@ def main():  # pragma: no cover
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
+<<<<<<< HEAD
     # support for xlsx and google sheet url or sheets id
     inputname, booktype = check_and_return_input_type(args.infile)
     workbook, sheetnames = get_workbook(inputname, booktype)
 
     cabin_cross_check(connection, args.patchall, args.update,
                       args.remote, booktype, args.lab, args.award)
+=======
+    cabin_cross_check(connection, args.patchall, args.update, args.infile,
+                      args.remote, args.lab, args.award)
+    # support for xlsx only - adjust if allowing different
+    workbook, sheetnames = digest_xlsx(args.infile)
+>>>>>>> master
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:

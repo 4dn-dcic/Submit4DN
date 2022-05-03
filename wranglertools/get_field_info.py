@@ -4,14 +4,13 @@ import pathlib as pp
 import argparse
 from dcicutils import ff_utils
 import attr
-import xlwt
 import openpyxl
 import sys
 import json
 
 
 EPILOG = '''
-    To create an test_digest_xlsx file with sheets to be filled use the example and modify to your needs.
+    To create an excel workbook file with sheets to be filled use the examples below and modify to your needs.
     It will accept the following optional parameters.
         --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
         --key            the name of the key identifier for the access key and secret in your keys file (default=default)
@@ -19,7 +18,7 @@ EPILOG = '''
         --nodesc         do not add the descriptions in the second line (by default they are added)
         --noenums        do not add the list of options for a field if they are specified (by default they are added)
         --comments       adds any (usually internal) comments together with enums (by default False)
-        --outfile        change the default file name "fields.xls" to a specified one
+        --outfile        change the default file name "fields.xlsx" to a specified one
         --debug          to add more debugging output
         --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
 
@@ -38,8 +37,8 @@ EPILOG = '''
 
     To change the result filename use --outfile flag followed by the new file name
 
-            %(prog)s --type Biosample --outfile biosample_only.xls
-            %(prog)s --type Biosample --type Experiment --outfile my_selection.xls
+            %(prog)s --type Biosample --outfile biosample_only.xlsx
+            %(prog)s --type Biosample --type Experiment --outfile my_selection.xlsx
 
     '''
 
@@ -96,8 +95,8 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="Do not include enums (or suggestions) for fields.")
     parser.add_argument('--outfile',
-                        default='fields.xls',
-                        help="The name of the output file. Default is fields.xls")
+                        default='fields.xlsx',
+                        help="The name of the output file. Default is fields.xlsx")
     parser.add_argument('--noadmin',
                         default=False,
                         action='store_true',
@@ -152,7 +151,7 @@ class FDN_Connection(object):
             sys.exit(1)
         if me_page.get('submits_for') is not None:
             # get all the labs that the user making the connection submits_for
-            self.labs = [l['@id'] for l in me_page['submits_for']]
+            self.labs = [lp['@id'] for lp in me_page['submits_for']]
             # take the first one as default value for the connection - reset in
             # import_data if needed by calling set_lab_award
             self.lab = self.labs[0]
@@ -391,7 +390,7 @@ def get_uploadable_fields(connection, types, no_description=False,
     return fields
 
 
-def create_xls(all_fields, filename):
+def create_excel(all_fields, filename):
     '''
     all_fields being a dictionary of sheet/Item names -> list of FieldInfo(objects)
     create one sheet per dictionary item, that inserts 4 commented header rows for each column
@@ -484,7 +483,7 @@ def main():  # pragma: no cover
 
     if args.outfile:
         file_name = args.outfile
-        create_xls(fields, file_name)
+        create_excel(fields, file_name)
 
 
 if __name__ == '__main__':
