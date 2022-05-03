@@ -76,8 +76,10 @@ def test_attachment_not_accepted():
 
 
 @pytest.mark.file_operation
-def test_reader(vendor_raw_xls_fields):
-    readxls = imp.reader('./tests/data_files/Vendor.xls')
+def test_reader_no_sheet_name(vendor_raw_xls_fields, workbooks):
+    sheet = 'Vendor'
+    sheetkey = "{}.xlsx".format(sheet)
+    readxls = imp.reader(workbooks.get(sheetkey))
     for n, row in enumerate(readxls):
         # reader deletes the trailing space in description (at index 3.8)
         if n == 2:
@@ -87,8 +89,10 @@ def test_reader(vendor_raw_xls_fields):
 
 
 @pytest.mark.file_operation
-def test_reader_with_sheetname(vendor_raw_xls_fields):
-    readxls = imp.reader('./tests/data_files/Vendor.xls', 'Vendor')
+def test_reader_with_sheetname(vendor_raw_xls_fields, workbooks):
+    sheet = 'Vendor'
+    sheetkey = "{}.xlsx".format(sheet)
+    readxls = imp.reader(workbooks.get(sheetkey), sheet)
     for n, row in enumerate(readxls):
         # reader deletes the trailing space in description (at index 3.8)
         if n == 2:
@@ -98,17 +102,23 @@ def test_reader_with_sheetname(vendor_raw_xls_fields):
 
 
 @pytest.mark.file_operation
-def test_reader_wrong_sheetname():
-    readxls = imp.reader('./tests/data_files/Vendor.xls', 'Enzyme')
-    list_readxls = list(readxls)
-    assert list_readxls == []
+def test_reader_wrong_sheetname(capsys):
+    msg = "string indices must be integers\nEnzyme\nERROR: Can not find the collection sheet in excel file (openpyxl error)\n"
+    sheet = 'Vendor'
+    sheetkey = "{}.xlsx".format(sheet)
+    readxls = imp.reader(sheetkey, 'Enzyme')
+    assert readxls is None
+    out = capsys.readouterr()[0]
+    assert out == msg
 
 
-@pytest.mark.file_operation
-def test_cell_value():
-    readxls = imp.reader('./tests/data_files/test_cell_values.xls')
+def test_cell_value(workbooks):
+    readxls = imp.reader(workbooks.get('test_cell_values.xlsx'))
     list_readxls = list(readxls)
-    assert list_readxls == [['BOOLEAN', '1'], ['NUMBER', '10'], ['DATE', '2016-09-02']]
+    assert list_readxls == [
+        ['BOOLEAN', True], ['INT', 10100], ['FLOAT', 5.5], ['DATE', '2016-09-02'],
+        ['STRDATE', '2022-01-01'], ['STRING', 'testing']
+    ]
 
 
 def test_formatter_gets_ints_correctly():
@@ -246,12 +256,12 @@ def test_error_report(connection_mock):
     err_dict = {"title": "Unprocessable Entity",
                 "status": "error",
                 "errors": [
-                  {"name": "protocol_documents",
-                   "description": "'dcic:insituhicagar' not found", "location": "body"},
-                  {"name": "age",
-                   "description": "'at' is not of type 'number'", "location": "body"},
-                  {"name": "sex",
-                   "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
+                    {"name": "protocol_documents",
+                     "description": "'dcic:insituhicagar' not found", "location": "body"},
+                    {"name": "age",
+                     "description": "'at' is not of type 'number'", "location": "body"},
+                    {"name": "sex",
+                     "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
                 "code": 422,
                 "@type": ["ValidationFailure", "Error"],
                 "description": "Failed validation"}
@@ -298,12 +308,20 @@ def test_fix_attribution(connection_mock):
     assert result_json['award'] == 'test_award'
 
 
-# these tests will be replaced with dryrun tests
-
 @pytest.mark.file_operation
-def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection_mock):
+def test_digest_xlsx(workbooks):
+    WORKBOOK_DIR = './tests/data_files/workbooks/'
+    for fn, workbook in workbooks.items():
+        book, sheets = imp.digest_xlsx(WORKBOOK_DIR + fn)
+        assert sheets == workbook.sheetnames
+        for sheet in sheets:
+            assert book[sheet].max_row == workbook[sheet].max_row
+            assert book[sheet].max_column == workbook[sheet].max_column
+
+
+def test_workbooks_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection_mock, workbooks):
     # test new item submission without patchall update tags and check the return message
-    test_insert = './tests/data_files/Document_insert.xls'
+    test_insert = 'Document_insert.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
@@ -313,90 +331,71 @@ def test_excel_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mock
     mocker.patch('wranglertools.import_data.remove_deleted', return_value={})
     # mocking the test post line
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'})
-    imp.excel_reader(test_insert, 'Document', False, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, ['attachment'])
+    imp.workbook_reader(workbooks.get(test_insert), 'Document', False, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, ['attachment'])
     args = imp.remove_deleted.call_args
     attach = args[0][0]['attachment']
     assert attach['href'].startswith('data:image/jpeg;base64')
 
-# @pytest.mark.file_operation
-# def test_excel_reader_no_update_no_patchall_new_item(capsys, mocker, connection):
-#     # test new item submission without patchall update tags and check the return message
-#     test_insert = './tests/data_files/Vendor_insert.xls'
-#     dict_load = {}
-#     dict_rep = {}
-#     dict_set = {}
-#     message = "This looks like a new row but the update flag wasn't passed, use --update to post new data"
-#     post_json = {'lab': 'sample-lab',
-#                  'description': 'Sample description',
-#                  'award': 'SampleAward',
-#                  'title': 'Sample Vendor',
-#                  'url': 'https://www.sample_vendor.com/',
-#                  'aliases': ['dcic:sample_vendor']}
-#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
-#     imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
-#     args = imp.get_existing.call_args
-#     assert args[0][0] == post_json
-#     out = capsys.readouterr()[0]
-#     assert out.strip() == message
+
+def test_workbook_reader_no_update_no_patchall_existing_item(capsys, mocker, connection_mock, workbooks):
+    # test exisiting item submission without patchall update tags and check the return message
+    test_insert = "Vendor_insert.xlsx"
+    dict_load = {}
+    dict_rep = {}
+    dict_set = {}
+    message = "VENDOR(1)                  :  0 posted / 0 not posted           0 patched / 1 not patched, 0 errors\n"
+    post_json = {'lab': 'sample-lab',
+                 'description': 'Sample description',
+                 'award': 'SampleAward',
+                 'title': 'Sample Vendor',
+                 'url': 'https://www.sample_vendor.com/',
+                 'aliases': ['dcic:sample_vendor']}
+    existing_vendor = {'uuid': 'sample_uuid'}
+    mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor)
+    mocker.patch('wranglertools.import_data.ff_utils.patch_metadata',
+                 return_value={'status': 'success', '@graph': [{'uuid': 'uid1', '@id': '/vendor/test'}]})
+    imp.workbook_reader(workbooks.get(test_insert), 'Vendor', False, connection_mock, False, {}, dict_load, dict_rep, dict_set, True, [])
+    out = capsys.readouterr()
+    args = imp.get_existing.call_args
+    assert args[0][0] == post_json
+    assert out[0] == message
 
 
-# @pytest.mark.file_operation
-# def test_excel_reader_no_update_no_patchall_existing_item(capsys, mocker, connection):
-#     # test exisiting item submission without patchall update tags and check the return message
-#     test_insert = "./tests/data_files/Vendor_insert.xls"
-#     dict_load = {}
-#     dict_rep = {}
-#     dict_set = {}
-#     message = "VENDOR(1)                  :  0 posted / 0 not posted       0 patched / 1 not patched, 0 errors"
-#     post_json = {'lab': 'sample-lab',
-#                  'description': 'Sample description',
-#                  'award': 'SampleAward',
-#                  'title': 'Sample Vendor',
-#                  'url': 'https://www.sample_vendor.com/',
-#                  'aliases': ['dcic:sample_vendor']}
-#     existing_vendor = {'uuid': 'sample_uuid'}
-#     mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor)
-#     imp.excel_reader(test_insert, 'Vendor', False, connection, False, dict_load, dict_rep, dict_set, True)
-#     args = imp.get_existing.call_args
-#     assert args[0][0] == post_json
-#     out = capsys.readouterr()[0]
-#     assert out.strip() == message
-
-
-# @pytest.mark.file_operation
-@pytest.mark.ftp
-def test_excel_reader_post_ftp_file_upload(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Ftp_file_test_md5.xls'
+def test_workbook_reader_post_ftp_file_upload(capsys, mocker, connection_mock, workbooks):
+    test_insert = 'Ftp_file_test_md5.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
     all_aliases = {}
-    message0_1 = "INFO: Attempting to download file from this url to your computer before upload "
-    message0_2 = "ftp://speedtest.tele2.net/1KB.zip"
-    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
+    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors\n"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock upload file and skip
     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+    # mock the ftp copy - this should get it's own tests
+    mocker.patch('wranglertools.import_data.ftp_copy', return_value=(True, {'md5sum': '0f343b0931126a20f133d67c2b018a3b'}, '1KB.zip'))
+    # mock file deletion
+    mocker.patch('wranglertools.import_data.pp.Path.unlink')
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'FileCalibration', True, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i.strip()]
     post_json_arg = args[0][0]
     assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-    assert message0_1 + message0_2 == outlist[0]
-    assert message1 == outlist[1]
+    assert message1 == out
 
 
-# @pytest.mark.file_operation
-@pytest.mark.ftp
-def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Ftp_file_test.xls'
+def test_workbook_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock, workbooks):
+    """ This appears to actually mainly be testing the ftp_copy function - confirming that
+        the correct error messages are generated when you try to copy an ftp file without
+        including an md5sum in the post and subsequently that the workbook_reader function
+        will still post the metadata without uploading a file
+    """
+    test_insert = 'Ftp_file_test.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
@@ -411,8 +410,8 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_moc
     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'FileCalibration', True, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'FileCalibration', True, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     out = capsys.readouterr()[0]
     outlist = [i.strip() for i in out.split('\n') if i.strip()]
     assert message0 == outlist[0]
@@ -421,14 +420,18 @@ def test_excel_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_moc
 
 
 @pytest.mark.file_operation
-def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Exp_HiC_insert.xls'
+def test_workbook_reader_update_new_file_fastq_post_and_file_upload(capsys, mocker, connection_mock, workbooks):
+    """ This appears to actually mainly be testing the md5 function - confirming that
+        the correct output is generated when and that the md5sum is as expected
+        and that the workbook_reader function posts the metadata with expected output
+    """
+    test_insert = 'File_fastq_upload.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
     all_aliases = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
-    message1 = "EXPERIMENTHIC(1)           :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
+    message1 = "FILEFASTQ(1)               :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
     # mock fetching existing info, return None
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
@@ -436,8 +439,8 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'ExperimentHiC', True, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'FileFastq', True, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
     outlist = [i.strip() for i in out.split('\n') if i is not ""]
@@ -450,14 +453,18 @@ def test_excel_reader_update_new_experiment_post_and_file_upload(capsys, mocker,
 # a weird test that has filename in an experiment
 # needs to change
 @pytest.mark.file_operation
-def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Exp_HiC_insert.xls'
+def test_workbook_reader_patch_file_meta_and_file_upload(capsys, mocker, connection_mock, workbooks):
+    """ This appears to actually mainly be testing the md5 function - confirming that
+        the correct output is generated when and that the md5sum is as expected
+        and that the workbook_reader function patches the metadata with expected output
+    """
+    test_insert = 'File_fastq_upload.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
     all_aliases = {}
     message0 = "calculating md5 sum for file ./tests/data_files/example.fastq.gz"
-    message1 = "EXPERIMENTHIC(1)           :  0 posted / 0 not posted       1 patched / 0 not patched, 0 errors"
+    message1 = "FILEFASTQ(1)               :  0 posted / 0 not posted       1 patched / 0 not patched, 0 errors"
     existing_exp = {'uuid': 'sample_uuid', 'status': "uploading"}
     e = {'status': 'success',
          '@graph': [{'uuid': 'some_uuid',
@@ -472,8 +479,8 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e)
     # mock get upload creds
     mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds")
-    imp.excel_reader(test_insert, 'ExperimentHiC', False, connection_mock, True,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'FileFastq', False, connection_mock, True,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     # check for md5sum
     args = imp.ff_utils.patch_metadata.call_args
     post_json_arg = args[0][0]
@@ -489,9 +496,8 @@ def test_excel_reader_patch_experiment_post_and_file_upload(capsys, mocker, conn
     assert message1 == outlist[1]
 
 
-@pytest.mark.file_operation
-def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/File_fastq_insert.xls'
+def test_workbook_reader_update_new_filefastq_meta_post(capsys, mocker, connection_mock, workbooks):
+    test_insert = 'File_fastq_insert.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {}
@@ -506,8 +512,8 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection_mock)
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'FileFastq', True, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'FileFastq', True, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
     print([i for i in args])
@@ -515,9 +521,8 @@ def test_excel_reader_update_new_filefastq_post(capsys, mocker, connection_mock)
     assert args[0][0] == final_post
 
 
-@pytest.mark.file_operation
-def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Exp_Set_Replicate_insert.xls'
+def test_workbook_reader_update_new_replicate_set_post(capsys, mocker, connection_mock, workbooks):
+    test_insert = 'Exp_Set_Replicate_insert.xlsx'
     dict_load = {}
     dict_rep = {'sample_repset': [{'replicate_exp': 'awesome_uuid', 'bio_rep_no': 1.0, 'tec_rep_no': 1.0}]}
     dict_set = {}
@@ -531,17 +536,16 @@ def test_excel_reader_update_new_replicate_set_post(capsys, mocker, connection_m
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock upload file and skip
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'ExperimentSetReplicate', True, connection_mock,
-                     False, all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'ExperimentSetReplicate', True, connection_mock,
+                        False, all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
     assert message == out.strip()
     assert args[0][0] == final_post
 
 
-@pytest.mark.file_operation
-def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Exp_Set_insert.xls'
+def test_workbook_reader_update_new_experiment_set_post(capsys, mocker, connection_mock, workbooks):
+    test_insert = 'Exp_Set_insert.xlsx'
     dict_load = {}
     dict_rep = {}
     dict_set = {'sample_expset': ['awesome_uuid']}
@@ -554,17 +558,16 @@ def test_excel_reader_update_new_experiment_set_post(capsys, mocker, connection_
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock upload file and skip
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.excel_reader(test_insert, 'ExperimentSet', True, connection_mock, False,
-                     all_aliases, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'ExperimentSet', True, connection_mock, False,
+                        all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
     assert message == out.strip()
     assert args[0][0] == final_post
 
 
-@pytest.mark.file_operation
-def test_user_workflow_reader_wfr_post(capsys, mocker, connection_mock):
-    test_insert = './tests/data_files/Pseudo_wfr_insert.xls'
+def test_user_workflow_reader_wfr_post(capsys, mocker, connection_mock, workbooks):
+    test_insert = 'Pseudo_wfr_insert.xlsx'
     sheet_name = 'user_workflow_1'
 
     message = "USER_WORKFLOW_1(1)         :  1 posted / 0 not posted       - patched / - not patched, 0 errors"
@@ -618,7 +621,7 @@ def test_user_workflow_reader_wfr_post(capsys, mocker, connection_mock):
          'object_key': '4DNFIGOJW3XZ.pairs.gz', 'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71'}
     ])
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.user_workflow_reader(test_insert, sheet_name, connection_mock)
+    imp.user_workflow_reader(workbooks.get(test_insert), sheet_name, connection_mock)
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
     print([i for i in args])
@@ -668,10 +671,12 @@ def test_verify_and_return_item_bad_item(mocker, connection_mock):
 
 @pytest.mark.file_operation
 def test_cabin_cross_check_dryrun(mocker, connection_mock, capsys):
+    """ checks that the filename passed in is a file and otherwise treats as normal dryrun
+    """
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
-    imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/Exp_Set_insert.xls', False, None, None)
+    imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/workbooks/Exp_Set_insert.xlsx', False, None, None)
     out = capsys.readouterr()[0]
     message = '''
 Running on:       https://data.4dnucleome.org/
@@ -708,7 +713,6 @@ The validation will only check for schema rules, but not for object relations
     assert out.strip() == message.strip()
 
 
-@pytest.mark.skip  # invalid mock use, needs refactor
 def test_cabin_cross_check_not_remote_w_lab_award_options(mocker, connection_mock, capsys):
     mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch.object(connection_mock, 'prompt_for_lab_award', return_value='blah')
@@ -866,19 +870,12 @@ def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection
         connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
         imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '/labs/bing-ren-lab/', '/awards/non-ren-lab-award/')
 
-# with pytest.raises(SystemExit):
-# Disabled - public account is not compatible with the connection object at the moment
-# # TODO: use mastertest tests for this purpose
-# def test_get_collections(connection_public):
-#     all_cols = imp.get_collections(connection_public)
-#     assert len(all_cols) > 10
 
-
-def test_get_all_aliases():
-    wb = "./tests/data_files/Exp_Set_insert.xls"
+def test_get_all_aliases(workbooks):
+    wbname = "Exp_Set_insert.xlsx"
     sheet = ["ExperimentSet"]
     my_aliases = {'sample_expset': 'ExperimentSet'}
-    all_aliases = imp.get_all_aliases(wb, sheet)
+    all_aliases = imp.get_all_aliases(workbooks.get(wbname), sheet)
     assert my_aliases == all_aliases
 
 
@@ -1159,10 +1156,11 @@ def test_file_pair_chk_sheets_w_no_aliases_col_skipped():
 
 
 @pytest.mark.file_operation
-def test_file_pair_chk_multiple_aliases():
+def test_file_pair_chk_multiple_aliases(workbooks):
     """This file contains multiple aliases and various ways to link the paired files
     If the check is running properly, should not see any errors."""
-    fastq_rows = imp.reader('./tests/data_files/FileFastq_pairing.xlsx', sheetname='FileFastq')
+    wbname = 'FileFastq_pairing.xlsx'
+    fastq_rows = imp.reader(workbooks.get(wbname), sheetname='FileFastq')
     pair_errs = imp.check_file_pairing(fastq_rows)
     assert not pair_errs
 

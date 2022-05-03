@@ -1,7 +1,9 @@
 import wranglertools.get_field_info as gfi
 import pytest
 from operator import itemgetter
-import xlrd3
+import openpyxl
+from pathlib import Path
+import os
 
 # test data is in conftest.py
 
@@ -344,85 +346,100 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
 
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
-    return_list = []
-    wb = xlrd3.open_workbook(xls_file)
-    read_sheet = wb.sheet_by_name(sheet)
-    cols = read_sheet.ncols
-    rows = read_sheet.nrows
-    for row_idx in range(rows):
-        row_val = []
-        for col_idx in range(cols):
-            cell_value = str(read_sheet.cell(row_idx, col_idx))
-
-            row_val.append(cell_value)
-        return_list.append(row_val)
-    return return_list.sort(key=itemgetter(1))
+    wb = openpyxl.load_workbook(xls_file)
+    return sorted([value for row in wb[sheet].values for value in row if value])
 
 
 def xls_field_order(xls_file, sheet):
-    # returns list of fields (in order) in an excel sheet
-    wb = xlrd3.open_workbook(xls_file).sheet_by_name(sheet)
-    return [str(wb.cell_value(0, col)) for col in range(1, wb.ncols)]
+    ''' returns the list of fields in the order they appear in an excel sheet
+        removes the commented out first col header
+    '''
+    wb = openpyxl.load_workbook(xls_file)
+    return list(next(wb[sheet].values))[1:]
 
 
 @pytest.mark.file_operation
-def test_create_xls_vendor(connection_mock, mocker, returned_vendor_schema):
-    xls_file = "./tests/data_files/GFI_test_vendor.xls"
-    xls_ref_file = "./tests/data_files/GFI_test_vendor_reference.xls"
-    import os
+def test_create_xlsx_default_options(connection_mock, mocker, returned_bcc_schema):
+    """ creates a workbook with one BiosampleCellCulture sheet with default options for populating rows
+        schema used is a fixture with a trimmed version that cotains properties to test various permutations
+    """
+    EXPECTED = [
+        '#Additional Info:', '#Description:', '#Field Name:', '#Field Type:', '*culture_start_date',
+        '-', '-', '-', '-', '-', '-',
+        'A short description of the cell culture procedure - eg. Details on culturing a preparation of K562 cells',
+        "Choices:['Yes', 'No']", "Choices:['cardiac muscle myoblast', 'cardiac muscle cell']", "Choices:['non synchronized', 'G1']",
+        'If a culture is synchronized the cell cycle stage from which the biosample used in an experiment is prepared',
+        'Item:OntologyTerm', 'Protocols including additional culture manipulations such as stem cell differentiation or cell cycle synchronization.',
+        'Relevant for pluripotent and stem cell lines - set to Yes if cells have undergone in vitro differentiation',
+        'The resulting tissue or cell type for cells that have undergone differentiation.',
+        'Total number of culturing days since receiving original vial', 'YYYY-MM-DD format date for most recently thawed cell culture.',
+        'array of Item:Protocol', 'culture_duration', 'culture_harvest_date', 'description', 'in_vitro_differentiated',
+        'integer', 'number', 'passage_number', 'protocols_additional', 'string', 'string', 'string', 'string', 'string',
+        'synchronization_stage', 'tissue'
+    ]
+    xls_file = "./tests/data_files/workbooks/GFI_test_bcc_sheet.xlsx"
+    try:
+        os.remove(xls_file)  # file should be created by the test
+    except OSError:
+        pass
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_bcc_schema.json())
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'])
+    gfi.create_excel(field_dict, xls_file)
+    assert Path(xls_file).is_file()
+    assert xls_to_list(xls_file, "BiosampleCellCulture") == EXPECTED
+    try:
+        os.remove(xls_file)
+    except OSError as e:
+        assert False
+        print("Cleanup needed! {}".format(e))
+
+
+@pytest.mark.file_operation
+def test_create_xlsx_non_defaults(connection_mock, mocker, returned_bcc_schema):
+    xls_file = "./tests/data_files/workbooks/GFI_test_bcc_sheet.xlsx"
+    EXPECTED = [
+        '#Additional Info:', '#Description:', '#Field Name:', '#Field Type:',
+        '*culture_start_date', '-', '-', '-', '-', '-', '-', '-', '-',
+        'Date can be submitted in as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD',
+        'Item:OntologyTerm', 'array of Item:Protocol', 'culture_duration',
+        'culture_harvest_date', 'description', 'in_vitro_differentiated', 'integer',
+        'number', 'passage_number', 'protocols_additional', 'string',
+        'string', 'string', 'string', 'string', 'synchronization_stage', 'tissue'
+    ]
     try:
         os.remove(xls_file)
     except OSError:
         pass
-    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema.json())
-    field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
-    gfi.create_xls(field_dict, xls_file)
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_bcc_schema.json())
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'], no_description=True, include_comments=True, no_enums=True)
+    gfi.create_excel(field_dict, xls_file)
     assert os.path.isfile(xls_file)
-    assert xls_to_list(xls_file, "Vendor") == xls_to_list(xls_ref_file, "Vendor")
+    assert xls_to_list(xls_file, "BiosampleCellCulture") == EXPECTED
     try:
         os.remove(xls_file)
-    except OSError:
-        pass
+    except OSError as e:
+        assert False
+        print("Cleanup needed! {}".format(e))
 
 
 @pytest.mark.file_operation
 def test_create_xls_lookup_order(connection_mock, mocker, returned_vendor_schema_l):
-    xls_file = "./tests/data_files/GFI_test_vendor_lookup.xls"
+    xls_file = "./tests/data_files/workbooks/GFI_test_vendor_lookup.xlsx"
     ref_list = ['aliases', '*title', 'description', 'contributing_labs', 'tags', 'url']
-    import os
     try:
         os.remove(xls_file)
     except OSError:
         pass
     mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_vendor_schema_l.json())
     field_dict = gfi.get_uploadable_fields(connection_mock, ['Vendor'])
-    gfi.create_xls(field_dict, xls_file)
-    assert os.path.isfile(xls_file)
+    gfi.create_excel(field_dict, xls_file)
+    assert Path(xls_file).is_file()
     assert xls_field_order(xls_file, "Vendor") == ref_list
     try:
         os.remove(xls_file)
-    except OSError:
-        pass
-
-
-@pytest.mark.file_operation
-def test_create_xls_experiment_set(connection_mock, mocker, returned_experiment_set_schema):
-    xls_file = "./tests/data_files/GFI_test_Experiment_Set.xls"
-    xls_ref_file = "./tests/data_files/GFI_test_Experiment_Set_reference.xls"
-    import os
-    try:
-        os.remove(xls_file)
-    except OSError:
-        pass
-    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_experiment_set_schema.json())
-    field_dict = gfi.get_uploadable_fields(connection_mock, ['ExperimentSet'], True, True, True)
-    gfi.create_xls(field_dict, xls_file)
-    assert os.path.isfile(xls_file)
-    assert xls_to_list(xls_file, "ExperimentSet") == xls_to_list(xls_ref_file, "ExperimentSet")
-    try:
-        os.remove(xls_file)
-    except OSError:
-        pass
+    except OSError as e:
+        assert False
+        print("Cleanup needed! {}".format(e))
 
 
 def test_get_sheet_names(capfd):

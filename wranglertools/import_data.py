@@ -8,7 +8,9 @@ from wranglertools.get_field_info import (
     sheet_order, FDN_Key, FDN_Connection,
     create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
-import xlrd3 as xlrd
+import openpyxl
+import warnings  # to suppress openpxl warning about headers
+from openpyxl.utils.exceptions import InvalidFileException
 import datetime
 import sys
 import mimetypes
@@ -228,46 +230,86 @@ def attachment(path):
     return attach
 
 
-def reader(filename, sheetname=None):
+def digest_xlsx(filename):
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            book = openpyxl.load_workbook(filename)
+    except InvalidFileException as e:
+        if filename.endswith('.xls'):
+            print("WARNING - Old xls format not supported - please save your workbook as xlsx")
+        else:
+            print("ERROR - ", e)
+        sys.exit(1)
+    sheets = book.sheetnames
+    return book, sheets
+
+
+def reader(workbook, sheetname=None):
     """Read named sheet or first and only sheet from xlsx file."""
-    book = xlrd.open_workbook(filename)
     if sheetname is None:
-        sheet, = book.sheets()
+        sheet = workbook.worksheets[0]
     else:
         try:
-            sheet = book.sheet_by_name(sheetname)
-        except xlrd.XLRDError:
+            sheet = workbook[sheetname]
+        except Exception as e:
+            print(e)
             print(sheetname)
-            print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
+            print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
             return
-    datemode = sheet.book.date_mode
-    for index in range(sheet.nrows):
-        yield [cell_value(cell, datemode) for cell in sheet.row(index)]
+    # Generator that gets rows from excel sheet
+    # NB we have a lot of empty no formatting rows added (can we get rid of that)
+    # or do we need to be careful to check for the first totally emptyvalue row?
+    return row_generator(sheet)
 
 
-def cell_value(cell, datemode):
-    """Get cell value from excel."""
-    # This should be always returning text format if the excel is generated
-    # by the get_field_info command
-    ctype = cell.ctype
+def row_generator(sheet):
+    """Generator that gets rows from excel sheet
+    Note that this currently checks to see if a row is empty and if so stops
+    This is needed as plain text formatting of cells is recognized as data
+    """
+    for row in sheet.rows:
+        vals = [cell_value(cell) for cell in row]
+        if not any([v for v in vals]):
+            return
+        else:
+            yield vals
+
+
+def cell_value(cell):
+    """Get cell value from excel. [From Submit4DN]"""
+    ctype = cell.data_type
     value = cell.value
-    if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
-        raise ValueError(repr(cell), 'cell error')
-    elif ctype == xlrd.XL_CELL_BOOLEAN:
-        return str(value).upper().strip()
-    elif ctype == xlrd.XL_CELL_NUMBER:
-        if value.is_integer():
-            value = int(value)
-        return str(value).strip()
-    elif ctype == xlrd.XL_CELL_DATE:
-        value = xlrd.xldate_as_tuple(value, datemode)
-        if value[3:] == (0, 0, 0):
-            return datetime.date(*value[:3]).isoformat()
-        else:  # pragma: no cover
-            return datetime.datetime(*value).isoformat()
-    elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+    if ctype == openpyxl.cell.cell.TYPE_ERROR:  # pragma: no cover
+        raise ValueError('Cell %s contains a cell error' % str(cell.coordinate))
+    elif ctype == openpyxl.cell.cell.TYPE_BOOL:
+        boolstr = str(value).strip()
+        if boolstr == 'TRUE':
+            return True
+        elif boolstr == 'FALSE':
+            return False
+        else:
+            return value
+    elif ctype in (openpyxl.cell.cell.TYPE_NUMERIC, openpyxl.cell.cell.TYPE_NULL):
+        if isinstance(value, float):
+            if value.is_integer():
+                value = int(value)
+        if not value:
+            return ''
+        return value
+    elif isinstance(value, openpyxl.cell.cell.TIME_TYPES):
+        if isinstance(value, datetime.datetime):
+            if value.time() == datetime.time(0, 0, 0):
+                return value.date().isoformat()
+            else:  # pragma: no cover
+                return value.isoformat()
+        else:
+            return value.isoformat()
+    elif ctype in (openpyxl.cell.cell.TYPE_STRING, openpyxl.cell.cell.TYPE_INLINE):
         return value.strip()
-    raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
+    raise ValueError(
+        'Cell %s is not an acceptable cell type' % str(cell.coordinate)
+    )  # pragma: no cover
 
 
 def data_formatter(value, val_type, field=None):
@@ -283,6 +325,8 @@ def data_formatter(value, val_type, field=None):
         elif val_type in ["list", "array"]:
             data_list = value.strip("[\']").split(",")
             return [data.strip() for data in data_list]
+        elif val_type == 'boolean':
+            return value
         else:
             # default assumed to be string
             return str(value).strip()
@@ -328,15 +372,10 @@ def get_sub_field_number(field_name):
         return 0
 
 
-# @attr.s
-# class FieldInfo(object):
-#     name = attr.ib()
-#     field_type = attr.ib(default=u'')
-#     value = attr.ib(default=u'')
-
-
 def build_field(field, field_data, field_type):
-    if not field_data or not field:
+    if field_data is False:
+        pass
+    elif not field_data or not field:
         return None
     patch_field_name = get_field_name(field)
     if not field_type:
@@ -393,18 +432,18 @@ def get_existing(post_json, connection):
     temp = {}
     uuids = []
     for an_id in all_ids:
-            try:
-                temp = ff_utils.get_metadata(an_id, key=connection.key, add_on="frame=object")
-            except Exception as e:
-                exc = parse_exception(e)
-                # if the item does not exist get_metadata will raise an exceptions
-                # see if the exception message has 404, then continue, if not throw that exception
-                if exc['code'] == 404:
-                    temp = {}
-                else:
-                    raise e
-            if temp.get("uuid"):
-                uuids.append(temp.get("uuid"))
+        try:
+            temp = ff_utils.get_metadata(an_id, key=connection.key, add_on="frame=object")
+        except Exception as e:
+            exc = parse_exception(e)
+            # if the item does not exist get_metadata will raise an exceptions
+            # see if the exception message has 404, then continue, if not throw that exception
+            if exc['code'] == 404:
+                temp = {}
+            else:
+                raise e
+        if temp.get("uuid"):
+            uuids.append(temp.get("uuid"))
 
     # check if all existing identifiers point to the same object
     unique_uuids = list(set(uuids))
@@ -483,6 +522,7 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
     to_trim = 'array of embedded objects, '
     is_array = False
     msg = None
+    field_data = data_formatter(field_data, field_type)
     if field_type.startswith(to_trim):
         field_type = field_type.replace(to_trim, '')
     if 'array' in field_type:
@@ -494,6 +534,8 @@ def validate_field(field_data, field_type, aliases_by_type, connection):
     elif 'string' in field_type:
         strings = _convert_to_array(field_data, is_array)
         msg = validate_string(strings, aliases_by_type)
+    elif 'boolean' in field_type:
+        pass  # for now
     return msg
 
 
@@ -973,7 +1015,7 @@ def check_file_pairing(fastq_row):
         paired_end = row[pair_idx] if pair_idx else None
         saw_pair = False
         for i, fld in enumerate(row):
-            if fld.strip() == 'paired with':
+            if isinstance(fld, str) and fld.strip() == 'paired with':
                 if saw_pair:
                     err = 'single row with multiple paired_with values'
                     errors = _add_e_to_edict(aliases[0], err, errors)
@@ -1034,15 +1076,17 @@ def check_file_pairing(fastq_row):
     return _pairing_consistency_check(files, errors)
 
 
-def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
-                 dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate, attach_fields):
-    """takes an excel sheet and post or patched the data in."""
+def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_type,
+                    dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate, attach_fields):
+    """takes an openpyxl workbook object and posts, patches or does a dry run on the data depending
+    on the options passed in.
+    """
     # determine right from the top if dry run
     dryrun = not(update or patchall)
     all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
-    row = reader(datafile, sheetname=sheet)
+    row = reader(workbook, sheetname=sheet)
     skip_dryrun = False
     if sheet == "ExperimentMic_Path":
         skip_dryrun = True
@@ -1065,23 +1109,28 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
     if sheet == "FileFastq" and not novalidate:
         # check for consistent file pairing of fastqs in the sheet
-        pair_errs = check_file_pairing(reader(datafile, sheetname=sheet))
+        pair_errs = check_file_pairing(reader(workbook, sheetname=sheet))
         for f, err in sorted(pair_errs.items()):
             for e in err:
                 print('WARNING: ', f, '\t', e)
 
     # iterate over the rows
     for values in row:
-        # Delete trailing commas and spaces
-        values = [item.strip(', ') for item in values]
         # Rows that start with # are skipped
         if values[0].startswith("#"):
             continue
         # Get rid of the first empty cell
         values.pop(0)
         total += 1
+        clean_values = []
+        for item in values:
+            try:
+                # strip trailing commas and spaces if a str
+                clean_values.append(item.strip(', '))
+            except AttributeError:
+                clean_values.append(item)
         # build post_json and get existing if available
-        post_json = OrderedDict(zip(keys, values))
+        post_json = OrderedDict(zip(keys, clean_values))
         # Get existing data if available
         # existing_data = get_existing(post_json, connection)
 
@@ -1096,6 +1145,15 @@ def excel_reader(datafile, sheet, update, connection, patchall, aliases_by_type,
 
         # if we get this far continue to build the json
         post_json = build_patch_json(post_json, fields2types)
+
+        # # validate the row by fields and data_types
+        # if not novalidate:
+        #     row_errors = pre_validate_json(post_json, fields2types, aliases_by_type, connection)
+        #     if row_errors:
+        #         error += 1
+        #         pre_validate_errors.extend(row_errors)
+        #         invalid = True
+        #         continue
         filename_to_post = post_json.get('filename')
         post_json, existing_data, file_to_upload, extrafiles = populate_post_json(
             post_json, connection, sheet, attach_fields)
@@ -1307,9 +1365,9 @@ def build_tibanna_json(keys, types, values, connection):
     return template
 
 
-def user_workflow_reader(datafile, sheet, connection):
+def user_workflow_reader(workbook, sheet, connection):
     """takes the user workflow runsheet and ony post it to fourfront endpoint."""
-    row = reader(datafile, sheetname=sheet)
+    row = reader(workbook, sheetname=sheet)
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
     # remove title column
@@ -1591,12 +1649,14 @@ def main():  # pragma: no cover
     connection = FDN_Connection(key)
     cabin_cross_check(connection, args.patchall, args.update, args.infile,
                       args.remote, args.lab, args.award)
+    # support for xlsx only - adjust if allowing different
+    workbook, sheetnames = digest_xlsx(args.infile)
+
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
         names = args.type
     else:
-        book = xlrd.open_workbook(args.infile)
-        names = book.sheet_names()
+        names = sheetnames
     # get me a list of all the data_types in the system
     profiles = get_profiles(connection)
     supported_collections = get_collections(profiles)
@@ -1604,7 +1664,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-    aliases_by_type = get_all_aliases(args.infile, sorted_names)
+    aliases_by_type = get_all_aliases(workbook, sorted_names)
     # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
@@ -1614,14 +1674,14 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            excel_reader(args.infile, n, args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
+            workbook_reader(workbook, n, args.update, connection, args.patchall, aliases_by_type,
+                            dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower() == "experimentmic_path":
-            excel_reader(args.infile, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
-                         dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
+            workbook_reader(workbook, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
+                            dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower().startswith('user_workflow'):
             if args.update:
-                user_workflow_reader(args.infile, n, connection)
+                user_workflow_reader(workbook, n, connection)
             else:
                 print('user workflow sheets will only be processed with the --update argument')
         else:
@@ -1640,4 +1700,4 @@ def main():  # pragma: no cover
 
 
 if __name__ == '__main__':
-        main()
+    main()

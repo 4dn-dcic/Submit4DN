@@ -1,6 +1,8 @@
 # flake8: noqa
 import pytest
 from wranglertools.get_field_info import FDN_Key, FDN_Connection
+from pathlib import Path
+import openpyxl
 
 
 class MockedResponse(object):
@@ -366,6 +368,18 @@ def embed_properties():
 
 
 @pytest.fixture
+def workbooks():
+    workbooks = {}
+    WORKBOOK_DIR = './tests/data_files/workbooks/'
+    filenames = Path(WORKBOOK_DIR).glob('*.xlsx')
+    for fn in filenames:
+        if fn.name.startswith('~'):
+            continue
+        workbooks[fn.name] = openpyxl.load_workbook(fn)
+    return workbooks
+
+
+@pytest.fixture
 def file_metadata():
     from collections import OrderedDict
     return OrderedDict([('aliases', 'dcic:HIC00test2'),
@@ -411,6 +425,15 @@ def file_metadata_type():
 @pytest.fixture
 def returned_award_schema():
     data = {"title":"Grant","id":"/profiles/award.json","$schema":"http://json-schema.org/draft-04/schema#","required":["name"],"identifyingProperties":["uuid","name","title"],"additionalProperties":False,"mixinProperties":[{"$ref":"mixins.json#/schema_version"},{"$ref":"mixins.json#/uuid"},{"$ref":"mixins.json#/submitted"},{"$ref":"mixins.json#/status"}],"type":"object","properties":{"status":{"readonly":True,"type":"string","default":"released","enum":["released","current","revoked","deleted","replaced","in review by lab","in review by project","released to project"],"title":"Status","permission":"import_items"},"submitted_by":{"readonly":True,"type":"string","serverDefault":"userid","linkTo":"User","comment":"Do not submit, value is assigned by the server. The user that created the object.","title":"Submitted by","rdfs:subPropertyOf":"dc:creator","permission":"import_items"},"date_created":{"readonly":True,"type":"string","serverDefault":"now","anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Do not submit, value is assigned by the server. The date the object is created.","title":"Date created","rdfs:subPropertyOf":"dc:created","permission":"import_items"},"uuid":{"requestMethod":"POST","readonly":True,"type":"string","serverDefault":"uuid4","format":"uuid","title":"UUID","permission":"import_items"},"schema_version":{"requestMethod":[],"type":"string","default":"1","pattern":"^\\d+(\\.\\d+)*$","comment":"Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.","title":"Schema Version"},"title":{"description":"The grant name from the NIH database, if applicable.","type":"string","title":"Name","rdfs:subPropertyOf":"dc:title"},"name":{"description":"The official grant number from the NIH database, if applicable","uniqueKey":True,"type":"string","title":"Number","pattern":"^[A-Za-z0-9\\-]+$"},"description":{"type":"string","title":"Description","rdfs:subPropertyOf":"dc:description"},"start_date":{"anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).","type":"string","title":"Start date"},"end_date":{"anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Date can be submitted as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD (TZD is the time zone designator; use Z to express time in UTC or for time expressed in local time add a time zone offset from UTC +HH:MM or -HH:MM).","type":"string","title":"End date"},"url":{"format":"uri","type":"string","@type":"@id","description":"An external resource with additional information about the grant.","title":"URL","rdfs:subPropertyOf":"rdfs:seeAlso"},"pi":{"description":"Principle Investigator of the grant.","comment":"See user.json for available identifiers.","type":"string","title":"P.I.","linkTo":"User"},"project":{"description":"The name of the consortium project","type":"string","title":"Project","enum":["4DN","External"]},"viewing_group":{"description":"The group that determines which set of data the user has permission to view.","type":"string","title":"View access group","enum":["4DN","Not 4DN"]},"@id":{"calculatedProperty":True,"type":"string","title":"ID"},"@type":{"calculatedProperty":True,"title":"Type","type":"array","items":{"type":"string"}}},"boost_values":{"name":1,"title":1,"pi.title":1},"@type":["JSONSchema"]}
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_bcc_schema():
+    """ trimmed schema with examples of various permutations of properties including descriptions, comments, enums, suggested enums
+        and also a calcprop and schema version that have import-item permission for testing sheet generation
+    """
+    data = {"title": "Cell culture details for biosample preparation","id": "/profiles/biosample_cell_culture.json","$schema": "http://json-schema.org/draft-04/schema#","type": "object","required": ["culture_start_date", "award", "lab"],"identifyingProperties": ["uuid", "aliases"],"additionalProperties": False,"mixinProperties": [{ "$ref": "mixins.json#/schema_version" },],"mixinFacets" : [{ "$ref": "mixins.json#/facets_common" }],"properties": {"description": {"title": "Description","description": "A short description of the cell culture procedure - eg. Details on culturing a preparation of K562 cells","type": "string","lookup": 20,"formInput": "textarea"},"culture_start_date": {"title": "Culture start date","description": "YYYY-MM-DD format date for most recently thawed cell culture.","comment": "Date can be submitted in as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSTZD","type": "string","lookup": 40,"anyOf": [{"format": "date-time"},{"format": "date"}]},"culture_harvest_date": {"title": "Culture harvest date","type": "string","lookup": 50,"anyOf": [{"format": "date-time"},{"format": "date"}]},"culture_duration":{"title":"Total Days in Culture","description":"Total number of culturing days since receiving original vial","type":"number","lookup": 60},"passage_number": {"title": "Passage Number","type": "integer","lookup": 70},"protocols_additional": {"title": "Additional Protocols used in Cell Culture","description": "Protocols including additional culture manipulations such as stem cell differentiation or cell cycle synchronization.","type": "array","lookup": 150,"items": {"title": "Culture Protocol","type": "string","linkTo": "Protocol"}},"in_vitro_differentiated": {"title": "Differentiated in vitro","description": "Relevant for pluripotent and stem cell lines - set to Yes if cells have undergone in vitro differentiation","type": "string","enum": ["Yes", "No"],"default": "No","lookup": 98},"tissue": {"title": "Differentiation Tissue/Cell Type","description": "The resulting tissue or cell type for cells that have undergone differentiation.","type": "string","linkTo": "OntologyTerm","lookup": 99,"suggested_enum": ["cardiac muscle myoblast","cardiac muscle cell"]},"synchronization_stage": {"title": "Synchronization Stage","description": "If a culture is synchronized the cell cycle stage from which the biosample used in an experiment is prepared","type": "string","lookup": 120,"suggested_enum": ["non synchronized","G1",],"ignored_enum": ["3h after mitotic shakeoff"]},"@type":{"calculatedProperty":True,"title":"Type","type":"array","items":{"type":"string"}}, "schema_version":{"requestMethod":[],"type":"string","default":"1","pattern":"^\\d+(\\.\\d+)*$","title":"Schema Version", "permission":"import_items"}}}
     return MockedResponse(data, 200)
 
 

@@ -1,7 +1,0 @@
-{
-  "default": {
-    "key": "ABCDEFG",
-    "secret": "ABCD1234567",
-    "server": "http://4dn-web-dev.us-east-1.elasticbeanstalk.com/"
-  }
-}

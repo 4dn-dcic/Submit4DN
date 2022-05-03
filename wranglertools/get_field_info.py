@@ -4,13 +4,13 @@ import pathlib as pp
 import argparse
 from dcicutils import ff_utils
 import attr
-import xlwt
+import openpyxl
 import sys
 import json
 
 
 EPILOG = '''
-    To create an xls file with sheets to be filled use the example and modify to your needs.
+    To create an excel workbook file with sheets to be filled use the examples below and modify to your needs.
     It will accept the following optional parameters.
         --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
         --key            the name of the key identifier for the access key and secret in your keys file (default=default)
@@ -18,7 +18,7 @@ EPILOG = '''
         --nodesc         do not add the descriptions in the second line (by default they are added)
         --noenums        do not add the list of options for a field if they are specified (by default they are added)
         --comments       adds any (usually internal) comments together with enums (by default False)
-        --outfile        change the default file name "fields.xls" to a specified one
+        --outfile        change the default file name "fields.xlsx" to a specified one
         --debug          to add more debugging output
         --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
 
@@ -37,8 +37,8 @@ EPILOG = '''
 
     To change the result filename use --outfile flag followed by the new file name
 
-            %(prog)s --type Biosample --outfile biosample_only.xls
-            %(prog)s --type Biosample --type Experiment --outfile my_selection.xls
+            %(prog)s --type Biosample --outfile biosample_only.xlsx
+            %(prog)s --type Biosample --type Experiment --outfile my_selection.xlsx
 
     '''
 
@@ -95,8 +95,8 @@ def getArgs():  # pragma: no cover
                         action='store_true',
                         help="Do not include enums (or suggestions) for fields.")
     parser.add_argument('--outfile',
-                        default='fields.xls',
-                        help="The name of the output file. Default is fields.xls")
+                        default='fields.xlsx',
+                        help="The name of the output file. Default is fields.xlsx")
     parser.add_argument('--noadmin',
                         default=False,
                         action='store_true',
@@ -151,7 +151,7 @@ class FDN_Connection(object):
             sys.exit(1)
         if me_page.get('submits_for') is not None:
             # get all the labs that the user making the connection submits_for
-            self.labs = [l['@id'] for l in me_page['submits_for']]
+            self.labs = [lp['@id'] for lp in me_page['submits_for']]
             # take the first one as default value for the connection - reset in
             # import_data if needed by calling set_lab_award
             self.lab = self.labs[0]
@@ -390,33 +390,31 @@ def get_uploadable_fields(connection, types, no_description=False,
     return fields
 
 
-def create_xls(all_fields, filename):
+def create_excel(all_fields, filename):
     '''
-    fields being a dictionary of sheet -> FieldInfo(objects)
-    create one sheet per dictionary item, with three columns of fields
-    for fieldname, description and enum
+    all_fields being a dictionary of sheet/Item names -> list of FieldInfo(objects)
+    create one sheet per dictionary item, that inserts 4 commented header rows for each column
+    that corresponds to one of the FieldInfo objects in the list
+    header rows are for fieldname, fieldtype, description and comments/enums
     '''
-    wb = xlwt.Workbook()
-    # text styling for all columns
-    style = xlwt.XFStyle()
-    style.num_format_str = "@"
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)  # removes the by default created empty sheet named Sheet
     # order sheets
     sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
-        ws = wb.add_sheet(obj_name)
-        ws.write(0, 0, "#Field Name:")
-        ws.write(1, 0, "#Field Type:")
-        ws.write(2, 0, "#Description:")
-        ws.write(3, 0, "#Additional Info:")
-        # add empty formatting for first column
-        for i in range(100):
-            ws.write(4+i, 0, '', style)
+        ws = wb.create_sheet(title=obj_name)
+        ws.cell(row=1, column=1, value="#Field Name:")
+        ws.cell(row=2, column=1, value="#Field Type:")
+        ws.cell(row=3, column=1, value="#Description:")
+        ws.cell(row=4, column=1, value="#Additional Info:")
         # order fields in sheet based on lookup numbers, then alphabetically
         for col, field in enumerate(sorted(sorted(fields), key=lambda x: x.lookup)):
-            ws.write(0, col+1, str(field.name), style)
-            ws.write(1, col+1, str(field.ftype), style)
+            ws.cell(row=1, column=col+2, value=str(field.name))
+            ws.cell(row=2, column=col+2, value=str(field.ftype))
+            description = ''
             if field.desc:
-                ws.write(2, col+1, str(field.desc), style)
+                description = str(field.desc)
+            ws.cell(row=3, column=col+2, value=description)
             # combine comments and Enum
             add_info = ''
             if field.comm:
@@ -425,10 +423,7 @@ def create_xls(all_fields, filename):
                 add_info += "Choices:" + str(field.enum)
             if not field.comm and not field.enum:
                 add_info = "-"
-            ws.write(3, col+1, add_info, style)
-            # add empty formatting for all columns
-            for i in range(100):
-                ws.write(4+i, col+1, '', style)
+            ws.cell(row=4, column=col+2, value=add_info)
     wb.save(filename)
 
 
@@ -488,7 +483,7 @@ def main():  # pragma: no cover
 
     if args.outfile:
         file_name = args.outfile
-        create_xls(fields, file_name)
+        create_excel(fields, file_name)
 
 
 if __name__ == '__main__':
