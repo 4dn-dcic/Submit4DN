@@ -22,3 +22,16 @@ AllItems.xls
 Custom_scripts/
 Data_Files/MicroscopyCalibration/Files/
 .pytest_cache/
+
+# pycharm
+.idea/
+
+
+# virtual envs
+*env/
+.python-version
+.python-cmd
+
+# Emacs Backup
+*~
+
