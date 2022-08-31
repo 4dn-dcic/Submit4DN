@@ -7,7 +7,7 @@ Change Log
 ----------
 
 
-2.3.0
+3.0.0
 =======
 
 * Drop support for Python3.6
