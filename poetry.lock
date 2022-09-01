@@ -527,7 +527,7 @@ tests = ["nose (<1.3.0)", "coverage", "mock", "pastedeploy", "wsgiproxy2", "pyqu
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.0,<3.10"
-content-hash = "69d85c8d7f917630a9f3e5075f9033f7fe435283e361c45b917c5ca9bb6e2fc6"
+content-hash = "c851ac9587a6baefead93f0f4361e6e7b2df380344cf822228d6bb2fcb64b683"
 
 [metadata.files]
 attrs = [

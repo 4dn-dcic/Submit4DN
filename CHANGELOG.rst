@@ -14,7 +14,7 @@ Change Log
 
 * Add this CHANGELOG and test warning if it's not updated 
 
-* Update dependency to use dcicutils >-4.5
+* Update dependency to use dcicutils >-4.0
 
 2.2.0
 =====
