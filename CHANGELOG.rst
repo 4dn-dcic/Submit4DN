@@ -10,11 +10,13 @@ Change Log
 3.0.0
 =======
 
+`PR 159: Remove Python3.6 support <https://github.com/4dn-dcic/Submit4DN/pull/159>`_
+
 * Drop support for Python3.6
 
 * Add this CHANGELOG and test warning if it's not updated 
 
-* Update dependency to use dcicutils >-4.0
+* Update dependency to use dcicutils >=4.0
 
 2.2.0
 =====
