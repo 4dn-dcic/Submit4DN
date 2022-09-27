@@ -1556,3 +1556,6 @@ def test_get_collections(mock_profiles):
     colls = imp.get_collections(mock_profiles)
     for c in mock_profiles.keys():
         assert c.lower() in colls
+
+
+
