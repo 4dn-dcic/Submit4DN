@@ -590,7 +590,7 @@ def build_patch_json(fields, fields2types):
 
 
 def get_just_filename(path):
-    return path.split('/')[-1]
+    return pp.Path(path).name
 
 
 def check_extra_file_meta(ef_info, seen_formats, existing_formats):
@@ -1452,15 +1452,25 @@ def upload_file(creds, path):  # pragma: no cover
     print("Uploading file.")
     start = time.time()
     try:
-        subprocess.check_call(['aws', 's3', 'cp', '--only-show-errors', path, creds['upload_url']], env=env)
+        source = path
+        target = creds['upload_url']
+        print("Going to upload {} to {}.".format(source, target))
+        command = ['aws', 's3', 'cp']
+        command = command + ['--only-show-errors', source, target]
+        options = {}
+        if running_on_windows_native():
+            options = {"shell": True}
+        subprocess.check_call(command, env=env, **options)
     except subprocess.CalledProcessError as e:
-        # The aws command returns a non-zero exit code on error.
-        print("Upload failed with exit code %d" % e.returncode)
-        sys.exit(e.returncode)
+        raise RuntimeError("Upload failed with exit code %d" % e.returncode)
     else:
         end = time.time()
         duration = end - start
-        print("Uploaded in %.2f seconds" % duration)
+        show("Uploaded in %.2f seconds" % duration)
+
+
+def running_on_windows_native():
+    return os.name == 'nt'
 
 
 # the order to try to upload / update the items

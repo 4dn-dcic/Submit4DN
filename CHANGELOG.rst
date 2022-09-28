@@ -7,6 +7,11 @@ Change Log
 ----------
 
 
+3.0.1
+=====
+
+* Bug fix: Windows paths were not handled properly for File upload and keyfile handling.
+
 3.0.0
 =======
 
@@ -14,7 +19,7 @@ Change Log
 
 * Drop support for Python3.6
 
-* Add this CHANGELOG and test warning if it's not updated 
+* Add this CHANGELOG and test warning if it's not updated
 
 * Update dependency to use dcicutils >=4.0
 
@@ -212,4 +217,3 @@ Change Log
 
 0.2.2
 =====
-

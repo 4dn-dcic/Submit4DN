@@ -1,5 +1,6 @@
 import wranglertools.import_data as imp
 import pytest
+import pathlib as pp
 # test data is in conftest.py
 
 
@@ -1556,3 +1557,15 @@ def test_get_collections(mock_profiles):
     colls = imp.get_collections(mock_profiles)
     for c in mock_profiles.keys():
         assert c.lower() in colls
+
+
+def test_get_just_filename_posix():
+    test_path = pp.PurePosixPath('Users', 'username', 'test_dir', 'test_file.fastq.gz')
+    filename = imp.get_just_filename(test_path)
+    assert filename == 'test_file.fastq.gz'
+
+
+def test_get_just_filename_windows():
+    test_path = pp.PureWindowsPath('c:/', 'Users', 'username', 'test_dir', 'test_file.fastq.gz')
+    filename = imp.get_just_filename(test_path)
+    assert filename == 'test_file.fastq.gz'
