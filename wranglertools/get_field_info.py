@@ -61,8 +61,8 @@ def create_common_arg_parser():
                         help="The keypair identifier from the keyfile.  \
                         Default is --key=default")
     parser.add_argument('--keyfile',
-                        default=f"{home}/keypairs.json",
-                        help=f"The keypair file.  Default is --keyfile={home}/keypairs.json")
+                        default=home / 'keypairs.json',
+                        help=f"The keypair file.  Default is --keyfile={home / 'keypairs.json'}")
     parser.add_argument('--debug',
                         default=False,
                         action='store_true',
