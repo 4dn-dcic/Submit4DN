@@ -591,7 +591,6 @@ def build_patch_json(fields, fields2types):
 
 def get_just_filename(path):
     return pp.Path(path).name
-    # return path.split('/')[-1]
 
 
 def check_extra_file_meta(ef_info, seen_formats, existing_formats):
