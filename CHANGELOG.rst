@@ -10,7 +10,7 @@ Change Log
 3.0.1
 =====
 
-* Bug fix: Windows paths were not handled properly for File upload.
+* Bug fix: Windows paths were not handled properly for File upload and keyfile handling.
 
 3.0.0
 =======
