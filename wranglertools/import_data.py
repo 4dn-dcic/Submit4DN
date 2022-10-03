@@ -139,7 +139,8 @@ list_of_loadxl_fields = [
 ]
 
 
-def md5(path):
+def md5(path_string):
+    path = pp.path(path_string)
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
         for chunk in iter(lambda: f.read(1024*1024), b''):
@@ -1451,8 +1452,9 @@ def upload_file(creds, path):  # pragma: no cover
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
     start = time.time()
+    path_object = pp.Path(path)
     try:
-        source = path
+        source = path_object
         target = creds['upload_url']
         print("Going to upload {} to {}.".format(source, target))
         command = ['aws', 's3', 'cp']
