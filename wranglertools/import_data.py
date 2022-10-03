@@ -140,7 +140,7 @@ list_of_loadxl_fields = [
 
 
 def md5(path_string):
-    path = pp.path(path_string)
+    path = pp.Path(path_string)
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
         for chunk in iter(lambda: f.read(1024*1024), b''):
