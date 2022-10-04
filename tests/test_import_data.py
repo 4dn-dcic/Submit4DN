@@ -54,6 +54,18 @@ def test_attachment_wrong_path():
     assert "ERROR : The 'attachment' field has INVALID FILE PATH or URL" in str(e.value)
 
 
+@pytest.mark.file_operation
+def test_attachment_expanduser_path():
+    valid_path = pp.Path("./tests/data_files/test.pdf")
+    absolute_path = valid_path.resolve()
+    home = absolute_path.home()
+    string_path_with_tilde = str(absolute_path).replace(str(home), '~')
+    attach = imp.attachment(string_path_with_tilde)
+    assert attach['download'] == 'test.pdf'
+    assert attach['type'] == 'application/pdf'
+    assert attach['href'].startswith('data:application/pdf;base64')
+
+
 @pytest.mark.webtest
 def test_attachment_url():
     attach = imp.attachment("http://example.com/index.html")
