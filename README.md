@@ -26,7 +26,7 @@ This package is not supported on older Python versions and is supported and test
 
 It is recommended to install this package in a virtual environment to avoid dependency clashes.
 
-Problems have been reported on recent MacOS X versions having to do with the inablity to find `libmagic`,
+Problems have been reported on recent MacOS X and Windows versions having to do with the inablity to find `libmagic`,
 a C library to check file types that is used by the `python-magic` library.
 
 eg. `ImportError: failed to find libmagic.  Check your installation`

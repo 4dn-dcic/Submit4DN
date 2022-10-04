@@ -6,6 +6,19 @@ Submit4DN
 Change Log
 ----------
 
+3.1.0
+=====
+
+`PR 160 <https://github.com/4dn-dcic/Submit4DN/pull/160>`_
+
+* Added documentation regarding how to install Submit4DN on Windows machines in
+  a virtual environment. There is a bug in ``awscli`` or in ``pyenv-win``, which
+  requires to adjust the installation instructions for this use case (see
+  troubleshooting in ``README.md`` for details).
+
+* Added support for ``~`` in paths for file and attachment upload.
+
+* Bug fix: a ``show`` command was giving intermittent errors.
 
 3.0.1
 =====

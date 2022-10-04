@@ -1527,7 +1527,7 @@ def _verify_and_return_item(item, connection):
 def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, award=None):
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
-    # check input file (xls)
+    # check input file (xlsx)
     if not pp.Path(infile).is_file():
         print(f"File {infile} not found!")
         sys.exit(1)
