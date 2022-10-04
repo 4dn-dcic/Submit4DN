@@ -176,7 +176,8 @@ def attachment(path):
         'image/tiff',
     )
     ftp_attach = False
-    if not pp.Path(path).is_file():
+    path = pp.Path(path).expanduser()
+    if not path.is_file():
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
             print("\nINFO: Attempting to download file from this url %s" % path)
@@ -209,7 +210,7 @@ def attachment(path):
                 raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
     attach = {}
-    filename = pp.PurePath(path).name
+    filename = path.name
     guessed_mime = mimetypes.guess_type(path)[0]
     detected_mime = magic.from_file(path, mime=True)
     # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
