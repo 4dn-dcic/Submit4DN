@@ -176,7 +176,8 @@ def attachment(path):
         'image/tiff',
     )
     ftp_attach = False
-    path = str(pp.Path(path).expanduser())
+    if path.startswith('~'):
+        path = str(pp.Path(path).expanduser())
     if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
