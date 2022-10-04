@@ -18,9 +18,18 @@ def test_attachment_ftp_to_nowhere():
     assert "urlopen error" in str(e.value)
 
 
+def convert_to_path_with_tilde(string_path):
+    path = pp.Path(string_path)
+    absolute_path = path.resolve()
+    home = absolute_path.home()
+    string_path_with_tilde = str(absolute_path).replace(str(home), '~')
+    return string_path_with_tilde
+
+
 @pytest.mark.file_operation
 def test_md5():
-    md5_keypairs = imp.md5('./tests/data_files/keypairs.json')
+    path = convert_to_path_with_tilde('./tests/data_files/keypairs.json')
+    md5_keypairs = imp.md5(path)
     assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
 
 
@@ -41,6 +50,15 @@ def test_attachment_pdf():
 
 
 @pytest.mark.file_operation
+def test_attachment_expanduser_path():
+    path = convert_to_path_with_tilde("./tests/data_files/test.pdf")
+    attach = imp.attachment(path)
+    assert attach['download'] == 'test.pdf'
+    assert attach['type'] == 'application/pdf'
+    assert attach['href'].startswith('data:application/pdf;base64')
+
+
+@pytest.mark.file_operation
 def test_attachment_image_wrong_extension():
     with pytest.raises(ValueError) as excinfo:
         imp.attachment("./tests/data_files/test_jpeg.tiff")
@@ -52,18 +70,6 @@ def test_attachment_wrong_path():
     with pytest.raises(Exception) as e:
         imp.attachment("./tests/data_files/dontexisit.txt")
     assert "ERROR : The 'attachment' field has INVALID FILE PATH or URL" in str(e.value)
-
-
-@pytest.mark.file_operation
-def test_attachment_expanduser_path():
-    valid_path = pp.Path("./tests/data_files/test.pdf")
-    absolute_path = valid_path.resolve()
-    home = absolute_path.home()
-    string_path_with_tilde = str(absolute_path).replace(str(home), '~')
-    attach = imp.attachment(string_path_with_tilde)
-    assert attach['download'] == 'test.pdf'
-    assert attach['type'] == 'application/pdf'
-    assert attach['href'].startswith('data:application/pdf;base64')
 
 
 @pytest.mark.webtest
