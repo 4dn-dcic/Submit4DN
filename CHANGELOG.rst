@@ -9,7 +9,7 @@ Change Log
 3.1.0
 =====
 
-`PR 160 <https://github.com/4dn-dcic/Submit4DN/pull/160>`_
+`PR 161 <https://github.com/4dn-dcic/Submit4DN/pull/161>`_
 
 * Added documentation regarding how to install Submit4DN on Windows machines in
   a virtual environment. There is a bug in ``awscli`` or in ``pyenv-win``, which
