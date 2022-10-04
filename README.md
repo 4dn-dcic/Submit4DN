@@ -52,6 +52,33 @@ brew install libmagic
 brew link libmagic  (if the link is already created is going to fail, don't worry about that)
 ```
 
+Additionally, problems have been reported on Windows when installing Submit4DN
+inside a virtual environment, due to `aws` trying to use the global python instead
+of the python inside the virtual environment.
+
+The workaround, then, because it’s actually OK if `aws` doesn’t use the python
+inside the virtual environment, is to just install `awscli` in the global
+environment before entering the virtual environment. Or if you discover the
+problem after you’re in, then go outside, install `awscli`, and re-enter the
+virtual environment.
+
+```
+deactivate
+pip install awscli
+venv\scripts\activate
+aws --version  # this is to test that awscli is now installed correctly
+```
+
+Alternatively, it works also to modify `aws.cmd`. Run:
+
+```
+notepad venv\scripts\aws.cmd
+```
+
+and change the for loop in the first couple of lines where it loops over
+`cmd bat exe` to have it loop over `exe bat cmd` instead, so that it finds
+`python.exe` before it finds `python.cmd`.
+
 ## Connecting to the Data Portal
 To be able to use the provided tools, you need to generate an AccessKey on the [data portal](https://data.4dnucleome.org/).
 If you do not yet have access, please contact [4DN Data Wranglers](mailto:support@4dnucleome.org)
