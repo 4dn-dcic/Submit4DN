@@ -1468,7 +1468,7 @@ def upload_file(creds, path):  # pragma: no cover
     else:
         end = time.time()
         duration = end - start
-        show("Uploaded in %.2f seconds" % duration)
+        print("Uploaded in %.2f seconds" % duration)
 
 
 def running_on_windows_native():
