@@ -19,6 +19,8 @@ def test_attachment_ftp_to_nowhere():
 
 
 def convert_to_path_with_tilde(string_path):
+    '''Helper function that introduces ~ in a valid path,
+       somehow the inverse of pathlib.Path.expanduser()'''
     path = pp.Path(string_path)
     absolute_path = path.resolve()
     home = absolute_path.home()
