@@ -65,19 +65,10 @@ virtual environment.
 ```
 deactivate
 pip install awscli
-venv\scripts\activate
+<venv_name>\scripts\activate  # replace virtual environment name
 aws --version  # this is to test that awscli is now installed correctly
 ```
 
-Alternatively, it works also to modify `aws.cmd`. Run:
-
-```
-notepad venv\scripts\aws.cmd
-```
-
-and change the for loop in the first couple of lines where it loops over
-`cmd bat exe` to have it loop over `exe bat cmd` instead, so that it finds
-`python.exe` before it finds `python.cmd`.
 
 ## Connecting to the Data Portal
 To be able to use the provided tools, you need to generate an AccessKey on the [data portal](https://data.4dnucleome.org/).
