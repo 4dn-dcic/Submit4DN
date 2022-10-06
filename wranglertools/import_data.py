@@ -139,7 +139,8 @@ list_of_loadxl_fields = [
 ]
 
 
-def md5(path):
+def md5(path_string):
+    path = pp.Path(path_string).expanduser()
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
         for chunk in iter(lambda: f.read(1024*1024), b''):
@@ -175,6 +176,8 @@ def attachment(path):
         'image/tiff',
     )
     ftp_attach = False
+    if path.startswith('~'):
+        path = str(pp.Path(path).expanduser())
     if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
@@ -211,7 +214,7 @@ def attachment(path):
     filename = pp.PurePath(path).name
     guessed_mime = mimetypes.guess_type(path)[0]
     detected_mime = magic.from_file(path, mime=True)
-    # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
+    # NOTE: this whole guessing and detecting bit falls apart for zip files which seems a bit dodgy
     # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
     # basically relying on extension with a little verification by magic for most file types
     if guessed_mime not in ALLOWED_MIMES:
@@ -1451,8 +1454,9 @@ def upload_file(creds, path):  # pragma: no cover
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
     start = time.time()
+    path_object = pp.Path(path).expanduser()
     try:
-        source = path
+        source = path_object
         target = creds['upload_url']
         print("Going to upload {} to {}.".format(source, target))
         command = ['aws', 's3', 'cp']
@@ -1466,7 +1470,7 @@ def upload_file(creds, path):  # pragma: no cover
     else:
         end = time.time()
         duration = end - start
-        show("Uploaded in %.2f seconds" % duration)
+        print("Uploaded in %.2f seconds" % duration)
 
 
 def running_on_windows_native():
@@ -1524,7 +1528,7 @@ def _verify_and_return_item(item, connection):
 def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, award=None):
     """Set of check for connection, file, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
-    # check input file (xls)
+    # check input file (xlsx)
     if not pp.Path(infile).is_file():
         print(f"File {infile} not found!")
         sys.exit(1)

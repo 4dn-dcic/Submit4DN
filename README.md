@@ -26,7 +26,7 @@ This package is not supported on older Python versions and is supported and test
 
 It is recommended to install this package in a virtual environment to avoid dependency clashes.
 
-Problems have been reported on recent MacOS X versions having to do with the inablity to find `libmagic`,
+Problems have been reported on recent MacOS X and Windows versions having to do with the inablity to find `libmagic`,
 a C library to check file types that is used by the `python-magic` library.
 
 eg. `ImportError: failed to find libmagic.  Check your installation`
@@ -51,6 +51,24 @@ Others have had success using homebrew to install `libmagic`:
 brew install libmagic
 brew link libmagic  (if the link is already created is going to fail, don't worry about that)
 ```
+
+Additionally, problems have been reported on Windows when installing Submit4DN
+inside a virtual environment, due to `aws` trying to use the global python instead
+of the python inside the virtual environment.
+
+The workaround, then, because it’s actually OK if `aws` doesn’t use the python
+inside the virtual environment, is to just install `awscli` in the global
+environment before entering the virtual environment. Or if you discover the
+problem after you’re in, then go outside, install `awscli`, and re-enter the
+virtual environment.
+
+```
+deactivate
+pip install awscli
+VENV\scripts\activate  # replace VENV with your virtual environment name
+aws --version  # this is to test that awscli is now installed correctly
+```
+
 
 ## Connecting to the Data Portal
 To be able to use the provided tools, you need to generate an AccessKey on the [data portal](https://data.4dnucleome.org/).
