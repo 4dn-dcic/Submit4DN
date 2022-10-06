@@ -65,7 +65,7 @@ virtual environment.
 ```
 deactivate
 pip install awscli
-<venv_name>\scripts\activate  # replace virtual environment name
+VENV\scripts\activate  # replace VENV with your virtual environment name
 aws --version  # this is to test that awscli is now installed correctly
 ```
 
