@@ -1,5 +1,6 @@
 import wranglertools.import_data as imp
 import pytest
+import pathlib as pp
 # test data is in conftest.py
 
 
@@ -17,9 +18,20 @@ def test_attachment_ftp_to_nowhere():
     assert "urlopen error" in str(e.value)
 
 
+def convert_to_path_with_tilde(string_path):
+    """Somehow the inverse of pathlib.Path.expanduser(). Helper function used
+    to generate valid paths containing ~ """
+    path = pp.Path(string_path)
+    absolute_path = path.resolve()
+    home = absolute_path.home()
+    string_path_with_tilde = str(absolute_path).replace(str(home), '~')
+    return string_path_with_tilde
+
+
 @pytest.mark.file_operation
 def test_md5():
-    md5_keypairs = imp.md5('./tests/data_files/keypairs.json')
+    path = convert_to_path_with_tilde('./tests/data_files/keypairs.json')
+    md5_keypairs = imp.md5(path)
     assert md5_keypairs == "19d43267b642fe1868e3c136a2ee06f2"
 
 
@@ -34,6 +46,15 @@ def test_attachment_image():
 @pytest.mark.file_operation
 def test_attachment_pdf():
     attach = imp.attachment("./tests/data_files/test.pdf")
+    assert attach['download'] == 'test.pdf'
+    assert attach['type'] == 'application/pdf'
+    assert attach['href'].startswith('data:application/pdf;base64')
+
+
+@pytest.mark.file_operation
+def test_attachment_expanduser_path():
+    path = convert_to_path_with_tilde("./tests/data_files/test.pdf")
+    attach = imp.attachment(path)
     assert attach['download'] == 'test.pdf'
     assert attach['type'] == 'application/pdf'
     assert attach['href'].startswith('data:application/pdf;base64')
@@ -1556,3 +1577,15 @@ def test_get_collections(mock_profiles):
     colls = imp.get_collections(mock_profiles)
     for c in mock_profiles.keys():
         assert c.lower() in colls
+
+
+def test_get_just_filename_posix():
+    test_path = pp.PurePosixPath('Users', 'username', 'test_dir', 'test_file.fastq.gz')
+    filename = imp.get_just_filename(test_path)
+    assert filename == 'test_file.fastq.gz'
+
+
+def test_get_just_filename_windows():
+    test_path = pp.PureWindowsPath('c:/', 'Users', 'username', 'test_dir', 'test_file.fastq.gz')
+    filename = imp.get_just_filename(test_path)
+    assert filename == 'test_file.fastq.gz'

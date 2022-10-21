@@ -9,12 +9,9 @@ from wranglertools.get_field_info import (
     create_common_arg_parser, _remove_all_from_types)
 from dcicutils import ff_utils
 import openpyxl
-<<<<<<< HEAD
 import gspread
-=======
 import warnings  # to suppress openpxl warning about headers
 from openpyxl.utils.exceptions import InvalidFileException
->>>>>>> master
 import datetime
 import sys
 import mimetypes
@@ -164,7 +161,8 @@ ALLOWED_MIMES = (
 G_API_CLIENT_ID = '258037973854-vgk9qvfsnps2gaca354bmrk80mmtf3do.apps.googleusercontent.com'
 
 
-def md5(path):
+def md5(path_string):
+    path = pp.Path(path_string).expanduser()
     md5sum = hashlib.md5()
     with open(path, 'rb') as f:
         for chunk in iter(lambda: f.read(1024*1024), b''):
@@ -201,6 +199,8 @@ def attachment(path):
        the magic detected MIME type of that file and be one of the allowed mime types
     """
     ftp_attach = False
+    if path.startswith('~'):
+        path = str(pp.Path(path).expanduser())
     if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
         if path.startswith("ftp://"):  # grab the file from ftp
@@ -235,9 +235,15 @@ def attachment(path):
 
     attach = {}
     filename = pp.PurePath(path).name
-    guessed_mime = mime_allowed(path, ALLOWED_MIMES)
-    if not guessed_mime:
-        sys.exit(1)
+    guessed_mime = mimetypes.guess_type(path)[0]
+    detected_mime = magic.from_file(path, mime=True)
+    # NOTE: this whole guessing and detecting bit falls apart for zip files which seems a bit dodgy
+    # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
+    # basically relying on extension with a little verification by magic for most file types
+    if guessed_mime not in ALLOWED_MIMES:
+        raise ValueError("Unallowed file type for %s" % filename)
+    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
+        raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
 
     with open(path, 'rb') as stream:
         attach = {
@@ -644,7 +650,7 @@ def build_patch_json(fields, fields2types):
 
 
 def get_just_filename(path):
-    return path.split('/')[-1]
+    return pp.Path(path).name
 
 
 def check_extra_file_meta(ef_info, seen_formats, existing_formats):
@@ -1505,16 +1511,27 @@ def upload_file(creds, path):  # pragma: no cover
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
     start = time.time()
+    path_object = pp.Path(path).expanduser()
     try:
-        subprocess.check_call(['aws', 's3', 'cp', '--only-show-errors', path, creds['upload_url']], env=env)
+        source = path_object
+        target = creds['upload_url']
+        print("Going to upload {} to {}.".format(source, target))
+        command = ['aws', 's3', 'cp']
+        command = command + ['--only-show-errors', source, target]
+        options = {}
+        if running_on_windows_native():
+            options = {"shell": True}
+        subprocess.check_call(command, env=env, **options)
     except subprocess.CalledProcessError as e:
-        # The aws command returns a non-zero exit code on error.
-        print("Upload failed with exit code %d" % e.returncode)
-        sys.exit(e.returncode)
+        raise RuntimeError("Upload failed with exit code %d" % e.returncode)
     else:
         end = time.time()
         duration = end - start
         print("Uploaded in %.2f seconds" % duration)
+
+
+def running_on_windows_native():
+    return os.name == 'nt'
 
 
 # the order to try to upload / update the items
@@ -1582,13 +1599,16 @@ def check_and_return_input_type(inputname):
         inputname = re.search("/d/([A-Za-z0-9_-]+)/*", inputname).group(1)
     if not re.match("^[A-Za-z0-9_-]+$", inputname):
         print("ERROR: invalid format of the google sheet ID in input - {}".format(inputname))
-        sys.exit(1)
     return inputname, 'gsheet'
 
 
 def cabin_cross_check(connection, patchall, update, remote, booktype='excel', lab=None, award=None):
     """Set of check for connection, input, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
+        # check input file (xlsx)
+    if not pp.Path(infile).is_file():
+        print(f"File {infile} not found!")
+        sys.exit(1)
     # check for multi labs and awards and reset connection appropriately
     # if lab and/or award options used modify connection accordingly and check for conflict later
     if lab or award:
@@ -1721,19 +1741,12 @@ def main():  # pragma: no cover
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
-<<<<<<< HEAD
     # support for xlsx and google sheet url or sheets id
     inputname, booktype = check_and_return_input_type(args.infile)
     workbook, sheetnames = get_workbook(inputname, booktype)
 
     cabin_cross_check(connection, args.patchall, args.update,
                       args.remote, booktype, args.lab, args.award)
-=======
-    cabin_cross_check(connection, args.patchall, args.update, args.infile,
-                      args.remote, args.lab, args.award)
-    # support for xlsx only - adjust if allowing different
-    workbook, sheetnames = digest_xlsx(args.infile)
->>>>>>> master
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
