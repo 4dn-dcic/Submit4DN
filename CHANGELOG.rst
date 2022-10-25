@@ -6,6 +6,11 @@ Submit4DN
 Change Log
 ----------
 
+3.1.1
+=====
+
+* Bug fix: some "empty" cells were not handled correctly.
+
 3.1.0
 =====
 
