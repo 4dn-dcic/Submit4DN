@@ -286,7 +286,7 @@ def cell_value(cell):
     if ctype == openpyxl.cell.cell.TYPE_ERROR:  # pragma: no cover
         raise ValueError('Cell %s contains a cell error' % str(cell.coordinate))
     elif value is None:
-        return ''
+        return None
     elif ctype == openpyxl.cell.cell.TYPE_BOOL:
         boolstr = str(value).strip()
         if boolstr == 'TRUE':
