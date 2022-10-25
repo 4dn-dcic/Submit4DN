@@ -23,3 +23,6 @@ Custom_scripts/
 Data_Files/MicroscopyCalibration/Files/
 .pytest_cache/
 .python-version
+
+# PyCharm metadata
+.idea/
