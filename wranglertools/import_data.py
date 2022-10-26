@@ -2,71 +2,36 @@
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
 import argparse
-import pathlib as pp
-import hashlib
-from wranglertools.get_field_info import (
-    sheet_order, FDN_Key, FDN_Connection,
-    create_common_arg_parser, _remove_all_from_types)
-from dcicutils import ff_utils
-import openpyxl
-import gspread
-import warnings  # to suppress openpxl warning about headers
-from openpyxl.utils.exceptions import InvalidFileException
+import ast
 import datetime
-import sys
+import hashlib
 import mimetypes
-import requests
+import os
+import pathlib as pp
+import re
+import shutil
+import subprocess
+import sys
+import time
+import warnings  # to suppress openpyxl warnings
 from base64 import b64encode
-import magic  # install me with 'pip install python-magic'
+from collections import Counter, OrderedDict
+from contextlib import closing
+from urllib import request as urllib2
+
+import gspread
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
-import ast
-import os
-import time
-import subprocess
-import shutil
-import re
-from collections import OrderedDict, Counter
-from urllib import request as urllib2
-from contextlib import closing
-
-# for gsheet authentication
-
-
-EPILOG = '''
-This script takes in a spreadsheet workbook file with the data
-This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
-to actually submit data to the portal
-
-By DEFAULT:
-If there is a uuid, @id, accession, or previously submitted alias in the document:
-Use '--patchall' if you want to patch ALL objects in your document and ignore that message
-
-If you want to upload new items(no existing object identifiers are found),
-in the document you need to use '--update' for POSTing to occur
-
-Defining Object type:
-    Each "sheet" of the excel file is named after the object type you are uploading,
-    with the format used on http://data.4dnucleome.org//profiles/
-Ex: ExperimentHiC, Biosample, Document, BioFeature
-
-If you only want to submit a subset of sheets in a workbook use the --type option with the
-sheet name Ex: %(prog)s mydata.xsls --type ExperimentHiC
-
-The name of each sheet should be the names of the object type.
-Ex: Award, Lab, BioFeature, etc.
-
-The first row of the sheets should be the field names
-Ex: aliases, experiment_type, etc.
-
-To upload objects with attachments, use the column titled "attachment"
-containing the full path to the file you wish to attach
-
-To delete a field, use the keyword "*delete*" as the value.
-
-For more details:
-please see README.rst
-'''
+import magic  # install me with 'pip install python-magic'
+import openpyxl
+import requests
+from dcicutils import ff_utils
+from gspread.exceptions import GSpreadException
+from openpyxl.utils.exceptions import InvalidFileException
+from wranglertools.get_field_info import (FDN_Connection, FDN_Key,
+                                          _remove_all_from_types,
+                                          create_common_arg_parser,
+                                          sheet_order)
 
 
 def getArgs():  # pragma: no cover
@@ -107,6 +72,42 @@ def getArgs():  # pragma: no cover
     args = parser.parse_args()
     _remove_all_from_types(args)
     return args
+
+
+EPILOG = '''
+This script takes in a spreadsheet workbook file with the data
+This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
+to actually submit data to the portal
+
+By DEFAULT:
+If there is a uuid, @id, accession, or previously submitted alias in the document:
+Use '--patchall' if you want to patch ALL objects in your document and ignore that message
+
+If you want to upload new items(no existing object identifiers are found),
+in the document you need to use '--update' for POSTing to occur
+
+Defining Object type:
+    Each "sheet" of the excel file is named after the object type you are uploading,
+    with the format used on http://data.4dnucleome.org//profiles/
+Ex: ExperimentHiC, Biosample, Document, BioFeature
+
+If you only want to submit a subset of sheets in a workbook use the --type option with the
+sheet name Ex: %(prog)s mydata.xlxs --type ExperimentHiC
+
+The name of each sheet should be the names of the object type.
+Ex: Award, Lab, BioFeature, etc.
+
+The first row of the sheets should be the field names
+Ex: aliases, experiment_type, etc.
+
+To upload objects with attachments, use the column titled "attachment"
+containing the full path to the file you wish to attach
+
+To delete a field, use the keyword "*delete*" as the value.
+
+For more details:
+please see README.rst
+'''
 
 
 # list of [sheet, [fields]] that need to be patched as a second step
@@ -159,7 +160,8 @@ ALLOWED_MIMES = (
 )
 
 G_API_CLIENT_ID = '258037973854-vgk9qvfsnps2gaca354bmrk80mmtf3do.apps.googleusercontent.com'
-
+# If modifying these scopes, delete the file token.json.
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 def md5(path_string):
     path = pp.Path(path_string).expanduser()
@@ -175,6 +177,18 @@ class WebFetchException(Exception):
     custom exception to raise if ftp or http fetch fails
     """
     pass
+
+
+def authenticate():
+    gsauth = None
+    import pdb; pdb.set_trace()
+    creddir = pp.Path(__file__).parent.joinpath('.config', 'gspread')
+    gsauth = gspread.oauth(
+        credentials_filename=creddir.joinpath('credentials.json'),
+        authorized_user_filename=creddir.joinpath('authorized_user.json'),
+        scopes=SCOPES
+    )
+    return gsauth
 
 
 def mime_allowed(path, ok_mimes):
@@ -271,18 +285,20 @@ def digest_xlsx(filename):
     return book, sheets
 
 
-def open_gsheets(gsid):
-    gc = gspread.service_account(filename='credentials.json')
-    wkbk = gc.open_by_key(gsid)
+def open_gsheets(gsid, gauth):
+    import pdb; pdb.set_trace()
+    wkbk = gauth.open_by_key(gsid)
     sheets = [sh.title for sh in wkbk.worksheets()]
     return wkbk, sheets
 
 
-def get_workbook(inputname, booktype):
+def get_workbook(inputname, booktype, gauth=None):
     if booktype == 'excel':
         return digest_xlsx(inputname)
     elif booktype == 'gsheet':
-        return open_gsheets(inputname)
+        if not gauth:
+            raise GSpreadException("Google authentication problem")
+        return open_gsheets(inputname, gauth)
 
 
 def reader(workbook, sheetname=None, booktype=None):
@@ -1587,7 +1603,7 @@ def check_and_return_input_type(inputname):
         xlsx_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         # specific check for xlsx
         if not mime_allowed(inputname, xlsx_mime):
-            print(f"ERROR: File {infile} not recognized as excel file")
+            print(f"ERROR: File {inputname} not recognized as excel file")
             sys.exit(1)
         return inputname, 'excel'
     elif inputname.startswith('http'):
@@ -1602,13 +1618,10 @@ def check_and_return_input_type(inputname):
     return inputname, 'gsheet'
 
 
-def cabin_cross_check(connection, patchall, update, remote, booktype='excel', lab=None, award=None):
+
+def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None):
     """Set of check for connection, input, dryrun, and prompt."""
     print("Running on:       {server}".format(server=connection.key['server']))
-        # check input file (xlsx)
-    if not pp.Path(infile).is_file():
-        print(f"File {infile} not found!")
-        sys.exit(1)
     # check for multi labs and awards and reset connection appropriately
     # if lab and/or award options used modify connection accordingly and check for conflict later
     if lab or award:
@@ -1648,10 +1661,6 @@ def cabin_cross_check(connection, patchall, update, remote, booktype='excel', la
                 print("Award {} not associated with lab {} - exiting!".format(submit_award, submit_lab))
                 sys.exit(1)
 
-    # if workbook is google sheet then do auth here and return credentials
-    if booktype == 'gsheet':
-        creds = do_authentication()
-
     print("Submitting User:  {}".format(connection.email))
     missing = []
     if connection.lab is None:
@@ -1674,10 +1683,7 @@ def cabin_cross_check(connection, patchall, update, remote, booktype='excel', la
         print("##############   DRY-RUN MODE   ################\n")
     else:
         if not remote:
-            try:
-                response = raw_input("Do you want to continue with these credentials? (Y/N): ") or "N"
-            except NameError:
-                response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+            response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
             if response.lower() not in ["y", "yes"]:
                 sys.exit(1)
 
@@ -1743,10 +1749,17 @@ def main():  # pragma: no cover
     connection = FDN_Connection(key)
     # support for xlsx and google sheet url or sheets id
     inputname, booktype = check_and_return_input_type(args.infile)
-    workbook, sheetnames = get_workbook(inputname, booktype)
 
-    cabin_cross_check(connection, args.patchall, args.update,
-                      args.remote, booktype, args.lab, args.award)
+    cabin_cross_check(connection, args.patchall, args.update, args.remote, args.lab, args.award)
+
+    # need to google authenticate to allow gsheet to be read
+    gauth=None
+    if booktype == 'gsheet':
+        gauth = authenticate()
+    
+    workbook, sheetnames = get_workbook(inputname, booktype, gauth)
+
+   
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
