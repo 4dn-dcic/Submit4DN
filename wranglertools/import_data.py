@@ -159,9 +159,9 @@ ALLOWED_MIMES = (
     'image/tiff',
 )
 
-G_API_CLIENT_ID = '258037973854-vgk9qvfsnps2gaca354bmrk80mmtf3do.apps.googleusercontent.com'
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
 
 def md5(path_string):
     path = pp.Path(path_string).expanduser()
@@ -174,14 +174,13 @@ def md5(path_string):
 
 class WebFetchException(Exception):
     """
-    custom exception to raise if ftp or http fetch fails
+    custom exception to raise if http fetch fails
     """
     pass
 
 
 def authenticate():
     gsauth = None
-    import pdb; pdb.set_trace()
     creddir = pp.Path(__file__).parent.joinpath('.config', 'gspread')
     gsauth = gspread.oauth(
         credentials_filename=creddir.joinpath('credentials.json'),
@@ -286,7 +285,6 @@ def digest_xlsx(filename):
 
 
 def open_gsheets(gsid, gauth):
-    import pdb; pdb.set_trace()
     wkbk = gauth.open_by_key(gsid)
     sheets = [sh.title for sh in wkbk.worksheets()]
     return wkbk, sheets
@@ -358,8 +356,6 @@ def cell_value(cell):
     value = cell.value
     if ctype == openpyxl.cell.cell.TYPE_ERROR:  # pragma: no cover
         raise ValueError('Cell %s contains a cell error' % str(cell.coordinate))
-    elif value is None:
-        return ''
     elif ctype == openpyxl.cell.cell.TYPE_BOOL:
         boolstr = str(value).strip()
         if boolstr == 'TRUE':
