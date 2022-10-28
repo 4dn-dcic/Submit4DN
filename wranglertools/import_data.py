@@ -15,8 +15,6 @@ import time
 import warnings  # to suppress openpyxl warnings
 from base64 import b64encode
 from collections import Counter, OrderedDict
-# from contextlib import closing
-from urllib import request as urllib2
 
 import gspread
 # https://github.com/ahupp/python-magic

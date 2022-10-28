@@ -5,7 +5,7 @@ from gspread.exceptions import GSpreadException
 import pytest
 import inspect
 import wranglertools.import_data as imp
-from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook
+from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook, MockedGauth
 
 # test data is in conftest.py
 
@@ -126,7 +126,6 @@ def test_reader_wrong_sheetname(capsys):
     assert out == msg
 
 
-
 @pytest.fixture
 def gs_test_data():
     return {'row1': ['a', 'b', 'c'], 'row2': ['d', 'e', 'f']}
@@ -175,10 +174,18 @@ def test_reader_gsheet_bad_name(mock_gsheet, capsys):
 def test_row_generator_gsheet(mock_gsheet, gs_test_data):
     res = imp.row_generator(mock_gsheet, 'gsheet')
     # import pdb; pdb.set_trace()
-    assert(inspect.isgenerator(res))
+    assert inspect.isgenerator(res)
     lres = list(res)
     assert len(lres) == 2
     assert lres[0] == gs_test_data['row1']
+
+
+def test_open_gsheets():
+    test_names = ['Sheet1', 'Sheet2']
+    ret_wkbk, ret_names = imp.open_gsheets('gsid1234', MockedGauth())
+    assert type(ret_wkbk) is MockedGoogleWorkBook
+    for rn in ret_names:
+        assert rn in test_names
 
 
 def test_cell_value(workbooks):
@@ -977,7 +984,7 @@ def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': ['/awards/test_award/', '/awards/1U54DK107977-01/']}, {'@id': '/awards/non-ren-lab-award/'}
     ])
-    with pytest.raises (SystemExit):
+    with pytest.raises(SystemExit):
         connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
         imp.cabin_cross_check(connection_mock, False, False, True, '/labs/bing-ren-lab/', '/awards/non-ren-lab-award/')
 

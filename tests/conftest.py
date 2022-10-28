@@ -33,6 +33,18 @@ class MockedConnection(object):
         return
 
 
+class MockedGauth(object):
+    def __init__(self):
+        pass
+
+    def open_by_key(self, gsid):
+        wkbk = MockedGoogleWorkBook()
+        sheet2 = MockedGoogleWorkSheet()
+        sheet2.set_title('Sheet2')
+        wkbk.add_sheets([MockedGoogleWorkSheet(), sheet2])
+        return wkbk
+
+
 class MockedGoogleWorkSheet(object):
     ''' very basic mocked object to represent a gsheet sheet'''
     def __init__(self, title='Sheet1', data={}):
@@ -57,7 +69,7 @@ class MockedGoogleWorkBook(object):
         self.sheets = sheets
 
     def add_sheets(self, sheets=[]):
-        self.sheets.extend(sheets)
+        self.sheets = sheets
 
 
     def worksheets(self):
