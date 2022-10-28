@@ -33,6 +33,47 @@ class MockedConnection(object):
         return
 
 
+class MockedGoogleWorkSheet(object):
+    ''' very basic mocked object to represent a gsheet sheet'''
+    def __init__(self, title='Sheet1', data={}):
+        self.title = title
+        self.data = data
+
+    def set_title(self, title=''):
+        if title:
+            self.title = title
+    
+    def set_data(self, data={}):
+        self.data = data
+
+    def get_values(self):
+        return self.data.values()
+
+
+class MockedGoogleWorkBook(object):
+    ''' basic mocked google workbook '''
+    def __init__(self, gsid='1111', sheets=[]):
+        self.gsid = gsid
+        self.sheets = sheets
+
+    def add_sheets(self, sheets=[]):
+        self.sheets.extend(sheets)
+
+
+    def worksheets(self):
+        return self.sheets
+
+    def get_worksheet(self, idx):
+        '''return sheet at idx in sheet list'''
+        return self.sheets[idx]
+
+    def worksheet(self, title):
+        for sheet in self.sheets:
+            if sheet.title == title:
+                return sheet
+        raise Exception
+
+
 @pytest.fixture
 def connection_mock():
     keypairs = {

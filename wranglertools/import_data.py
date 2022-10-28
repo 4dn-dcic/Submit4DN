@@ -9,14 +9,13 @@ import mimetypes
 import os
 import pathlib as pp
 import re
-import shutil
 import subprocess
 import sys
 import time
 import warnings  # to suppress openpyxl warnings
 from base64 import b64encode
 from collections import Counter, OrderedDict
-from contextlib import closing
+# from contextlib import closing
 from urllib import request as urllib2
 
 import gspread
@@ -179,7 +178,7 @@ class WebFetchException(Exception):
     pass
 
 
-def authenticate():
+def google_authenticate():
     gsauth = None
     creddir = pp.Path(__file__).parent.joinpath('.config', 'gspread')
     gsauth = gspread.oauth(
@@ -208,43 +207,31 @@ def mime_allowed(path, ok_mimes):
 
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url.
-       NOTE: a url or ftp can be used but path must end in filename with extension that will match
+       NOTE: a url can be used but path must end in filename with extension that will match
        the magic detected MIME type of that file and be one of the allowed mime types
     """
-    ftp_attach = False
+    url_attach = False
     if path.startswith('~'):
         path = str(pp.Path(path).expanduser())
     if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
-        if path.startswith("ftp://"):  # grab the file from ftp
-            print("\nINFO: Attempting to download file from this url %s" % path)
-            try:
-                with closing(urllib2.urlopen(path)) as r:
-                    file_name = path.split("/")[-1]
-                    with open(file_name, 'wb') as f:
-                        shutil.copyfileobj(r, f)
-                        path = file_name
-                        ftp_attach = True
-            except urllib2.URLError as e:
-                raise WebFetchException("\nERROR : FTP fetch for 'attachment' failed - {}".format(e))
+        try:
+            r = requests.get(path)
+        except Exception:
+            raise WebFetchException(
+                "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
         else:
-            try:
-                r = requests.get(path)
-            except Exception:
-                raise WebFetchException(
-                    "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
-            else:
-                # if it works as a URL, but does not return 200
-                if r.status_code != 200:  # pragma: no cover
-                    raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
-            # parse response
-            path = path.split("/")[-1]
-            try:
-                with open(path, "wb") as outfile:
-                    outfile.write(r.content)
-                    ftp_attach = True
-            except Exception as e:
-                raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
+            # if it works as a URL, but does not return 200
+            if r.status_code != 200:  # pragma: no cover
+                raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
+        # parse response
+        path = path.split("/")[-1]
+        try:
+            with open(path, "wb") as outfile:
+                outfile.write(r.content)
+                url_attach = True
+        except Exception as e:
+            raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
     attach = {}
     filename = pp.PurePath(path).name
@@ -264,7 +251,7 @@ def attachment(path):
             'type': guessed_mime,
             'href': 'data:%s;base64,%s' % (guessed_mime, b64encode(stream.read()).decode('ascii'))
         }
-    if ftp_attach:
+    if url_attach:
         pp.Path(path).unlink()
     return attach
 
@@ -419,7 +406,7 @@ def get_sub_field(field_name):
     """Construct embeded field names."""
     try:
         return field_name.split(".")[1].rstrip('-0123456789')
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         return ''
 
 
@@ -442,7 +429,7 @@ def get_sub_field_number(field_name):
     field = field_name.split(":")[0]
     try:
         return int(field.split("-")[1])
-    except:
+    except Exception:
         return 0
 
 
@@ -487,7 +474,7 @@ def parse_exception(e):
         resp_dict = ast.literal_eval(resp_text)
         return resp_dict
     # if not re-raise
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         raise e
 
 
@@ -871,13 +858,13 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
         try:
             report.append("{sheet:<30}{eid}: {des}"
                           .format(des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
-        except:
+        except Exception:
             return error_dic
     # if there is a conflict
     elif error_dic.get('title') == "Conflict":
         try:
             report.extend(conflict_error_report(error_dic, sheet, connection))
-        except:
+        except Exception:
             return error_dic
     # if nothing works, give the full error, we should add that case to our reporting
     else:
@@ -909,7 +896,7 @@ def conflict_error_report(error_dic, sheet, connection):
                 existing_item = ff_utils.search_metadata(search, key=connection.key)
                 at_id = existing_item.get('@id')
                 add_text = "please use " + at_id
-            except:
+            except Exception:
                 # if there is a conflicting item, but it is not viewable by the user,
                 # we should release the item to the project/public
                 add_text = "please contact DCIC"
@@ -917,17 +904,11 @@ def conflict_error_report(error_dic, sheet, connection):
                             .format(er=error_field, des=error_value, sheet="ERROR " + sheet.lower(), at=add_text))
         all_conflicts.append(conflict_rep)
         return all_conflicts
-    except:
+    except Exception:
         return
 
 
 def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, connection, identifier):
-    # if FTP, grab the file from ftp
-    ftp_download = False
-    if file_to_upload and filename_to_post.startswith("ftp://"):
-        ftp_download = True
-        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
-    # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
@@ -949,15 +930,13 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             e['@graph'][0]['upload_credentials'] = creds
         # upload
         upload_file_item(e, filename_to_post)
-        if ftp_download:
-            pp.Path(filename_to_post).unlink()
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_files_creds')
         for fformat, filepath in extrafiles.items():
             try:
                 file_format = ff_utils.get_metadata(fformat, key=connection.key)
                 ff_uuid = file_format.get('uuid')
-            except:
+            except Exception:
                 raise "Can't find file_format item for %s" % fformat
             for ecred in extcreds:
                 if ff_uuid == ecred.get('file_format'):
@@ -973,29 +952,6 @@ def patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connecti
 
 def post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet):
     return update_item('POST', file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet)
-
-
-def ftp_copy(filename_to_post, post_json):
-    """Downloads the file from the server, and reformats post_json."""
-    if not post_json.get("md5sum"):
-        # if the file is from the server, the md5 should be supplied by the user.
-        print("\nWARNING: File not uploaded")
-        print("Please add original md5 values of the files")
-        return False, post_json, ""
-    try:
-        # download the file from the server
-        # return new file location to upload from
-        print("\nINFO: Attempting to download file from this url to your computer before upload %s" % filename_to_post)
-        with closing(urllib2.urlopen(filename_to_post)) as r:
-            new_file = post_json['filename']
-            with open(new_file, 'wb') as f:
-                shutil.copyfileobj(r, f)
-        return True, post_json, new_file
-    except:
-        # if download did not work, delete the filename from the post json
-        print("WARNING: Download failed")
-        post_json.pop('filename')
-        return False, post_json, ""
 
 
 def delete_fields(post_json, connection, existing_data):
@@ -1156,7 +1112,7 @@ def workbook_reader(workbook, booktype, sheet, update, connection, patchall, ali
     on the options passed in.
     """
     # determine right from the top if dry run
-    dryrun = not(update or patchall)
+    dryrun = not (update or patchall)
     all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -1520,7 +1476,7 @@ def upload_file(creds, path):  # pragma: no cover
             'AWS_SECURITY_TOKEN': creds['SessionToken'],
         })
     except Exception as e:
-        raise("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
+        raise ("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
@@ -1614,7 +1570,6 @@ def check_and_return_input_type(inputname):
     if not re.match("^[A-Za-z0-9_-]+$", inputname):
         print("ERROR: invalid format of the google sheet ID in input - {}".format(inputname))
     return inputname, 'gsheet'
-
 
 
 def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None):
@@ -1718,7 +1673,7 @@ def get_all_aliases(workbook, sheets, booktype):
         keys = next(rows)  # grab the first row of headers
         try:
             alias_col = keys.index("aliases")
-        except:
+        except Exception:
             continue
         for row in rows:
             my_aliases = []
@@ -1751,13 +1706,11 @@ def main():  # pragma: no cover
     cabin_cross_check(connection, args.patchall, args.update, args.remote, args.lab, args.award)
 
     # need to google authenticate to allow gsheet to be read
-    gauth=None
+    gauth = None
     if booktype == 'gsheet':
-        gauth = authenticate()
-    
-    workbook, sheetnames = get_workbook(inputname, booktype, gauth)
+        gauth = google_authenticate()
 
-   
+    workbook, sheetnames = get_workbook(inputname, booktype, gauth)
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
@@ -1784,8 +1737,9 @@ def main():  # pragma: no cover
             workbook_reader(workbook, booktype, n, args.update, connection, args.patchall, aliases_by_type,
                             dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower() == "experimentmic_path":
-            workbook_reader(workbook, booktype, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
-                            dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
+            workbook_reader(workbook, booktype, "ExperimentMic_Path", args.update, connection, args.patchall,
+                            aliases_by_type, dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate,
+                            attachment_fields)
         elif n.lower().startswith('user_workflow'):
             if args.update:
                 user_workflow_reader(workbook, booktype, n, connection)

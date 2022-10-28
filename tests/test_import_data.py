@@ -1,23 +1,13 @@
 import pathlib as pp
+from plistlib import InvalidFileException
+from gspread.exceptions import GSpreadException
 
 import pytest
+import inspect
 import wranglertools.import_data as imp
+from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook
 
 # test data is in conftest.py
-
-
-# # @pytest.mark.file_operation
-# @pytest.mark.ftp
-# def test_attachment_from_ftp():
-#     attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
-#     assert attach
-
-
-# @pytest.mark.ftp
-# def test_attachment_ftp_to_nowhere():
-#     with pytest.raises(Exception) as e:
-#         imp.attachment("ftp://on/a/road/to/nowhere/blah.txt")
-#     assert "urlopen error" in str(e.value)
 
 
 def convert_to_path_with_tilde(string_path):
@@ -134,6 +124,61 @@ def test_reader_wrong_sheetname(capsys):
     assert readxls is None
     out = capsys.readouterr()[0]
     assert out == msg
+
+
+
+@pytest.fixture
+def gs_test_data():
+    return {'row1': ['a', 'b', 'c'], 'row2': ['d', 'e', 'f']}
+
+
+@pytest.fixture
+def mock_gsheet(gs_test_data):
+    msheet = MockedGoogleWorkSheet()
+    msheet.set_data(gs_test_data)
+    return msheet
+
+
+def test_reader_gsheet_no_name(mock_gsheet):
+    test_wkbk = MockedGoogleWorkBook()
+    test_wkbk.add_sheets([mock_gsheet])
+    res = imp.reader(test_wkbk, booktype='gsheet')
+    assert inspect.isgenerator(res)
+
+
+def test_reader_gsheet_w_name(mock_gsheet):
+    sheetname = 'TestSheet2'
+    test_row_data = ['x', 'y']
+    mock_sheet2 = MockedGoogleWorkSheet()
+    mock_sheet2.set_title(sheetname)
+    mock_sheet2.set_data({'row1': test_row_data})
+    test_wkbk = MockedGoogleWorkBook()
+    test_wkbk.add_sheets([mock_gsheet, mock_sheet2])
+    res = imp.reader(test_wkbk, sheetname=sheetname, booktype='gsheet')
+    assert inspect.isgenerator(res)
+    res_data = list(res)
+    assert len(res_data) == 1
+    assert res_data[0] == test_row_data
+
+
+def test_reader_gsheet_bad_name(mock_gsheet, capsys):
+    badname = 'NoSuchName'
+    errmsg = '\nNoSuchName\nERROR: Can not find the collection sheet in excel file (gspread error)\n'
+    test_wkbk = MockedGoogleWorkBook()
+    test_wkbk.add_sheets([mock_gsheet])
+    res = imp.reader(test_wkbk, sheetname=badname, booktype='gsheet')
+    assert res is None
+    out = capsys.readouterr()[0]
+    assert out == errmsg
+
+
+def test_row_generator_gsheet(mock_gsheet, gs_test_data):
+    res = imp.row_generator(mock_gsheet, 'gsheet')
+    # import pdb; pdb.set_trace()
+    assert(inspect.isgenerator(res))
+    lres = list(res)
+    assert len(lres) == 2
+    assert lres[0] == gs_test_data['row1']
 
 
 def test_cell_value(workbooks):
@@ -344,6 +389,46 @@ def test_digest_xlsx(workbooks):
             assert book[sheet].max_column == workbook[sheet].max_column
 
 
+def test_digest_xlsx_error_on_xls(capsys):
+    test_filename = 'test.xls'
+    with pytest.raises(SystemExit):
+        with pytest.raises(InvalidFileException):
+            imp.digest_xlsx(test_filename)
+            out = capsys.readouterr()[0]
+            assert 'WARNING - Old xls format not supported' in out
+
+
+def test_digest_xlsx_error_on_badext(capsys):
+    test_filename = 'test.ods'
+    with pytest.raises(SystemExit):
+        with pytest.raises(InvalidFileException):
+            imp.digest_xlsx(test_filename)
+            out = capsys.readouterr()[0]
+            assert "ERROR - " in out
+
+
+def test_get_workbook_excel(mocker):
+    filename = 'test.xlsx'
+    retval = 'digested excel'
+    mocker.patch('wranglertools.import_data.digest_xlsx', return_value=retval)
+    val = imp.get_workbook(filename, 'excel')
+    assert val == retval
+
+
+def test_get_workbook_gsheet(mocker):
+    filename = 'http://docs.google.com/test_sheet'
+    retval = 'digested gsheet'
+    mocker.patch('wranglertools.import_data.open_gsheets', return_value=retval)
+    val = imp.get_workbook(filename, 'gsheet', True)
+    assert val == retval
+
+
+def test_get_workbook_gsheet_fail_w_no_auth():
+    filename = 'http://docs.google.com/test_sheet'
+    with pytest.raises(GSpreadException):
+        imp.get_workbook(filename, 'gsheet')
+
+
 def test_workbooks_reader_no_update_no_patchall_new_doc_with_attachment(mocker, connection_mock, workbooks):
     # test new item submission without patchall update tags and check the return message
     test_insert = 'Document_insert.xlsx'
@@ -388,62 +473,62 @@ def test_workbook_reader_no_update_no_patchall_existing_item(capsys, mocker, con
     assert out[0] == message
 
 
-def test_workbook_reader_post_ftp_file_upload(capsys, mocker, connection_mock, workbooks):
-    test_insert = 'Ftp_file_test_md5.xlsx'
-    dict_load = {}
-    dict_rep = {}
-    dict_set = {}
-    all_aliases = {}
-    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors\n"
-    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
-    # mock fetching existing info, return None
-    mocker.patch('wranglertools.import_data.get_existing', return_value={})
-    # mock upload file and skip
-    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
-    # mock the ftp copy - this should get it's own tests
-    mocker.patch('wranglertools.import_data.ftp_copy',
-                 return_value=(True, {'md5sum': '0f343b0931126a20f133d67c2b018a3b'}, '1KB.zip'))
-    # mock file deletion
-    mocker.patch('wranglertools.import_data.pp.Path.unlink')
-    # mock posting new items
-    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileCalibration', True, connection_mock, False,
-                        all_aliases, dict_load, dict_rep, dict_set, True, [])
-    args = imp.ff_utils.post_metadata.call_args
-    out = capsys.readouterr()[0]
-    post_json_arg = args[0][0]
-    assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-    assert message1 == out
+# def test_workbook_reader_post_ftp_file_upload(capsys, mocker, connection_mock, workbooks):
+#     test_insert = 'Ftp_file_test_md5.xlsx'
+#     dict_load = {}
+#     dict_rep = {}
+#     dict_set = {}
+#     all_aliases = {}
+#     message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors\n"
+#     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
+#     # mock fetching existing info, return None
+#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
+#     # mock upload file and skip
+#     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+#     # mock the ftp copy - this should get it's own tests
+#     mocker.patch('wranglertools.import_data.ftp_copy',
+#                  return_value=(True, {'md5sum': '0f343b0931126a20f133d67c2b018a3b'}, '1KB.zip'))
+#     # mock file deletion
+#     mocker.patch('wranglertools.import_data.pp.Path.unlink')
+#     # mock posting new items
+#     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+#     imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileCalibration', True, connection_mock, False,
+#                         all_aliases, dict_load, dict_rep, dict_set, True, [])
+#     args = imp.ff_utils.post_metadata.call_args
+#     out = capsys.readouterr()[0]
+#     post_json_arg = args[0][0]
+#     assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
+#     assert message1 == out
 
 
-def test_workbook_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock, workbooks):
-    """ This appears to actually mainly be testing the ftp_copy function - confirming that
-        the correct error messages are generated when you try to copy an ftp file without
-        including an md5sum in the post and subsequently that the workbook_reader function
-        will still post the metadata without uploading a file
-    """
-    test_insert = 'Ftp_file_test.xlsx'
-    dict_load = {}
-    dict_rep = {}
-    dict_set = {}
-    all_aliases = {}
-    message0 = "WARNING: File not uploaded"
-    message1 = "Please add original md5 values of the files"
-    message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
-    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
-    # mock fetching existing info, return None
-    mocker.patch('wranglertools.import_data.get_existing', return_value={})
-    # mock upload file and skip
-    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
-    # mock posting new items
-    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileCalibration', True, connection_mock, False,
-                        all_aliases, dict_load, dict_rep, dict_set, True, [])
-    out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i.strip()]
-    assert message0 == outlist[0]
-    assert message1 == outlist[1]
-    assert message2 == outlist[2]
+# def test_workbook_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock, workbooks):
+#     """ This appears to actually mainly be testing the ftp_copy function - confirming that
+#         the correct error messages are generated when you try to copy an ftp file without
+#         including an md5sum in the post and subsequently that the workbook_reader function
+#         will still post the metadata without uploading a file
+#     """
+#     test_insert = 'Ftp_file_test.xlsx'
+#     dict_load = {}
+#     dict_rep = {}
+#     dict_set = {}
+#     all_aliases = {}
+#     message0 = "WARNING: File not uploaded"
+#     message1 = "Please add original md5 values of the files"
+#     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
+#     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
+#     # mock fetching existing info, return None
+#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
+#     # mock upload file and skip
+#     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
+#     # mock posting new items
+#     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
+#     imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileCalibration', True, connection_mock, False,
+#                         all_aliases, dict_load, dict_rep, dict_set, True, [])
+#     out = capsys.readouterr()[0]
+#     outlist = [i.strip() for i in out.split('\n') if i.strip()]
+#     assert message0 == outlist[0]
+#     assert message1 == outlist[1]
+#     assert message2 == outlist[2]
 
 
 @pytest.mark.file_operation
@@ -892,7 +977,7 @@ def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': ['/awards/test_award/', '/awards/1U54DK107977-01/']}, {'@id': '/awards/non-ren-lab-award/'}
     ])
-    with pytest.raises(SystemExit):
+    with pytest.raises (SystemExit):
         connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
         imp.cabin_cross_check(connection_mock, False, False, True, '/labs/bing-ren-lab/', '/awards/non-ren-lab-award/')
 
