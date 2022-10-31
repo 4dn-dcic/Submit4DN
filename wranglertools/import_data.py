@@ -25,10 +25,14 @@ import requests
 from dcicutils import ff_utils
 from gspread.exceptions import GSpreadException
 from openpyxl.utils.exceptions import InvalidFileException
+from wranglertools.constants import (
+    CONFDIR, GSID_REGEX, SHEET_ORDER, LIST_OF_LOADXL_FIELDS, ENV_VAR_DIR, GCRED_FNAME,
+    AUTH_TOKEN_FNAME, SCOPES, GSHEET, EXCEL, ZIP_MIME, XLSX_MIME, ALLOWED_MIMES,
+    GSHEET_URL_REGEX, GSID_REGEX
+)
 from wranglertools.get_field_info import (FDN_Connection, FDN_Key,
                                           _remove_all_from_types,
-                                          create_common_arg_parser,
-                                          sheet_order)
+                                          create_common_arg_parser)
 
 
 def getArgs():  # pragma: no cover
@@ -107,59 +111,6 @@ please see README.rst
 '''
 
 
-# list of [sheet, [fields]] that need to be patched as a second step
-# should be in sync with loadxl.py in fourfront
-list_of_loadxl_fields = [
-    ['Document', ['references']],
-    ['User', ['lab', 'submits_for']],
-    ['ExperimentType', ['sop', 'reference_pubs']],
-    ['Biosample', ['biosample_relation']],
-    ['Experiment', ['experiment_relation']],
-    ['ExperimentMic', ['experiment_relation']],
-    ['ExperimentHiC', ['experiment_relation']],
-    ['ExperimentSeq', ['experiment_relation']],
-    ['ExperimentTsaseq', ['experiment_relation']],
-    ['ExperimentDamid', ['experiment_relation']],
-    ['ExperimentChiapet', ['experiment_relation']],
-    ['ExperimentAtacseq', ['experiment_relation']],
-    ['ExperimentCaptureC', ['experiment_relation']],
-    ['ExperimentRepliseq', ['experiment_relation']],
-    ['FileFastq', ['related_files']],
-    ['FileReference', ['related_files']],
-    ['FileCalibration', ['related_files']],
-    ['FileMicroscopy', ['related_files']],
-    ['FileProcessed', ['related_files', 'produced_from']],
-    ['Individual', ['individual_relation']],
-    ['IndividualChicken', ['individual_relation']],
-    ['IndividualFly', ['individual_relation']],
-    ['IndividualHuman', ['individual_relation']],
-    ['IndividualMouse', ['individual_relation']],
-    ['IndividualPrimate', ['individual_relation']],
-    ['IndividualZebrafish', ['individual_relation']],
-    ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
-]
-
-
-ALLOWED_MIMES = (
-    'application/pdf',
-    'application/zip',
-    'text/plain',
-    'text/tab-separated-values',
-    'text/html',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'image/png',
-    'image/jpeg',
-    'image/gif',
-    'image/tiff',
-)
-
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-
 def md5(path_string):
     path = pp.Path(path_string).expanduser()
     md5sum = hashlib.md5()
@@ -178,12 +129,17 @@ class WebFetchException(Exception):
 
 def google_authenticate():
     gsauth = None
-    creddir = pp.Path(__file__).parent.joinpath('.config', 'gspread')
-    gsauth = gspread.oauth(
-        credentials_filename=creddir.joinpath('credentials.json'),
-        authorized_user_filename=creddir.joinpath('authorized_user.json'),
-        scopes=SCOPES
-    )
+    ga_cred_env = os.environ.get(ENV_VAR_DIR)  # look to see if set as env variable
+    # default to .submit4dn dir in home dir
+    creddir = pp.Path(ga_cred_env) if ga_cred_env else CONFDIR
+    try:
+        gsauth = gspread.oauth(
+            credentials_filename=creddir.joinpath(GCRED_FNAME),
+            authorized_user_filename=creddir.joinpath(AUTH_TOKEN_FNAME),
+            scopes=SCOPES
+        )
+    except GSpreadException as gse:
+        raise f"GOOGLE AUTH PROBLEM: {gse}"
     return gsauth
 
 
@@ -197,7 +153,7 @@ def mime_allowed(path, ok_mimes):
     # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
     # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
     # basically relying on extension with a little verification by magic for most file types
-    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
+    if detected_mime != guessed_mime and guessed_mime != ZIP_MIME:
         print('Wrong extension for %s: %s' % (detected_mime, filename))
         return False
     return guessed_mime
@@ -240,7 +196,7 @@ def attachment(path):
     # basically relying on extension with a little verification by magic for most file types
     if guessed_mime not in ALLOWED_MIMES:
         raise ValueError("Unallowed file type for %s" % filename)
-    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
+    if detected_mime != guessed_mime and guessed_mime != ZIP_MIME:
         raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
 
     with open(path, 'rb') as stream:
@@ -276,11 +232,11 @@ def open_gsheets(gsid, gauth):
 
 
 def get_workbook(inputname, booktype, gauth=None):
-    if booktype == 'excel':
+    if booktype == EXCEL:
         return digest_xlsx(inputname)
-    elif booktype == 'gsheet':
+    elif booktype == GSHEET:
         if not gauth:
-            raise GSpreadException("Google authentication problem")
+            raise Exception("ERROR: Trying to submit with Google sheets but no authentication found")
         return open_gsheets(inputname, gauth)
 
 
@@ -288,7 +244,7 @@ def reader(workbook, sheetname=None, booktype=None):
     """Read named sheet or first and only sheet from xlsx or google sheets file.
         Assume excel by default - will choke if no booktype and not excel"""
     sheet = None
-    if not booktype or booktype == 'excel':
+    if not booktype or booktype == EXCEL:
         if sheetname is None:
             sheet = workbook.worksheets[0]
         else:
@@ -299,7 +255,7 @@ def reader(workbook, sheetname=None, booktype=None):
                 print(sheetname)
                 print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
                 return
-    elif booktype == 'gsheet':
+    elif booktype == GSHEET:
         if sheetname is None:
             sheet = workbook.get_worksheet(0)
         else:
@@ -777,9 +733,9 @@ def filter_set_from_exps(post_json):
 
 
 def filter_loadxl_fields(post_json, sheet):
-    """All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary."""
+    """All fields from the LIST_OF_LOADXL_FIELDS are taken out of post_json and accumulated in dictionary."""
     patch_loadxl_item = {}
-    for sheet_loadxl, fields_loadxl in list_of_loadxl_fields:
+    for sheet_loadxl, fields_loadxl in LIST_OF_LOADXL_FIELDS:
         if sheet == sheet_loadxl:
             for field_loadxl in fields_loadxl:
                 if post_json.get(field_loadxl):
@@ -1506,7 +1462,7 @@ def running_on_windows_native():
 # used to avoid dependencies... i.e. biosample needs the biosource to exist
 def order_sorter(list_of_names):
     ret_list = []
-    for i in sheet_order:
+    for i in SHEET_ORDER:
         if i in list_of_names:
             ret_list.append(i)
     # we add the list of user supplied workflows at the end
@@ -1516,7 +1472,7 @@ def order_sorter(list_of_names):
     if list(set(list_of_names)-set(ret_list)) != []:
         missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
         print("WARNING!", missing_items, "sheet(s) are not loaded")
-        print("WARNING! Check the sheet names and the reference list \"sheet_order\"")
+        print("WARNING! Check the sheet names and the list in constant \"SHEET_ORDER\"")
     return ret_list
 
 
@@ -1552,22 +1508,21 @@ def _verify_and_return_item(item, connection):
 
 def check_and_return_input_type(inputname):
     if pp.Path(inputname).is_file():
-        xlsx_mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         # specific check for xlsx
-        if not mime_allowed(inputname, xlsx_mime):
+        if not mime_allowed(inputname, XLSX_MIME):
             print(f"ERROR: File {inputname} not recognized as excel file")
             sys.exit(1)
-        return inputname, 'excel'
-    elif inputname.startswith('http'):
+        return inputname, EXCEL
+    elif inputname.startswith('https'):
         # assume a url to google sheet and look for google?
         if 'google' not in inputname:
             print("ERROR: URL provided does not appear to be google sheet url")
             sys.exit(1)
         # parse out the bookId
-        inputname = re.search("/d/([A-Za-z0-9_-]+)/*", inputname).group(1)
-    if not re.match("^[A-Za-z0-9_-]+$", inputname):
+        inputname = re.search(GSHEET_URL_REGEX, inputname).group(1)
+    if not re.match(GSID_REGEX, inputname):
         print("ERROR: invalid format of the google sheet ID in input - {}".format(inputname))
-    return inputname, 'gsheet'
+    return inputname, GSHEET
 
 
 def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None):
@@ -1705,7 +1660,7 @@ def main():  # pragma: no cover
 
     # need to google authenticate to allow gsheet to be read
     gauth = None
-    if booktype == 'gsheet':
+    if booktype == GSHEET:
         gauth = google_authenticate()
 
     workbook, sheetnames = get_workbook(inputname, booktype, gauth)

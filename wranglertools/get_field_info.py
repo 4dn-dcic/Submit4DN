@@ -5,23 +5,17 @@ import argparse
 from dcicutils import ff_utils
 import attr
 import openpyxl
+import os
 import sys
 import json
+
+from wranglertools.constants import (
+    HOME, CONFDIR, ENV_VAR_DIR, DEFAULT_KEYPAIR_FILE, SHEET_ORDER
+)
 
 
 EPILOG = '''
     To create an excel workbook file with sheets to be filled use the examples below and modify to your needs.
-    It will accept the following optional parameters.
-        --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
-        --key            the name of the key identifier for the access key and secret in your keys file (default=default)
-        --type           use for each sheet that you want to add to the excel workbook
-        --nodesc         do not add the descriptions in the second line (by default they are added)
-        --noenums        do not add the list of options for a field if they are specified (by default they are added)
-        --comments       adds any (usually internal) comments together with enums (by default False)
-        --outfile        change the default file name "fields.xlsx" to a specified one
-        --debug          to add more debugging output
-        --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
-
 
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
@@ -54,15 +48,14 @@ def _remove_all_from_types(args):
 
 
 def create_common_arg_parser():
-    home = pp.Path.home()
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--key',
                         default='default',
                         help="The keypair identifier from the keyfile.  \
                         Default is --key=default")
     parser.add_argument('--keyfile',
-                        default=home / 'keypairs.json',
-                        help=f"The keypair file.  Default is --keyfile={home / 'keypairs.json'}")
+                        default=CONFDIR / 'keypairs.json',
+                        help=f"The keypair file.  Default is --keyfile={CONFDIR / DEFAULT_KEYPAIR_FILE}")
     parser.add_argument('--debug',
                         default=False,
                         action='store_true',
@@ -109,21 +102,33 @@ def getArgs():  # pragma: no cover
 class FDN_Key:
     def __init__(self, keyfile, keyname):
         self.error = False
+        keys = None
+        envdir = os.environ.get(ENV_VAR_DIR)
         # is the keyfile a dictionary
         if isinstance(keyfile, dict):
             keys = keyfile
-        # is the keyfile a file (the expected case)
-        elif pp.Path(str(keyfile)).is_file():
-            keys_f = open(keyfile, 'r')
-            keys_json_string = keys_f.read()
-            keys_f.close()
-            keys = json.loads(keys_json_string)
-        # if both fail, the file does not exist
         else:
-            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
-            self.error = True
-            return
-        self.con_key = keys[keyname]
+            if envdir:  # loc of keypairs.json specified in env var
+                keyfile = envdir
+            else:  # check if file
+                fpath = pp.Path(str(keyfile))
+                if not fpath.is_file():
+                    # maybe it's stored in the old default home dir
+                    fpath = HOME.joinpath(DEFAULT_KEYPAIR_FILE)
+                    if not fpath.is_file():
+                        print("\nThe keyfile does not exist\n"
+                              f"check the --keyfile path or add 'keypairs.json' to {CONFDIR}\n")
+                        self.error = True
+                        return
+
+            with open(fpath, 'r') as keys_f:
+                keys_json_string = keys_f.read()
+                keys = json.loads(keys_json_string)
+        try:
+            self.con_key = keys[keyname]
+        except KeyError:
+            print(f"ERROR: No key with {keyname} found - check your keypairs file")
+            sys.exit(1)
         if not self.con_key['server'].endswith("/"):
             self.con_key['server'] += "/"
 
@@ -144,7 +149,7 @@ class FDN_Connection(object):
             self.email = me_page['email']
             self.check = True
             self.admin = True if 'admin' in me_page.get('groups', []) else False
-        except:
+        except Exception:
             print('Can not establish connection, please check your keys')
             me_page = {}
         if not me_page:
@@ -238,27 +243,9 @@ exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3
                     ]
 
 
-sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "ExperimentType",
-    "Publication", "Organism", "Vendor", "IndividualChicken", "IndividualFly",
-    "IndividualHuman", "IndividualMouse", "IndividualPrimate",
-    "IndividualZebrafish", "FileFormat", "Enzyme", "GenomicRegion", "Gene",
-    "BioFeature", "Construct", "TreatmentRnai", "TreatmentAgent",
-    "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
-    "Biosample", "FileFastq", "FileProcessed", "FileReference",
-    "FileCalibration", "FileSet", "FileSetCalibration", "MicroscopeSettingD1",
-    "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
-    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic",
-    "ExperimentMic_Path", "ExperimentHiC", "ExperimentCaptureC",
-    "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
-    "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
-    "OntologyTerm"
-]
-
-file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
+file_types = [i for i in SHEET_ORDER if i.startswith('File') and not i.startswith('FileSet')]
 file_types.remove('FileFormat')
-exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
+exp_types = [i for i in SHEET_ORDER if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
 
 
 def get_field_type(field):
@@ -283,7 +270,7 @@ def is_subobject(field):
         return True
     try:
         return field['items']['type'] == 'object'
-    except:
+    except Exception:
         return False
 
 
@@ -400,7 +387,7 @@ def create_excel(all_fields, filename):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # removes the by default created empty sheet named Sheet
     # order sheets
-    sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
+    sheet_list = [(sheet, all_fields[sheet]) for sheet in SHEET_ORDER if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
         ws = wb.create_sheet(title=obj_name)
         ws.cell(row=1, column=1, value="#Field Name:")
@@ -431,7 +418,7 @@ def get_sheet_names(types_list):
     lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list if
                        item != 'ExperimentMic_Path']
     if lowercase_types == ['all']:
-        sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
+        sheets = [sheet for sheet in SHEET_ORDER if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
     else:
         presets = {
             'hic': ["image", "filefastq", "experimenthic"],
@@ -457,7 +444,7 @@ def get_sheet_names(types_list):
                     'protocol', 'publication', 'biosource', 'biosample',
                     'biosamplecellculture', 'image', 'experimentsetreplicate'
                 ]
-        sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
+        sheets = [sheet for sheet in SHEET_ORDER if sheet.lower() in lowercase_types]
         for name in types_list:
             modified_name = name.lower().replace('-', '').replace('_', '')
             if modified_name in lowercase_types and modified_name not in [sheetname.lower() for sheetname in sheets]:

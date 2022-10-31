@@ -480,64 +480,6 @@ def test_workbook_reader_no_update_no_patchall_existing_item(capsys, mocker, con
     assert out[0] == message
 
 
-# def test_workbook_reader_post_ftp_file_upload(capsys, mocker, connection_mock, workbooks):
-#     test_insert = 'Ftp_file_test_md5.xlsx'
-#     dict_load = {}
-#     dict_rep = {}
-#     dict_set = {}
-#     all_aliases = {}
-#     message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors\n"
-#     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
-#     # mock fetching existing info, return None
-#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
-#     # mock upload file and skip
-#     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
-#     # mock the ftp copy - this should get it's own tests
-#     mocker.patch('wranglertools.import_data.ftp_copy',
-#                  return_value=(True, {'md5sum': '0f343b0931126a20f133d67c2b018a3b'}, '1KB.zip'))
-#     # mock file deletion
-#     mocker.patch('wranglertools.import_data.pp.Path.unlink')
-#     # mock posting new items
-#     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-#     imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileCalibration', True, connection_mock, False,
-#                         all_aliases, dict_load, dict_rep, dict_set, True, [])
-#     args = imp.ff_utils.post_metadata.call_args
-#     out = capsys.readouterr()[0]
-#     post_json_arg = args[0][0]
-#     assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-#     assert message1 == out
-
-
-# def test_workbook_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock, workbooks):
-#     """ This appears to actually mainly be testing the ftp_copy function - confirming that
-#         the correct error messages are generated when you try to copy an ftp file without
-#         including an md5sum in the post and subsequently that the workbook_reader function
-#         will still post the metadata without uploading a file
-#     """
-#     test_insert = 'Ftp_file_test.xlsx'
-#     dict_load = {}
-#     dict_rep = {}
-#     dict_set = {}
-#     all_aliases = {}
-#     message0 = "WARNING: File not uploaded"
-#     message1 = "Please add original md5 values of the files"
-#     message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
-#     e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
-#     # mock fetching existing info, return None
-#     mocker.patch('wranglertools.import_data.get_existing', return_value={})
-#     # mock upload file and skip
-#     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
-#     # mock posting new items
-#     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-#     imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileCalibration', True, connection_mock, False,
-#                         all_aliases, dict_load, dict_rep, dict_set, True, [])
-#     out = capsys.readouterr()[0]
-#     outlist = [i.strip() for i in out.split('\n') if i.strip()]
-#     assert message0 == outlist[0]
-#     assert message1 == outlist[1]
-#     assert message2 == outlist[2]
-
-
 @pytest.mark.file_operation
 def test_workbook_reader_update_new_file_fastq_post_and_file_upload(capsys, mocker, connection_mock, workbooks):
     """ This appears to actually mainly be testing the md5 function - confirming that
