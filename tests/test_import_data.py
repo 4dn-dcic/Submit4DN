@@ -1,6 +1,5 @@
 import pathlib as pp
 from plistlib import InvalidFileException
-from gspread.exceptions import GSpreadException
 
 import pytest
 import inspect
@@ -432,7 +431,7 @@ def test_get_workbook_gsheet(mocker):
 
 def test_get_workbook_gsheet_fail_w_no_auth():
     filename = 'http://docs.google.com/test_sheet'
-    with pytest.raises(GSpreadException):
+    with pytest.raises(Exception):
         imp.get_workbook(filename, 'gsheet')
 
 
@@ -696,7 +695,7 @@ def test_order_sorter(capsys):
     ordered_list = ['User', 'Lab', 'Document', 'IndividualMouse', 'Modification', 'Biosource',
                     'BiosampleCellCulture', 'Biosample', 'ExperimentHiC']
     message0 = "WARNING! Trouble sheet(s) are not loaded"
-    message1 = '''WARNING! Check the sheet names and the reference list "sheet_order"'''
+    message1 = '''WARNING! Check the sheet names and the list in constant "SHEET_ORDER"'''
     assert ordered_list == imp.order_sorter(test_list)
     out = capsys.readouterr()[0]
     outlist = [i.strip() for i in out.split('\n') if i]

@@ -26,7 +26,7 @@ from dcicutils import ff_utils
 from gspread.exceptions import GSpreadException
 from openpyxl.utils.exceptions import InvalidFileException
 from wranglertools.constants import (
-    CONFDIR, GSID_REGEX, SHEET_ORDER, LIST_OF_LOADXL_FIELDS, ENV_VAR_DIR, GCRED_FNAME,
+    CONFDIR, SHEET_ORDER, LIST_OF_LOADXL_FIELDS, ENV_VAR_DIR, GCRED_FNAME,
     AUTH_TOKEN_FNAME, SCOPES, GSHEET, EXCEL, ZIP_MIME, XLSX_MIME, ALLOWED_MIMES,
     GSHEET_URL_REGEX, GSID_REGEX
 )

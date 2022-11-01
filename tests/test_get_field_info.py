@@ -1,11 +1,29 @@
 import wranglertools.get_field_info as gfi
+from wranglertools.constants import CONFDIR, DEFAULT_KEYPAIR_FILE
 import pytest
-from operator import itemgetter
 import openpyxl
 from pathlib import Path
 import os
 
 # test data is in conftest.py
+
+
+def test_gfi_get_args_required_default():
+    defaults = {
+        'type': ['all'],
+        'key': 'default',
+        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE, 
+        'debug': False,
+        'nodesc': False,
+        'comments': False,
+        'noenums': False,
+        'outfile': 'fields.xlsx',
+        'noadmin': False
+    }
+    args = gfi.getArgs([])
+    for k, v in defaults.items():
+        assert getattr(args, k) == v
+
 
 keypairs = {
     "default":
@@ -24,7 +42,7 @@ def mkey():
 
 def test_key():
     key = gfi.FDN_Key(keypairs, "default")
-    assert(key)
+    assert key
     assert isinstance(key.con_key["server"], str)
     assert isinstance(key.con_key['key'], str)
     assert isinstance(key.con_key['secret'], str)
@@ -33,16 +51,24 @@ def test_key():
 @pytest.mark.file_operation
 def test_key_file():
     key = gfi.FDN_Key('./tests/data_files/keypairs.json', "default")
-    assert(key)
+    assert key
     assert isinstance(key.con_key["server"], str)
     assert isinstance(key.con_key['key'], str)
     assert isinstance(key.con_key['secret'], str)
 
 
+def test_key_from_env(mocker):
+    #mocker.patch('wranglertools.get_field_info.os.environ.get', return_value='mock/dir')
+    #mocker.patch.object(Path, 'is_file')
+    #import pdb; pdb.set_trace()
+    key = gfi.FDN_Key('keypairs.json', 'default')
+    print(key)
+
+
 def test_key_error_wrong_format(capsys):
     gfi.FDN_Key([("key_name", "my_key")], "key_name")
     out = capsys.readouterr()[0]
-    message = "The keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder"
+    message =f"The keyfile [('key_name', 'my_key')] does not exist\ncheck the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}"
     assert out.strip() == message
 
 
@@ -190,6 +216,20 @@ def test_connection_prompt_for_lab_award_multi_lab_award(
     connection.prompt_for_lab_award()
     assert connection.lab == chosenlab
     assert connection.award == chosenaward
+
+
+def test_remove_all_from_types_multitypes(mocked_args_w_type):
+    assert 'all' in mocked_args_w_type.type
+    gfi._remove_all_from_types(mocked_args_w_type)
+    assert 'all' not in mocked_args_w_type.type
+    assert 'FileFastq' in mocked_args_w_type.type
+
+
+def test_remove_all_from_types_do_not_rm_when_only_type(mocked_args_w_type):
+    assert 'all' in mocked_args_w_type.type
+    gfi._remove_all_from_types(mocked_args_w_type)
+    assert 'all' not in mocked_args_w_type.type
+    assert 'FileFastq' in mocked_args_w_type.type
 
 
 def test_set_award_no_lab(mocker, mkey, returned_user_me_submit_for_one_lab,
@@ -344,6 +384,28 @@ def test_get_uploadable_fields_mock(connection_mock, mocker, returned_vendor_sch
         assert field.enum is not None
 
 
+def test_get_uploadable_fields_experiment_added_fields(connection_mock, mocker, returned_experiment_hi_c_schema):
+    added_field_names = ['*replicate_set', '*bio_rep_no', '*tec_rep_no']
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_experiment_hi_c_schema.json())
+    mocker.patch('dcicutils.ff_utils.search_metadata', return_value=[
+        {"title": "single cell Methyl Hi-C"}, {"title": "Methyl Hi-C"}, {"title": "Dilution Hi-C"},
+        {"title": "DNase Hi-C"}, {"title": "Micro-C"}, {"title": "single cell Hi-C"}, {"title": "sci-Hi-C"},
+        {"title": "TCC"}, {"title": "in situ Hi-C"}, {"title": "MC-Hi-C"}, {"title": "MC-3C"}, {"title": "sn-Hi-C"}])
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['ExperimentHiC'])
+    field_list = field_dict['ExperimentHiC']
+    assert len([field.name for field in field_list if field.name in added_field_names]) == len(added_field_names)
+
+
+def test_get_uploadable_fields_file_extra_files(connection_mock, mocker, returned_file_fastq_schema):
+    added_field_names = ['extra_files.file_format', 'extra_files.use_for']
+    mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_file_fastq_schema.json())
+    mocker.patch('dcicutils.ff_utils.search_metadata', return_value=[{'file_format': 'fastq'}, {'file_format': 'tar'}])
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['FileFastq'])
+    field_list = field_dict['FileFastq']
+    assert len([field.name for field in field_list if field.name in added_field_names]) == len(added_field_names)
+    assert all([field.ftype.startswith('array of embedded') for field in field_list if field.name in added_field_names])
+
+
 def xls_to_list(xls_file, sheet):
     """To compare xls files to reference ones, return a sorted list of content."""
     wb = openpyxl.load_workbook(xls_file)
@@ -367,12 +429,16 @@ def test_create_xlsx_default_options(connection_mock, mocker, returned_bcc_schem
         '#Additional Info:', '#Description:', '#Field Name:', '#Field Type:', '*culture_start_date',
         '-', '-', '-', '-', '-', '-',
         'A short description of the cell culture procedure - eg. Details on culturing a preparation of K562 cells',
-        "Choices:['Yes', 'No']", "Choices:['cardiac muscle myoblast', 'cardiac muscle cell']", "Choices:['non synchronized', 'G1']",
+        "Choices:['Yes', 'No']", "Choices:['cardiac muscle myoblast', 'cardiac muscle cell']",
+        "Choices:['non synchronized', 'G1']",
         'If a culture is synchronized the cell cycle stage from which the biosample used in an experiment is prepared',
-        'Item:OntologyTerm', 'Protocols including additional culture manipulations such as stem cell differentiation or cell cycle synchronization.',
+        'Item:OntologyTerm',
+        'Protocols including additional culture manipulations such as stem cell differentiation or'
+        ' cell cycle synchronization.',
         'Relevant for pluripotent and stem cell lines - set to Yes if cells have undergone in vitro differentiation',
         'The resulting tissue or cell type for cells that have undergone differentiation.',
-        'Total number of culturing days since receiving original vial', 'YYYY-MM-DD format date for most recently thawed cell culture.',
+        'Total number of culturing days since receiving original vial',
+        'YYYY-MM-DD format date for most recently thawed cell culture.',
         'array of Item:Protocol', 'culture_duration', 'culture_harvest_date', 'description', 'in_vitro_differentiated',
         'integer', 'number', 'passage_number', 'protocols_additional', 'string', 'string', 'string', 'string', 'string',
         'synchronization_stage', 'tissue'
@@ -411,7 +477,8 @@ def test_create_xlsx_non_defaults(connection_mock, mocker, returned_bcc_schema):
     except OSError:
         pass
     mocker.patch('dcicutils.ff_utils.get_metadata', return_value=returned_bcc_schema.json())
-    field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'], no_description=True, include_comments=True, no_enums=True)
+    field_dict = gfi.get_uploadable_fields(connection_mock, ['BiosampleCellCulture'], no_description=True,
+                                           include_comments=True, no_enums=True)
     gfi.create_excel(field_dict, xls_file)
     assert os.path.isfile(xls_file)
     assert xls_to_list(xls_file, "BiosampleCellCulture") == EXPECTED
@@ -445,10 +512,21 @@ def test_create_xls_lookup_order(connection_mock, mocker, returned_vendor_schema
 def test_get_sheet_names(capfd):
     input_list = ['hic', 'experi-ment_capture-c', 'TreatmentChemical', 'Biosample']
     result = gfi.get_sheet_names(input_list)
-    out, err = capfd.readouterr()
+    out, _ = capfd.readouterr()
     assert result == [
         'Protocol', 'Publication', 'Image', 'Biosource', 'BiosampleCellCulture',
         'Biosample', 'FileFastq', 'ExperimentHiC', 'ExperimentCaptureC', 'ExperimentSetReplicate'
         ]
     assert len(result) == len(list(set(result)))
     assert 'No schema found for type TreatmentChemical' in out
+
+
+def test_get_sheet_names_all():
+    from wranglertools.constants import SHEET_ORDER
+    sheet_names = SHEET_ORDER[:]
+    sheet_names.remove('ExperimentMic_Path')
+    sheet_names.remove('OntologyTerm')
+    count = len(sheet_names)
+    res = gfi.get_sheet_names(['All'])
+    assert len(res) == count
+    assert res == sheet_names

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
+from logging.config import DEFAULT_LOGGING_CONFIG_PORT
 import pathlib as pp
 import argparse
 from dcicutils import ff_utils
@@ -69,7 +70,7 @@ def create_common_arg_parser():
     return parser
 
 
-def getArgs():  # pragma: no cover
+def getArgs(args):  # pragma: no cover
     parser = argparse.ArgumentParser(
         parents=[create_common_arg_parser()],
         description=__doc__, epilog=EPILOG,
@@ -94,43 +95,76 @@ def getArgs():  # pragma: no cover
                         default=False,
                         action='store_true',
                         help="Will set an admin user to non-admin for generating sheets")
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     _remove_all_from_types(args)
     return args
 
 
 class FDN_Key:
     def __init__(self, keyfile, keyname):
+        ''' If key info is not provided as a dictionary then
+            We want to try to get the key info in the following order
+            1) if a keyfile param is provided (not the default value) 
+                then look there for the keys first
+                - using keyname if provided or 
+                - look for a "default" entry if not
+            2) check to see if the ENV_VAR_DIR env variable is set and in this
+                case we expect to find a file named keypairs.json with keys
+                to use there where we will look for key named keyname or "default"
+            3) finally look for keypairs.json in the .submit4dn directory and in home
+                directory
+        '''
         self.error = False
         keys = None
-        envdir = os.environ.get(ENV_VAR_DIR)
-        # is the keyfile a dictionary
-        if isinstance(keyfile, dict):
+        default_location = str(CONFDIR.joinpath(DEFAULT_KEYPAIR_FILE))
+        if not keyfile:  # this should not happen as defaults are supplied in gfi or imp but just in case
+            msg = "keyfile parameter missing"
+            self.set_error(msg)
+            return
+        elif isinstance(keyfile, dict):  # is the keyfile a dictionary
             keys = keyfile
-        else:
+        elif str(keyfile) != default_location:
+            fpath = pp.Path(str(keyfile))
+            if not fpath.is_file():
+                msg = f"\nThe keyfile {keyfile} does not exist\ncheck the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}\n"
+                self.set_error(msg)
+                return
+        else:  # default keyfile arg has been passed 
+            envdir = os.environ.get(ENV_VAR_DIR)
             if envdir:  # loc of keypairs.json specified in env var
-                keyfile = envdir
-            else:  # check if file
-                fpath = pp.Path(str(keyfile))
+                fpath = pp.Path(envdir).joinpath(DEFAULT_KEYPAIR_FILE) 
+                if not fpath.is_file():
+                    msg = f"\n{envdir} directory set as an env variable does not contain {DEFAULT_KEYPAIR_FILE}\n"
+                    self.set_error(msg)
+                    return
+            else:
+                # see if file found in default location
+                fpath = pp.Path(keyfile)
                 if not fpath.is_file():
                     # maybe it's stored in the old default home dir
                     fpath = HOME.joinpath(DEFAULT_KEYPAIR_FILE)
                     if not fpath.is_file():
-                        print("\nThe keyfile does not exist\n"
-                              f"check the --keyfile path or add 'keypairs.json' to {CONFDIR}\n")
-                        self.error = True
+                        msg = f"\nThe keyfile does not exist! Add {DEFAULT_KEYPAIR_FILE} to {CONFDIR} or use the --keyfile option\n"
+                        self.set_error(msg)
                         return
 
+        if not keys and fpath:
             with open(fpath, 'r') as keys_f:
                 keys_json_string = keys_f.read()
-                keys = json.loads(keys_json_string)
+            keys = json.loads(keys_json_string)
+        
         try:
             self.con_key = keys[keyname]
         except KeyError:
-            print(f"ERROR: No key with {keyname} found - check your keypairs file")
-            sys.exit(1)
+            msg = f"ERROR: No key with {keyname} found - check your keypairs file"
+            self.set_error(msg)
+            return
         if not self.con_key['server'].endswith("/"):
             self.con_key['server'] += "/"
+
+    def set_error(self, msg):
+        print(msg)
+        self.error = True
 
 
 class FDN_Connection(object):
@@ -236,16 +270,9 @@ class FieldInfo(object):
     enum = attr.ib(default=u'')
 
 
-# additional fields for experiment sheets to capture experiment_set related information
-exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
-                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
-                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
-                    ]
-
-
-file_types = [i for i in SHEET_ORDER if i.startswith('File') and not i.startswith('FileSet')]
-file_types.remove('FileFormat')
-exp_types = [i for i in SHEET_ORDER if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
+# file_types = [i for i in SHEET_ORDER if i.startswith('File') and not (i.startswith('FileSet') or i == 'FileFormat')]
+# file_types.remove('FileFormat')
+# exp_types = [i for i in SHEET_ORDER if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
 
 
 def get_field_type(field):
@@ -338,21 +365,31 @@ def build_field_list(properties, required_fields=None, no_description=False,
 
 
 class FDN_Schema(object):
+    file_types = [i for i in SHEET_ORDER if i.startswith('File') and not (i.startswith('FileSet') or i == 'FileFormat')]
+    exp_types = [i for i in SHEET_ORDER if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
+
     def __init__(self, connection, schema_name):
         uri = '/profiles/' + schema_name + '.json'
         response = ff_utils.get_metadata(uri, key=connection.key, add_on="frame=object")
         self.required = None
         if 'required' in response:
             self.required = response['required']
-        if schema_name in file_types and response['properties'].get('file_format'):
+        if schema_name in FDN_Schema.file_types and response['properties'].get('file_format'):
             q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
             formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
             response['properties']['file_format']['enum'] = formats
-        elif schema_name in exp_types and response['properties'].get('experiment_type'):
+        elif schema_name in FDN_Schema.exp_types and response['properties'].get('experiment_type'):
             q = '/search/?type=ExperimentType&field=title&valid_item_types={}'.format(schema_name)
             exptypes = [i['title'] for i in ff_utils.search_metadata(q, key=connection.key)]
             response['properties']['experiment_type']['enum'] = exptypes
         self.properties = response['properties']
+
+
+# additional fields for experiment sheets to capture experiment_set related information
+exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
+                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
+                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
+                    ]
 
 
 def get_uploadable_fields(connection, types, no_description=False,
@@ -453,7 +490,7 @@ def get_sheet_names(types_list):
 
 
 def main():  # pragma: no cover
-    args = getArgs()
+    args = getArgs(sys.argv[1:])  # the sys.argv bit is for testing purposes
     key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
