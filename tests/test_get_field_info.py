@@ -40,7 +40,7 @@ def mkey():
     return gfi.FDN_Key(keypairs, "default")
 
 
-def test_key():
+def test_key_as_dict():
     key = gfi.FDN_Key(keypairs, "default")
     assert key
     assert isinstance(key.con_key["server"], str)
@@ -48,21 +48,116 @@ def test_key():
     assert isinstance(key.con_key['secret'], str)
 
 
+@pytest.fixture
+def keydirname():
+    return './tests/data_files/'
+
+@pytest.fixture
+def keydir(keydirname):
+    return Path(keydirname)
+
+@pytest.fixture
+def keyfilename():
+    return 'keypairs.json'
+
+
+@pytest.fixture
+def keypath(keydir, keyfilename):
+    return keydir.joinpath(keyfilename)
+
+
+@pytest.fixture
+def missing_dirname():
+    return './missing/keydir/'
+
+
+@pytest.fixture
+def missing_dir(missing_dirname):
+    return Path(missing_dirname)
+
 @pytest.mark.file_operation
-def test_key_file():
-    key = gfi.FDN_Key('./tests/data_files/keypairs.json', "default")
+def test_key_file(keypath):
+    ''' testing when an actual keyfile path is provided as per --keyfile option'''
+    key = gfi.FDN_Key(keypath, "default")
     assert key
     assert isinstance(key.con_key["server"], str)
     assert isinstance(key.con_key['key'], str)
     assert isinstance(key.con_key['secret'], str)
 
 
-def test_key_from_env(mocker):
-    #mocker.patch('wranglertools.get_field_info.os.environ.get', return_value='mock/dir')
-    #mocker.patch.object(Path, 'is_file')
-    #import pdb; pdb.set_trace()
-    key = gfi.FDN_Key('keypairs.json', 'default')
-    print(key)
+@pytest.mark.file_operation
+def test_key_from_env(mocker, keydirname):
+    ''' testing getting directory where keypairs.json is stored when directory location
+        is set in an enviromental var - by mocking os.environ.get function
+        to hit this clause the expected default keypath must be passed to the constructor'''
+    default_keypath = CONFDIR / DEFAULT_KEYPAIR_FILE
+    mocker.patch('wranglertools.get_field_info.os.environ.get', return_value=keydirname)
+    key = gfi.FDN_Key(default_keypath, 'default')
+    assert key
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
+
+
+def test_key_from_env_set_wrong(mocker, capsys):
+    ''' testing when directory location is set in an enviromental var and the expected 'keypairs.json'
+        is not found in the director - by mocking os.environ.get function
+        to hit this clause the expected default keypath must be passed to the constructor'''
+    default_keypath = CONFDIR / DEFAULT_KEYPAIR_FILE
+    baddir = 'some/other/name/'
+    mocker.patch('wranglertools.get_field_info.os.environ.get', return_value=baddir)
+    # import pdb; pdb.set_trace()
+    key = gfi.FDN_Key(default_keypath, 'default')
+    out = capsys.readouterr()[0]
+    assert key.error
+    assert out == f'\n{baddir} directory set as an env variable does not contain {DEFAULT_KEYPAIR_FILE}\n\n'
+
+
+@pytest.mark.file_operation
+def test_key_from_default_location(mocker, keydir, keydirname, keyfilename):
+    '''little bit wonky as we are "mocking" the default location to be where the test file is stored
+        by over-riding the constant'''
+    mocker.patch("wranglertools.get_field_info.CONFDIR", keydir)
+    default_keypath = keydirname + keyfilename
+    key = gfi.FDN_Key(default_keypath, 'default')
+    assert key
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
+
+
+@pytest.mark.file_operation
+def test_key_from_home_location(mocker, keydir, keydirname, keyfilename):
+    '''little bit wonky as we are "mocking" the default location to be where the test file is stored
+        by over-riding the constant'''
+    mocker.patch("wranglertools.get_field_info.HOME", keydir)
+    default_keypath = keydirname + keyfilename
+    key = gfi.FDN_Key(default_keypath, 'default')
+    assert key
+    assert isinstance(key.con_key["server"], str)
+    assert isinstance(key.con_key['key'], str)
+    assert isinstance(key.con_key['secret'], str)
+
+
+def test_key_default_file_missing(mocker, capsys, missing_dir, missing_dirname, keyfilename):
+    ''' in this case we are mocking the default filename so it's not found'''
+    mocker.patch("wranglertools.get_field_info.CONFDIR", missing_dir)
+    mocker.patch("wranglertools.get_field_info.HOME", missing_dir)
+    mocker.patch('wranglertools.get_field_info.os.environ.get', return_value=None)
+    default_keypath = missing_dirname + keyfilename
+    key = gfi.FDN_Key(str(default_keypath), 'default')
+    out = capsys.readouterr()[0]
+    assert key.error
+    assert out == f"\nThe keyfile does not exist! Add keypairs.json to {missing_dir} or use the --keyfile option\n\n"
+
+
+def test_key_no_keyfile(capsys):
+    ''' this is testing something that should not be possible when running get_field_info but if using FDN_Key
+        in another context/script this could be relevant
+    '''
+    gfi.FDN_Key(None, 'default')
+    out = capsys.readouterr()[0]
+    assert out == "keyfile parameter missing\n"
 
 
 def test_key_error_wrong_format(capsys):
@@ -71,6 +166,12 @@ def test_key_error_wrong_format(capsys):
     message =f"The keyfile [('key_name', 'my_key')] does not exist\ncheck the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}"
     assert out.strip() == message
 
+
+def test_key_error_bad_keyname(capsys):
+    key = gfi.FDN_Key(keypairs, "nosuchkey")
+    out = capsys.readouterr()[0]
+    assert key.error
+    assert out == "ERROR: No key with name 'nosuchkey' found - check your keypairs file\n"
 
 def bad_connection_will_exit():
     with pytest.raises(SystemExit) as excinfo:

@@ -116,14 +116,14 @@ class FDN_Key:
         '''
         self.error = False
         keys = None
-        default_location = str(CONFDIR.joinpath(DEFAULT_KEYPAIR_FILE))
+        default_location = CONFDIR.joinpath(DEFAULT_KEYPAIR_FILE)
         if not keyfile:  # this should not happen as defaults are supplied in gfi or imp but just in case
             msg = "keyfile parameter missing"
             self.set_error(msg)
             return
         elif isinstance(keyfile, dict):  # is the keyfile a dictionary
             keys = keyfile
-        elif str(keyfile) != default_location:
+        elif pp.Path(str(keyfile)) != default_location:
             fpath = pp.Path(str(keyfile))
             if not fpath.is_file():
                 msg = f"\nThe keyfile {keyfile} does not exist\ncheck the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}\n"
@@ -156,7 +156,7 @@ class FDN_Key:
         try:
             self.con_key = keys[keyname]
         except KeyError:
-            msg = f"ERROR: No key with {keyname} found - check your keypairs file"
+            msg = f"ERROR: No key with name '{keyname}' found - check your keypairs file"
             self.set_error(msg)
             return
         if not self.con_key['server'].endswith("/"):
