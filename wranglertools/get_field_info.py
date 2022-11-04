@@ -130,7 +130,7 @@ class FDN_Key:
                 self.set_error(msg)
                 return
         else:  # default keyfile arg has been passed 
-            envdir = os.environ.get(ENV_VAR_DIR)
+            envdir = os.environ.get(p ENV_VAR_DIR)
             if envdir:  # loc of keypairs.json specified in env var
                 fpath = pp.Path(envdir).joinpath(DEFAULT_KEYPAIR_FILE) 
                 if not fpath.is_file():

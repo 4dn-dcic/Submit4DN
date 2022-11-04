@@ -1,12 +1,30 @@
 import pathlib as pp
 from plistlib import InvalidFileException
-
+from wranglertools.constants import CONFDIR, DEFAULT_KEYPAIR_FILE
 import pytest
 import inspect
 import wranglertools.import_data as imp
 from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook, MockedGauth
 
 # test data is in conftest.py
+
+
+def test_imp_get_args_required_default():
+    defaults = {
+        'type': ['all'],
+        'key': 'default',
+        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE, 
+        'debug': False,
+        'update': False,
+        'patchall': False,
+        'remote': False,
+        'novalidate': False,
+    }
+    args = imp.getArgs(['infile'])
+    for k, v in defaults.items():
+        assert getattr(args, k) == v
+    assert args.infile == 'infile'
+
 
 
 def convert_to_path_with_tilde(string_path):

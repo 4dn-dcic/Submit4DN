@@ -35,7 +35,7 @@ from wranglertools.get_field_info import (FDN_Connection, FDN_Key,
                                           create_common_arg_parser)
 
 
-def getArgs():  # pragma: no cover
+def getArgs(args):
     parser = argparse.ArgumentParser(
         parents=[create_common_arg_parser()],
         description=__doc__, epilog=EPILOG,
@@ -70,7 +70,7 @@ def getArgs():  # pragma: no cover
                         default=False,
                         action='store_true',
                         help="Will skip pre-validation of workbook")
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     _remove_all_from_types(args)
     return args
 
@@ -1646,7 +1646,7 @@ def get_all_aliases(workbook, sheets, booktype):
 
 
 def main():  # pragma: no cover
-    args = getArgs()
+    args = getArgs(sys.argv[1:])  # the sys.argv bit is for testing purposes
     key = FDN_Key(args.keyfile, args.key)
     # check if key has error
     if key.error:
