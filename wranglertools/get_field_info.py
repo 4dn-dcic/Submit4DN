@@ -11,7 +11,7 @@ import sys
 import json
 
 from wranglertools.constants import (
-    HOME, CONFDIR, ENV_VAR_DIR, DEFAULT_KEYPAIR_FILE, SHEET_ORDER
+    HOME, CONFDIR, CONFDIR_ENVVAR, DEFAULT_KEYPAIR_FILE, SHEET_ORDER
 )
 
 
@@ -108,12 +108,12 @@ class FDN_Key:
                 then look there for the keys first
                 - using keyname if provided or 
                 - look for a "default" entry if not
-            2) check to see if the ENV_VAR_DIR env variable is set and in this
+            2) check to see if the CONFDIR_ENVVAR env variable is set and in this
                 case we expect to find a file named keypairs.json with keys
                 to use there where we will look for key named keyname or "default"
             3) finally look for keypairs.json in the .submit4dn directory and in home
                 directory
-        '''
+        '''        
         self.error = False
         keys = None
         default_location = CONFDIR.joinpath(DEFAULT_KEYPAIR_FILE)
@@ -130,7 +130,7 @@ class FDN_Key:
                 self.set_error(msg)
                 return
         else:  # default keyfile arg has been passed 
-            envdir = os.environ.get(p ENV_VAR_DIR)
+            envdir = os.environ.get(CONFDIR_ENVVAR)
             if envdir:  # loc of keypairs.json specified in env var
                 fpath = pp.Path(envdir).joinpath(DEFAULT_KEYPAIR_FILE) 
                 if not fpath.is_file():

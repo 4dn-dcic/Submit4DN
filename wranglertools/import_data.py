@@ -26,7 +26,7 @@ from dcicutils import ff_utils
 from gspread.exceptions import GSpreadException
 from openpyxl.utils.exceptions import InvalidFileException
 from wranglertools.constants import (
-    CONFDIR, SHEET_ORDER, LIST_OF_LOADXL_FIELDS, ENV_VAR_DIR, GCRED_FNAME,
+    CONFDIR, SHEET_ORDER, LIST_OF_LOADXL_FIELDS, CONFDIR_ENVVAR, GCRED_FNAME,
     AUTH_TOKEN_FNAME, SCOPES, GSHEET, EXCEL, ZIP_MIME, XLSX_MIME, ALLOWED_MIMES,
     GSHEET_URL_REGEX, GSID_REGEX
 )
@@ -129,7 +129,7 @@ class WebFetchException(Exception):
 
 def google_authenticate():
     gsauth = None
-    ga_cred_env = os.environ.get(ENV_VAR_DIR)  # look to see if set as env variable
+    ga_cred_env = os.environ.get(CONFDIR_ENVVAR)  # look to see if set as env variable
     # default to .submit4dn dir in home dir
     creddir = pp.Path(ga_cred_env) if ga_cred_env else CONFDIR
     try:

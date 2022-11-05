@@ -10,7 +10,7 @@ import pathlib as pp
 HOME = pp.Path.home()
 CONFDIR = HOME.joinpath('.submit4dn')
 DEFAULT_KEYPAIR_FILE = 'keypairs.json'
-ENV_VAR_DIR = 'SUBMIT_4DN_CONF_DIR'
+CONFDIR_ENVVAR = 'SUBMIT_4DN_CONFDIR'
 
 SHEET_ORDER = [
     "User", "Award", "Lab", "Document", "Protocol", "ExperimentType",

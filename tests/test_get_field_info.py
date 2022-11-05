@@ -163,7 +163,8 @@ def test_key_no_keyfile(capsys):
 def test_key_error_wrong_format(capsys):
     gfi.FDN_Key([("key_name", "my_key")], "key_name")
     out = capsys.readouterr()[0]
-    message =f"The keyfile [('key_name', 'my_key')] does not exist\ncheck the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}"
+    message = (f"The keyfile [('key_name', 'my_key')] does not exist\n"
+               f"check the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}")
     assert out.strip() == message
 
 
