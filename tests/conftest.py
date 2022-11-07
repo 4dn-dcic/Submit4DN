@@ -1,6 +1,7 @@
 # flake8: noqa
 import pytest
 from wranglertools.get_field_info import FDN_Key, FDN_Connection
+from wranglertools.constants import CONFDIR, DEFAULT_KEYPAIR_FILE
 from pathlib import Path
 import openpyxl
 
@@ -31,6 +32,93 @@ class MockedConnection(object):
     def prompt_for_lab_award(self, lab=None, award=None):
         self.lab = 'test_lab'
         return
+
+
+class MockedGauth(object):
+    def __init__(self):
+        pass
+
+    def open_by_key(self, gsid):
+        wkbk = MockedGoogleWorkBook()
+        sheet2 = MockedGoogleWorkSheet()
+        sheet2.set_title('Sheet2')
+        wkbk.add_sheets([MockedGoogleWorkSheet(), sheet2])
+        return wkbk
+
+
+class MockedGoogleWorkSheet(object):
+    ''' very basic mocked object to represent a gsheet sheet'''
+    def __init__(self, title='Sheet1', data={}):
+        self.title = title
+        self.data = data
+
+    def set_title(self, title=''):
+        if title:
+            self.title = title
+    
+    def set_data(self, data={}):
+        self.data = data
+
+    def get_values(self):
+        return self.data.values()
+
+
+class MockedGoogleWorkBook(object):
+    ''' basic mocked google workbook '''
+    def __init__(self, gsid='1111', sheets=[]):
+        self.gsid = gsid
+        self.sheets = sheets
+
+    def add_sheets(self, sheets=[]):
+        self.sheets = sheets
+
+
+    def worksheets(self):
+        return self.sheets
+
+    def get_worksheet(self, idx):
+        '''return sheet at idx in sheet list'''
+        return self.sheets[idx]
+
+    def worksheet(self, title):
+        for sheet in self.sheets:
+            if sheet.title == title:
+                return sheet
+        raise Exception
+
+
+class MockedNamespace(object):
+    def __init__(self, dic):
+        for k, v in dic.items():
+            setattr(self, k, v)
+
+
+@pytest.fixture
+def mocked_args_w_type():
+    return MockedNamespace(
+        {
+            'type': ['FileFastq', 'all'],
+            'key': 'default'
+        }
+    )
+
+
+@pytest.fixture
+def mocked_gfi_args_default():
+    return MockedNamespace(
+        {
+            'type': ['all'],
+            'key': 'default',
+            'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE, 
+            'debug': False,
+            'nodesc': False,
+            'comments': False,
+            'noenums': False,
+            'outfile': 'fields.xlsx',
+            'noadmin': False
+        }
+    )
+
 
 
 @pytest.fixture
@@ -452,6 +540,18 @@ def returned_vendor_schema_l():
 def returned_experiment_set_schema():
     data = {"title":"Experiment set","description":"Schema for submitting metadata for an experiment set.","id":"/profiles/experiment_set.json","$schema":"http://json-schema.org/draft-04/schema#","type":"object","required":["award","lab"],"identifyingProperties":["uuid","aliases"],"additionalProperties":False,"mixinProperties":[{"$ref":"mixins.json#/schema_version"},{"$ref":"mixins.json#/accession"},{"$ref":"mixins.json#/uuid"},{"$ref":"mixins.json#/aliases"},{"$ref":"mixins.json#/status"},{"$ref":"mixins.json#/attribution"},{"$ref":"mixins.json#/submitted"},{"$ref":"mixins.json#/notes"},{"$ref":"mixins.json#/documents"}],"properties":{"documents":{"type":"array","title":"Documents","items":{"type":"string","linkTo":"Document","comment":"See document.json for available identifiers.","title":"Document","description":"A document that provides additional information (not data file)."},"default":[],"description":"Documents that provide additional information (not data file).","uniqueItems":True},"notes":{"type":"string","elasticsearch_mapping_index_type":{"type":"string","default":"analyzed","enum":["analyzed","not_analyzed","no"],"title":"Field mapping index type","description":"Defines one of three types of indexing available"},"title":"Notes","description":"DCIC internal notes."},"submitted_by":{"type":"string","linkTo":"User","comment":"Do not submit, value is assigned by the server. The user that created the object.","title":"Submitted by","rdfs:subPropertyOf":"dc:creator","readonly":True,"serverDefault":"userid","permission":"import_items"},"date_created":{"type":"string","serverDefault":"now","anyOf":[{"format":"date-time"},{"format":"date"}],"comment":"Do not submit, value is assigned by the server. The date the object is created.","title":"Date created","rdfs:subPropertyOf":"dc:created","readonly":True,"permission":"import_items"},"lab":{"type":"string","linkTo":"Lab","comment":"See lab.json for list of available identifiers.","title":"Lab","description":"Lab associated with the submission.","linkSubmitsFor":True},"award":{"type":"string","linkTo":"Award","comment":"See award.json for list of available identifiers.","title":"Grant","description":"Grant associated with the submission."},"status":{"type":"string","readonly":True,"title":"Status","enum":["released","current","revoked","deleted","replaced","in review by lab","in review by project","released to project"],"default":"in review by lab","permission":"import_items"},"aliases":{"type":"array","title":"Lab aliases","items":{"type":"string","pattern":"^\\S+:\\S+","comment":"Current convention is colon separated lab name and lab identifier. (e.g. john-doe:42).","title":"Lab alias","description":"A lab specific identifier to reference an object.","uniqueKey":"alias"},"default":[],"description":"Lab specific identifiers to reference an object.","uniqueItems":True},"uuid":{"type":"string","readonly":True,"title":"UUID","serverDefault":"uuid4","requestMethod":"POST","permission":"import_items","format":"uuid"},"accession":{"type":"string","accessionType":"ES","readonly":True,"title":"Accession","description":"A unique identifier to be used to reference the object.","serverDefault":"accession","permission":"import_items","comment":"Only admins are allowed to set or update this value.","format":"accession"},"alternate_accessions":{"type":"array","default":[],"description":"Accessions previously assigned to objects that have been merged with this object.","title":"Alternate accessions","items":{"type":"string","comment":"Only admins are allowed to set or update this value.","title":"Alternate Accession","description":"An accession previously assigned to an object that has been merged with this object.","permission":"import_items","format":"accession"}},"schema_version":{"type":"string","pattern":"^\\d+(\\.\\d+)*$","hidden comment":"Bump the default in the subclasses.","comment":"Do not submit, value is assigned by the server. The version of the JSON schema that the server uses to validate the object. Schema version indicates generation of schema used to save version to to enable upgrade steps to work. Individual schemas should set the default.","title":"Schema Version","requestMethod":[]},"experiments_in_set":{"type":"array","title":"Set of experiments","exclude_from":["submit4dn"],"default":[],"description":"List of experiments to be associatedas a set.","uniqueItems":True,"items":{"title":"Experiment","comment":"use accessions for identifiers.","type":"string","linkTo":"Experiment"}},"experimentset_type":{"type":"string","enum":["custom"],"title":"Experiment Set type","description":"The categorization of the set of experiments."},"description":{"type":"string","default":"","title":"Description","description":"A description of why experiments are part of the set."},"@type":{"type":"array","calculatedProperty":True,"title":"Type","items":{"type":"string"}},"@id":{"type":"string","calculatedProperty":True,"title":"ID"}},"facets":{"experimentset_type":{"title":"Experiment set type"},"experiments_in_set.award.project":{"title":"Project"},"experiments_in_set.biosample.biosource.individual.organism.name":{"title":"Organism"},"experiments_in_set.biosample.biosource.biosource_type":{"title":"Biosource type"},"experiments_in_set.biosample.biosource_summary":{"title":"Biosource"},"experiments_in_set.digestion_enzyme.name":{"title":"Enzyme"},"experiments_in_set.biosample.modifications_summary":{"title":"Modifications"},"experiments_in_set.biosample.treatments_summary":{"title":"Treatments"},"experiments_in_set.lab.title":{"title":"Lab"}},"columns":{"accession":{"title":"Accession"},"experimentset_type":{"title":"Experiment set type"},"description":{"title":"Description"},"experiments_in_set":{"title":"Experiments"}},"@type":["JSONSchema"]}
     return MockedResponse(data, 200)
+
+@pytest.fixture
+def returned_experiment_hi_c_schema():
+    data = {"title": "Hi-C Experiment","description": "Genome-wide chromosome conformation capture experiments including Hi-C, micro-C, DNase Hi-C","id": "/profiles/experiment_hi_c.json","$schema": "http://json-schema.org/draft-04/schema#","type": "object","required": ["experiment_type", "award", "lab", "biosample"],"identifyingProperties": ["uuid", "accession", "aliases"],"additionalProperties": False,"mixinProperties": [{ "$ref": "mixins.json#/schema_version" },{ "$ref": "mixins.json#/accession" },{ "$ref": "mixins.json#/uuid" },{ "$ref": "mixins.json#/aliases" },{ "$ref": "mixins.json#/attribution" },{ "$ref": "mixins.json#/submitted" },{ "$ref": "mixins.json#/modified" },{ "$ref": "mixins.json#/release_dates" },{ "$ref": "mixins.json#/notes" },{ "$ref": "mixins.json#/references" },{ "$ref": "mixins.json#/dbxrefs" },{ "$ref": "mixins.json#/external_submission" },{ "$ref": "mixins.json#/documents" },{ "$ref": "mixins.json#/library"},{ "$ref": "mixins.json#/sop_mapping"},{ "$ref": "mixins.json#/tags" },{ "$ref": "mixins.json#/badges" },{ "$ref": "mixins.json#/supplementary_files" },{ "$ref": "mixins.json#/static_embeds" },{ "$ref": "experiment.json#/properties"}],"mixinFacets": [{ "$ref": "experiment.json#/facets"},{ "$ref": "mixins.json#/facets_common" },{ "$ref": "mixins.json#/facets_aggregated_badges"}],"mixinColumns": [{ "$ref": "experiment.json#/columns"}],"dependencies": {"crosslinking_temperature": ["crosslinking_method", "crosslinking_time"],"crosslinking_time": ["crosslinking_method", "crosslinking_temperature"],"digestion_temperature": ["digestion_enzyme", "digestion_time"],"digestion_time": ["digestion_enzyme", "digestion_temperature"]},"properties": {"schema_version": {"default": "2"},"experiment_type": {"title": "Experiment Type","type": "string","lookup": 10,"description": "A controlled term specifying the type of experiment.","linkTo": "ExperimentType","ff_flag": "filter:valid_item_types"},"crosslinking_method": {"title": "Crosslinking Method","description": "Term used for the method for crosslinking chromatin","type": "string","lookup": 100,"suggested_enum": ["none","1% Formaldehyde","1.3% Formaldehyde","2% Formaldehyde","2.5% Formaldehyde","3% Formaldehyde","3.5% Formaldehyde","1% Formaldehyde and 3mM DSG","1% Formaldehyde and 2mM EGS","1% Formaldehyde and 3mM EGS","2% Formaldehyde and 2mM EGS"]},"crosslinking_time": {"title": "Crosslinking Time (min)","description": "Time of crosslinking step in minutes","type": "number","lookup": 101},"crosslinking_temperature": {"title": "Crosslinking Temperature (°C)","description": "Temperature of crosslinking step in degrees Celsius","type": "number","lookup": 102},"digestion_enzyme": {"title": "Digestion Enzyme","description": "The enzyme used for digestion of the DNA.","comment": "See Enzymes sheet or collection for existing items.","type": "string","lookup": 110,"linkTo": "Enzyme"},"enzyme_lot_number": {"title": "Digestion Enzyme Lot Number","description": "Lot number of batch of enzyme used to digest DNA","type": "string","lookup": 111},"digestion_time": {"title": "Digestion Time (min)","description": "Time of digestion step in minutes","type": "number","lookup": 112},"digestion_temperature": {"title": "Digestion Temperature (°C)","description": "Temperature of digestion step in degrees Celsius","type": "number","lookup": 113},"tagging_method": {"title": "Tagging Method","description": "Information on the biotinylated base used or other tagging info","type": "string","lookup": 120,"internal_comment": "should this be a controlled CV?"},"ligation_time": {"title": "Ligation Time (min)","description": "Time of ligation step in minutes","type": "number","lookup": 130},"ligation_temperature": {"title": "Ligation Temperature (°C)","description": "Temperature of ligation step in degrees Celsius","type": "number","lookup": 131},"ligation_volume": {"title": "Ligation Volume (ml)","description": "Volume of ligation step in milliliters","type": "number","lookup": 132},"biotin_removed": {"title": "Biotin Removal Step","description": "The optional biotin removal step was performed","type": "string","lookup": 140,"enum": ["Yes", "No"]}},"columns": {}}
+    return MockedResponse(data, 200)
+
+
+@pytest.fixture
+def returned_file_fastq_schema():
+    data = {"title": "FASTQ file","description": "Raw DNA sequncing file details and file in fastq.gz format.","id": "/profiles/file_fastq.json","$schema": "http://json-schema.org/draft-04/schema#","type": "object","required": ["file_format", "award", "lab"],"identifyingProperties": ["uuid", "accession", "aliases"],"additionalProperties": False,"mixinProperties": [{ "$ref": "mixins.json#/schema_version" },{ "$ref": "mixins.json#/uuid" },{ "$ref": "mixins.json#/submitted" },{ "$ref": "mixins.json#/modified" },{ "$ref": "mixins.json#/release_dates" },{ "$ref": "mixins.json#/aliases" },{ "$ref": "mixins.json#/attribution" },{ "$ref": "mixins.json#/notes" },{ "$ref": "mixins.json#/accession" },{ "$ref": "mixins.json#/dbxrefs" },{ "$ref": "mixins.json#/external_submission" },{ "$ref": "mixins.json#/tags" },{ "$ref": "mixins.json#/badges" },{ "$ref": "mixins.json#/static_embeds" },{ "$ref": "file.json#/properties" }],"mixinFacets": [{ "$ref": "file.json#/facets"},{ "$ref": "mixins.json#/facets_common" },{ "$ref": "mixins.json#/facets_aggregated_badges"}],"mixinColumns": [{ "$ref": "file.json#/columns"}],"properties": {"schema_version": {"default": "2"},"file_format": {"title": "File Format","type": "string","linkTo": "FileFormat","lookup": 20,"ff_flag": "filter:valid_item_types"},"file_type": {"title": "File Type","description": "The type of file based on the information in the file.","default": "reads","exclude_from": ["submit4dn", "FFedit-create"],"enum": ["reads","genomic reads","iPCR reads","cDNA reads","squiggles","barcode reads","index reads"]},"file_classification": {"title": "General Classification","type": "string","default": "raw file","exclude_from": ["submit4dn", "FFedit-create"],"enum": ["raw file"]},"extra_files": {"title": "Extra Files","description": "Links to extra files on s3 that don't have associated metadata","type": "array","exclude_from": ["FFedit-create"],"items": {"title": "Extra File","type": "object","required": ["file_format"],"additionalProperties": True,"properties": {"file_format": {"title": "File Format","type": "string","linkTo": "FileFormat","lookup": 400},"href": {"title": "Download URL","type": "string","exclude_from": ["submit4dn", "FFedit-create"]},"md5sum": {"title": "MD5sum","description": "The md5sum of the extra file.","type": "string","exclude_from": ["submit4dn", "FFedit-create"],"ff_flag":"clear edit","format": "hex"},"file_size": {"title": "File Size","exclude_from": ["submit4dn", "FFedit-create"],"description": "Size of file of the extra file.","comment": "","type": "integer"},"status": {"title": "Status","type": "string","exclude_from": ["submit4dn"],"default": "uploading","enum" : ["uploading","uploaded","upload failed","deleted","replaced","revoked","archived","pre-release","released","released to project","archived to project","to be uploaded by workflow"]},"use_for": {"title": "Use for","description": "The use of the extra file.","type": "string","enum": ["visualization"]}}}},"read_length": {"title": "Sequencing Read Length (bp)","description": "Length of sequencing reads in base pairs for fastq files","type": "integer","lookup": 40},"instrument": {"title": "Sequencer","description": "Instrument used for sequencing","type": "string","lookup": 50,"internal_comment": "should this be a controlled CV with enum, or another object?"},"paired_end": {"title": "Paired End Identifier","description": "Which pair the file belongs to (if paired end library)","type": "string","lookup": 30,"enum": ["1","2"]},"flowcell_details": {"title": "Flowcells","description": "For high-throughput sequencing, the flowcells used for the sequencing of the replicate.","type": "array","items": {"title": "Flowcell details","type": "object","required": ["machine"],"additionalProperties": True,"properties": {"machine": {"title": "Machine Name","description": "The lab specific name of the machine used.","type": "string","lookup": 61},"flowcell": {"title": "Flowcell ID","type": "string","lookup": 62},"lane": {"title": "Lane","type": "string","lookup": 63},"barcode": {"title": "Barcode","type": "string","lookup": 64},"barcode_in_read": {"title": "Barcode in Read","description": "The read the barcode is located on.","type": "string","lookup": 65,"enum": ["1","2"]},"barcode_position": {"title": "Barcode Position","description": "The 1-based start position of the barcode in 5->3 orientation.","type": "integer","lookup": 66},"chunk": {"title": "Chunk","description": "The file chunk label as assigned by Illumina software when splitting up a fastq into specified chunk sizes.","comment": "This label is used to re-assemble the chunks into the original file in the correct order.","type": "string","lookup": 67}}}},"beta_actin_sense_count":{"title": "Beta-actin count in the sense strand","description": "Number of reads that match a 21kmer of the Beta-actin encoding gene in the sense strand (RNA-seq experiments)","type": "integer","exclude_from": ["submit4dn", "FFedit-create"],"permission": "import_items","lookup": 1000},"beta_actin_antisense_count":{"title": "Beta-actin count in the anti-sense strand","description": "Number of reads that match a 21kmer of the Beta-actin encoding gene in the anti-sense strand (RNA-seq experiments)","type": "integer","exclude_from": ["submit4dn", "FFedit-create"],"permission": "import_items","lookup": 1001},"file_first_line":{"title": "First line of the fastq file","description": "First line of the fastq file","type": "string","exclude_from": ["submit4dn", "FFedit-create"],"permission": "import_items","lookup": 1002}}}
+    return MockedResponse(data, 200)
+
 
 @pytest.fixture
 def returned_vendor_items():

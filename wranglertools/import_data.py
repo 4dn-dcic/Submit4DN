@@ -2,71 +2,40 @@
 # -*- coding: latin-1 -*-
 """See the epilog for detailed information."""
 import argparse
-import pathlib as pp
-import hashlib
-from wranglertools.get_field_info import (
-    sheet_order, FDN_Key, FDN_Connection,
-    create_common_arg_parser, _remove_all_from_types)
-from dcicutils import ff_utils
-import openpyxl
-import warnings  # to suppress openpxl warning about headers
-from openpyxl.utils.exceptions import InvalidFileException
+import ast
 import datetime
-import sys
+import hashlib
 import mimetypes
-import requests
+import os
+import pathlib as pp
+import re
+import subprocess
+import sys
+import time
+import warnings  # to suppress openpyxl warnings
 from base64 import b64encode
-import magic  # install me with 'pip install python-magic'
+from collections import Counter, OrderedDict
+
+import gspread
 # https://github.com/ahupp/python-magic
 # this is the site for python-magic in case we need it
-import ast
-import os
-import time
-import subprocess
-import shutil
-import re
-from collections import OrderedDict, Counter
-from urllib import request as urllib2
-from contextlib import closing
+import magic  # install me with 'pip install python-magic'
+import openpyxl
+import requests
+from dcicutils import ff_utils
+from gspread.exceptions import GSpreadException
+from openpyxl.utils.exceptions import InvalidFileException
+from wranglertools.constants import (
+    CONFDIR, SHEET_ORDER, LIST_OF_LOADXL_FIELDS, CONFDIR_ENVVAR, GCRED_FNAME,
+    AUTH_TOKEN_FNAME, SCOPES, GSHEET, EXCEL, ZIP_MIME, XLSX_MIME, ALLOWED_MIMES,
+    GSHEET_URL_REGEX, GSID_REGEX
+)
+from wranglertools.get_field_info import (FDN_Connection, FDN_Key,
+                                          _remove_all_from_types,
+                                          create_common_arg_parser)
 
 
-EPILOG = '''
-This script takes in an Excel file with the data
-This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
-to actually submit data to the portal
-
-By DEFAULT:
-If there is a uuid, @id, accession, or previously submitted alias in the document:
-Use '--patchall' if you want to patch ALL objects in your document and ignore that message
-
-If you want to upload new items(no existing object identifiers are found),
-in the document you need to use '--update' for POSTing to occur
-
-Defining Object type:
-    Each "sheet" of the excel file is named after the object type you are uploading,
-    with the format used on http://data.4dnucleome.org//profiles/
-Ex: ExperimentHiC, Biosample, Document, BioFeature
-
-If you only want to submit a subset of sheets in a workbook use the --type option with the
-sheet name Ex: %(prog)s mydata.xsls --type ExperimentHiC
-
-The name of each sheet should be the names of the object type.
-Ex: Award, Lab, BioFeature, etc.
-
-The first row of the sheets should be the field names
-Ex: aliases, experiment_type, etc.
-
-To upload objects with attachments, use the column titled "attachment"
-containing the full path to the file you wish to attach
-
-To delete a field, use the keyword "*delete*" as the value.
-
-For more details:
-please see README.rst
-'''
-
-
-def getArgs():  # pragma: no cover
+def getArgs(args):
     parser = argparse.ArgumentParser(
         parents=[create_common_arg_parser()],
         description=__doc__, epilog=EPILOG,
@@ -101,42 +70,45 @@ def getArgs():  # pragma: no cover
                         default=False,
                         action='store_true',
                         help="Will skip pre-validation of workbook")
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     _remove_all_from_types(args)
     return args
 
 
-# list of [sheet, [fields]] that need to be patched as a second step
-# should be in sync with loadxl.py in fourfront
-list_of_loadxl_fields = [
-    ['Document', ['references']],
-    ['User', ['lab', 'submits_for']],
-    ['ExperimentType', ['sop', 'reference_pubs']],
-    ['Biosample', ['biosample_relation']],
-    ['Experiment', ['experiment_relation']],
-    ['ExperimentMic', ['experiment_relation']],
-    ['ExperimentHiC', ['experiment_relation']],
-    ['ExperimentSeq', ['experiment_relation']],
-    ['ExperimentTsaseq', ['experiment_relation']],
-    ['ExperimentDamid', ['experiment_relation']],
-    ['ExperimentChiapet', ['experiment_relation']],
-    ['ExperimentAtacseq', ['experiment_relation']],
-    ['ExperimentCaptureC', ['experiment_relation']],
-    ['ExperimentRepliseq', ['experiment_relation']],
-    ['FileFastq', ['related_files']],
-    ['FileReference', ['related_files']],
-    ['FileCalibration', ['related_files']],
-    ['FileMicroscopy', ['related_files']],
-    ['FileProcessed', ['related_files', 'produced_from']],
-    ['Individual', ['individual_relation']],
-    ['IndividualChicken', ['individual_relation']],
-    ['IndividualFly', ['individual_relation']],
-    ['IndividualHuman', ['individual_relation']],
-    ['IndividualMouse', ['individual_relation']],
-    ['IndividualPrimate', ['individual_relation']],
-    ['IndividualZebrafish', ['individual_relation']],
-    ['Publication', ['exp_sets_prod_in_pub', 'exp_sets_used_in_pub']]
-]
+EPILOG = '''
+This script takes in a spreadsheet workbook file with the data
+This is a dryrun-default script, run with --update, --patchall or both (--update --patchall)
+to actually submit data to the portal
+
+By DEFAULT:
+If there is a uuid, @id, accession, or previously submitted alias in the document:
+Use '--patchall' if you want to patch ALL objects in your document and ignore that message
+
+If you want to upload new items(no existing object identifiers are found),
+in the document you need to use '--update' for POSTing to occur
+
+Defining Object type:
+    Each "sheet" of the excel file is named after the object type you are uploading,
+    with the format used on http://data.4dnucleome.org//profiles/
+Ex: ExperimentHiC, Biosample, Document, BioFeature
+
+If you only want to submit a subset of sheets in a workbook use the --type option with the
+sheet name Ex: %(prog)s mydata.xlxs --type ExperimentHiC
+
+The name of each sheet should be the names of the object type.
+Ex: Award, Lab, BioFeature, etc.
+
+The first row of the sheets should be the field names
+Ex: aliases, experiment_type, etc.
+
+To upload objects with attachments, use the column titled "attachment"
+containing the full path to the file you wish to attach
+
+To delete a field, use the keyword "*delete*" as the value.
+
+For more details:
+please see README.rst
+'''
 
 
 def md5(path_string):
@@ -150,65 +122,70 @@ def md5(path_string):
 
 class WebFetchException(Exception):
     """
-    custom exception to raise if ftp or http fetch fails
+    custom exception to raise if http fetch fails
     """
     pass
 
 
+def google_authenticate():
+    gsauth = None
+    ga_cred_env = os.environ.get(CONFDIR_ENVVAR)  # look to see if set as env variable
+    # default to .submit4dn dir in home dir
+    creddir = pp.Path(ga_cred_env) if ga_cred_env else CONFDIR
+    try:
+        gsauth = gspread.oauth(
+            credentials_filename=creddir.joinpath(GCRED_FNAME),
+            authorized_user_filename=creddir.joinpath(AUTH_TOKEN_FNAME),
+            scopes=SCOPES
+        )
+    except (GSpreadException, FileNotFoundError) as gse:
+        print(f"GOOGLE AUTH PROBLEM: {gse}")
+    return gsauth
+
+
+def mime_allowed(path, ok_mimes):
+    filename = pp.PurePath(path).name
+    guessed_mime = mimetypes.guess_type(path)[0]
+    detected_mime = magic.from_file(path, mime=True)
+    if guessed_mime not in ok_mimes:
+        print("Unallowed file type for %s" % filename)
+        return False
+    # NOTE: this whole guesssing and detecting bit falls apart for zip files which seems a bit dodgy
+    # some .zip files are detected as generic application/octet-stream but don't see a good way to verify
+    # basically relying on extension with a little verification by magic for most file types
+    if detected_mime != guessed_mime and guessed_mime != ZIP_MIME:
+        print('Wrong extension for %s: %s' % (detected_mime, filename))
+        return False
+    return guessed_mime
+
+
 def attachment(path):
     """Create an attachment upload object from a filename and embed the attachment as a data url.
-       NOTE: a url or ftp can be used but path must end in filename with extension that will match
+       NOTE: a url can be used but path must end in filename with extension that will match
        the magic detected MIME type of that file and be one of the allowed mime types
     """
-    ALLOWED_MIMES = (
-        'application/pdf',
-        'application/zip',
-        'text/plain',
-        'text/tab-separated-values',
-        'text/html',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'image/png',
-        'image/jpeg',
-        'image/gif',
-        'image/tiff',
-    )
-    ftp_attach = False
+    url_attach = False
     if path.startswith('~'):
         path = str(pp.Path(path).expanduser())
     if not pp.Path(path).is_file():
         # if the path does not exist, check if it works as a URL
-        if path.startswith("ftp://"):  # grab the file from ftp
-            print("\nINFO: Attempting to download file from this url %s" % path)
-            try:
-                with closing(urllib2.urlopen(path)) as r:
-                    file_name = path.split("/")[-1]
-                    with open(file_name, 'wb') as f:
-                        shutil.copyfileobj(r, f)
-                        path = file_name
-                        ftp_attach = True
-            except urllib2.URLError as e:
-                raise WebFetchException("\nERROR : FTP fetch for 'attachment' failed - {}".format(e))
+        try:
+            r = requests.get(path)
+        except Exception:
+            raise WebFetchException(
+                "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
         else:
-            try:
-                r = requests.get(path)
-            except Exception:
-                raise WebFetchException(
-                    "\nERROR : The 'attachment' field has INVALID FILE PATH or URL ({})\n".format(path))
-            else:
-                # if it works as a URL, but does not return 200
-                if r.status_code != 200:  # pragma: no cover
-                    raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
-            # parse response
-            path = path.split("/")[-1]
-            try:
-                with open(path, "wb") as outfile:
-                    outfile.write(r.content)
-                    ftp_attach = True
-            except Exception as e:
-                raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
+            # if it works as a URL, but does not return 200
+            if r.status_code != 200:  # pragma: no cover
+                raise Exception("\nERROR : The 'attachment' field has INVALID URL ({})\n".format(path))
+        # parse response
+        path = path.split("/")[-1]
+        try:
+            with open(path, "wb") as outfile:
+                outfile.write(r.content)
+                url_attach = True
+        except Exception as e:
+            raise Exception("\nERROR : Cannot write a tmp file to disk - {}".format(e))
 
     attach = {}
     filename = pp.PurePath(path).name
@@ -219,7 +196,7 @@ def attachment(path):
     # basically relying on extension with a little verification by magic for most file types
     if guessed_mime not in ALLOWED_MIMES:
         raise ValueError("Unallowed file type for %s" % filename)
-    if detected_mime != guessed_mime and guessed_mime != 'application/zip':
+    if detected_mime != guessed_mime and guessed_mime != ZIP_MIME:
         raise ValueError('Wrong extension for %s: %s' % (detected_mime, filename))
 
     with open(path, 'rb') as stream:
@@ -228,7 +205,7 @@ def attachment(path):
             'type': guessed_mime,
             'href': 'data:%s;base64,%s' % (guessed_mime, b64encode(stream.read()).decode('ascii'))
         }
-    if ftp_attach:
+    if url_attach:
         pp.Path(path).unlink()
     return attach
 
@@ -248,35 +225,70 @@ def digest_xlsx(filename):
     return book, sheets
 
 
-def reader(workbook, sheetname=None):
-    """Read named sheet or first and only sheet from xlsx file."""
-    if sheetname is None:
-        sheet = workbook.worksheets[0]
-    else:
-        try:
-            sheet = workbook[sheetname]
-        except Exception as e:
-            print(e)
-            print(sheetname)
-            print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
-            return
+def open_gsheets(gsid, gauth):
+    wkbk = gauth.open_by_key(gsid)
+    sheets = [sh.title for sh in wkbk.worksheets()]
+    return wkbk, sheets
+
+
+def get_workbook(inputname, booktype, gauth=None):
+    if booktype == EXCEL:
+        return digest_xlsx(inputname)
+    elif booktype == GSHEET:
+        if not gauth:
+            raise Exception("ERROR: Trying to submit with Google sheets but no authentication found")
+        return open_gsheets(inputname, gauth)
+
+
+def reader(workbook, sheetname=None, booktype=None):
+    """Read named sheet or first and only sheet from xlsx or google sheets file.
+        Assume excel by default - will choke if no booktype and not excel"""
+    sheet = None
+    if not booktype or booktype == EXCEL:
+        if sheetname is None:
+            sheet = workbook.worksheets[0]
+        else:
+            try:
+                sheet = workbook[sheetname]
+            except Exception as e:
+                print(e)
+                print(sheetname)
+                print("ERROR: Can not find the collection sheet in excel file (openpyxl error)")
+                return
+    elif booktype == GSHEET:
+        if sheetname is None:
+            sheet = workbook.get_worksheet(0)
+        else:
+            try:
+                sheet = workbook.worksheet(sheetname)
+            except Exception as e:
+                print(e)
+                print(sheetname)
+                print("ERROR: Can not find the collection sheet in excel file (gspread error)")
+                return
     # Generator that gets rows from excel sheet
     # NB we have a lot of empty no formatting rows added (can we get rid of that)
     # or do we need to be careful to check for the first totally emptyvalue row?
-    return row_generator(sheet)
+    return row_generator(sheet, booktype)
 
 
-def row_generator(sheet):
+def row_generator(sheet, booktype=None):
     """Generator that gets rows from excel sheet
     Note that this currently checks to see if a row is empty and if so stops
     This is needed as plain text formatting of cells is recognized as data
     """
-    for row in sheet.rows:
-        vals = [cell_value(cell) for cell in row]
-        if not any([v for v in vals]):
-            return
-        else:
-            yield vals
+    if not booktype or booktype == 'excel':
+        for row in sheet.rows:
+            vals = [cell_value(cell) for cell in row]
+            if not any([v for v in vals]):
+                return
+            else:
+                yield vals
+    else:
+        # no formatting here assuming all are strings
+        all_vals = sheet.get_values()
+        for row in all_vals:
+            yield row
 
 
 def cell_value(cell):
@@ -285,8 +297,6 @@ def cell_value(cell):
     value = cell.value
     if ctype == openpyxl.cell.cell.TYPE_ERROR:  # pragma: no cover
         raise ValueError('Cell %s contains a cell error' % str(cell.coordinate))
-    elif value is None:
-        return ''
     elif ctype == openpyxl.cell.cell.TYPE_BOOL:
         boolstr = str(value).strip()
         if boolstr == 'TRUE':
@@ -350,7 +360,7 @@ def get_sub_field(field_name):
     """Construct embeded field names."""
     try:
         return field_name.split(".")[1].rstrip('-0123456789')
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         return ''
 
 
@@ -373,7 +383,7 @@ def get_sub_field_number(field_name):
     field = field_name.split(":")[0]
     try:
         return int(field.split("-")[1])
-    except:
+    except Exception:
         return 0
 
 
@@ -418,7 +428,7 @@ def parse_exception(e):
         resp_dict = ast.literal_eval(resp_text)
         return resp_dict
     # if not re-raise
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         raise e
 
 
@@ -723,9 +733,9 @@ def filter_set_from_exps(post_json):
 
 
 def filter_loadxl_fields(post_json, sheet):
-    """All fields from the list_of_loadxl_fields are taken out of post_json and accumulated in dictionary."""
+    """All fields from the LIST_OF_LOADXL_FIELDS are taken out of post_json and accumulated in dictionary."""
     patch_loadxl_item = {}
-    for sheet_loadxl, fields_loadxl in list_of_loadxl_fields:
+    for sheet_loadxl, fields_loadxl in LIST_OF_LOADXL_FIELDS:
         if sheet == sheet_loadxl:
             for field_loadxl in fields_loadxl:
                 if post_json.get(field_loadxl):
@@ -802,13 +812,13 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
         try:
             report.append("{sheet:<30}{eid}: {des}"
                           .format(des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
-        except:
+        except Exception:
             return error_dic
     # if there is a conflict
     elif error_dic.get('title') == "Conflict":
         try:
             report.extend(conflict_error_report(error_dic, sheet, connection))
-        except:
+        except Exception:
             return error_dic
     # if nothing works, give the full error, we should add that case to our reporting
     else:
@@ -840,7 +850,7 @@ def conflict_error_report(error_dic, sheet, connection):
                 existing_item = ff_utils.search_metadata(search, key=connection.key)
                 at_id = existing_item.get('@id')
                 add_text = "please use " + at_id
-            except:
+            except Exception:
                 # if there is a conflicting item, but it is not viewable by the user,
                 # we should release the item to the project/public
                 add_text = "please contact DCIC"
@@ -848,17 +858,11 @@ def conflict_error_report(error_dic, sheet, connection):
                             .format(er=error_field, des=error_value, sheet="ERROR " + sheet.lower(), at=add_text))
         all_conflicts.append(conflict_rep)
         return all_conflicts
-    except:
+    except Exception:
         return
 
 
 def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, connection, identifier):
-    # if FTP, grab the file from ftp
-    ftp_download = False
-    if file_to_upload and filename_to_post.startswith("ftp://"):
-        ftp_download = True
-        file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
-    # add the md5
     if file_to_upload and not post_json.get('md5sum'):
         print("calculating md5 sum for file %s " % (filename_to_post))
         post_json['md5sum'] = md5(filename_to_post)
@@ -880,15 +884,13 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             e['@graph'][0]['upload_credentials'] = creds
         # upload
         upload_file_item(e, filename_to_post)
-        if ftp_download:
-            pp.Path(filename_to_post).unlink()
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_files_creds')
         for fformat, filepath in extrafiles.items():
             try:
                 file_format = ff_utils.get_metadata(fformat, key=connection.key)
                 ff_uuid = file_format.get('uuid')
-            except:
+            except Exception:
                 raise "Can't find file_format item for %s" % fformat
             for ecred in extcreds:
                 if ff_uuid == ecred.get('file_format'):
@@ -904,29 +906,6 @@ def patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connecti
 
 def post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet):
     return update_item('POST', file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet)
-
-
-def ftp_copy(filename_to_post, post_json):
-    """Downloads the file from the server, and reformats post_json."""
-    if not post_json.get("md5sum"):
-        # if the file is from the server, the md5 should be supplied by the user.
-        print("\nWARNING: File not uploaded")
-        print("Please add original md5 values of the files")
-        return False, post_json, ""
-    try:
-        # download the file from the server
-        # return new file location to upload from
-        print("\nINFO: Attempting to download file from this url to your computer before upload %s" % filename_to_post)
-        with closing(urllib2.urlopen(filename_to_post)) as r:
-            new_file = post_json['filename']
-            with open(new_file, 'wb') as f:
-                shutil.copyfileobj(r, f)
-        return True, post_json, new_file
-    except:
-        # if download did not work, delete the filename from the post json
-        print("WARNING: Download failed")
-        post_json.pop('filename')
-        return False, post_json, ""
 
 
 def delete_fields(post_json, connection, existing_data):
@@ -1081,17 +1060,17 @@ def check_file_pairing(fastq_row):
     return _pairing_consistency_check(files, errors)
 
 
-def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_type,
+def workbook_reader(workbook, booktype, sheet, update, connection, patchall, aliases_by_type,
                     dict_patch_loadxl, dict_replicates, dict_exp_sets, novalidate, attach_fields):
     """takes an openpyxl workbook object and posts, patches or does a dry run on the data depending
     on the options passed in.
     """
     # determine right from the top if dry run
-    dryrun = not(update or patchall)
+    dryrun = not (update or patchall)
     all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
-    row = reader(workbook, sheetname=sheet)
+    row = reader(workbook, sheetname=sheet, booktype=booktype)
     skip_dryrun = False
     if sheet == "ExperimentMic_Path":
         skip_dryrun = True
@@ -1114,7 +1093,7 @@ def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_ty
 
     if sheet == "FileFastq" and not novalidate:
         # check for consistent file pairing of fastqs in the sheet
-        pair_errs = check_file_pairing(reader(workbook, sheetname=sheet))
+        pair_errs = check_file_pairing(reader(workbook, sheetname=sheet, booktype=booktype))
         for f, err in sorted(pair_errs.items()):
             for e in err:
                 print('WARNING: ', f, '\t', e)
@@ -1370,9 +1349,9 @@ def build_tibanna_json(keys, types, values, connection):
     return template
 
 
-def user_workflow_reader(workbook, sheet, connection):
+def user_workflow_reader(workbook, booktype, sheet, connection):
     """takes the user workflow runsheet and ony post it to fourfront endpoint."""
-    row = reader(workbook, sheetname=sheet)
+    row = reader(workbook, sheetname=sheet, booktype=booktype)
     keys = next(row)  # grab the first row of headers
     types = next(row)  # grab second row with type info
     # remove title column
@@ -1451,7 +1430,7 @@ def upload_file(creds, path):  # pragma: no cover
             'AWS_SECURITY_TOKEN': creds['SessionToken'],
         })
     except Exception as e:
-        raise("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
+        raise ("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
@@ -1483,7 +1462,7 @@ def running_on_windows_native():
 # used to avoid dependencies... i.e. biosample needs the biosource to exist
 def order_sorter(list_of_names):
     ret_list = []
-    for i in sheet_order:
+    for i in SHEET_ORDER:
         if i in list_of_names:
             ret_list.append(i)
     # we add the list of user supplied workflows at the end
@@ -1493,7 +1472,7 @@ def order_sorter(list_of_names):
     if list(set(list_of_names)-set(ret_list)) != []:
         missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
         print("WARNING!", missing_items, "sheet(s) are not loaded")
-        print("WARNING! Check the sheet names and the reference list \"sheet_order\"")
+        print("WARNING! Check the sheet names and the list in constant \"SHEET_ORDER\"")
     return ret_list
 
 
@@ -1527,14 +1506,28 @@ def _verify_and_return_item(item, connection):
     return res
 
 
-def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, award=None):
-    """Set of check for connection, file, dryrun, and prompt."""
-    print("Running on:       {server}".format(server=connection.key['server']))
-    # check input file (xlsx)
-    if not pp.Path(infile).is_file():
-        print(f"File {infile} not found!")
-        sys.exit(1)
+def check_and_return_input_type(inputname):
+    if pp.Path(inputname).is_file():
+        # specific check for xlsx
+        if not mime_allowed(inputname, XLSX_MIME):
+            print(f"ERROR: File {inputname} not recognized as excel file")
+            sys.exit(1)
+        return inputname, EXCEL
+    elif inputname.startswith('https'):
+        # assume a url to google sheet and look for google?
+        if 'google' not in inputname:
+            print("ERROR: URL provided does not appear to be google sheet url")
+            sys.exit(1)
+        # parse out the bookId
+        inputname = re.search(GSHEET_URL_REGEX, inputname).group(1)
+    if not re.match(GSID_REGEX, inputname):
+        print("ERROR: invalid format of the google sheet ID in input - {}".format(inputname))
+    return inputname, GSHEET
 
+
+def cabin_cross_check(connection, patchall, update, remote, lab=None, award=None):
+    """Set of check for connection, input, dryrun, and prompt."""
+    print("Running on:       {server}".format(server=connection.key['server']))
     # check for multi labs and awards and reset connection appropriately
     # if lab and/or award options used modify connection accordingly and check for conflict later
     if lab or award:
@@ -1596,10 +1589,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, aw
         print("##############   DRY-RUN MODE   ################\n")
     else:
         if not remote:
-            try:
-                response = raw_input("Do you want to continue with these credentials? (Y/N): ") or "N"
-            except NameError:
-                response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+            response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
             if response.lower() not in ["y", "yes"]:
                 sys.exit(1)
 
@@ -1624,7 +1614,7 @@ def get_collections(profiles):
     return supported_collections
 
 
-def get_all_aliases(workbook, sheets):
+def get_all_aliases(workbook, sheets, booktype):
     """Extracts all aliases existing in the workbook to later check object connections
        Checks for same aliases that are used for different items and gives warning."""
     aliases_by_type = {}
@@ -1632,11 +1622,11 @@ def get_all_aliases(workbook, sheets):
         if sheet == 'ExperimentMic_Path':
             continue
         alias_col = ""
-        rows = reader(workbook, sheetname=sheet)
+        rows = reader(workbook, sheetname=sheet, booktype=booktype)
         keys = next(rows)  # grab the first row of headers
         try:
             alias_col = keys.index("aliases")
-        except:
+        except Exception:
             continue
         for row in rows:
             my_aliases = []
@@ -1656,17 +1646,24 @@ def get_all_aliases(workbook, sheets):
 
 
 def main():  # pragma: no cover
-    args = getArgs()
+    args = getArgs(sys.argv[1:])  # the sys.argv bit is for testing purposes
     key = FDN_Key(args.keyfile, args.key)
     # check if key has error
     if key.error:
         sys.exit(1)
     # establish connection and run checks
     connection = FDN_Connection(key)
-    cabin_cross_check(connection, args.patchall, args.update, args.infile,
-                      args.remote, args.lab, args.award)
-    # support for xlsx only - adjust if allowing different
-    workbook, sheetnames = digest_xlsx(args.infile)
+    # support for xlsx and google sheet url or sheets id
+    inputname, booktype = check_and_return_input_type(args.infile)
+
+    cabin_cross_check(connection, args.patchall, args.update, args.remote, args.lab, args.award)
+
+    # need to google authenticate to allow gsheet to be read
+    gauth = None
+    if booktype == GSHEET:
+        gauth = google_authenticate()
+
+    workbook, sheetnames = get_workbook(inputname, booktype, gauth)
 
     # This is not in our documentation, but if single sheet is used, file name can be the collection
     if args.type and 'all' not in args.type:
@@ -1680,7 +1677,7 @@ def main():  # pragma: no cover
     # we want to read through names in proper upload order
     sorted_names = order_sorter(names)
     # get all aliases from all sheets for dryrun object connections tests
-    aliases_by_type = get_all_aliases(workbook, sorted_names)
+    aliases_by_type = get_all_aliases(workbook, sorted_names, booktype)
     # all_aliases = list(aliases_by_type.keys())
     # dictionaries that accumulate information during submission
     dict_loadxl = {}
@@ -1690,14 +1687,15 @@ def main():  # pragma: no cover
     # accumulate = {dict_loadxl: {}, dict_replicates: {}, dict_exp_sets: {}}
     for n in sorted_names:
         if n.lower() in supported_collections:
-            workbook_reader(workbook, n, args.update, connection, args.patchall, aliases_by_type,
+            workbook_reader(workbook, booktype, n, args.update, connection, args.patchall, aliases_by_type,
                             dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
         elif n.lower() == "experimentmic_path":
-            workbook_reader(workbook, "ExperimentMic_Path", args.update, connection, args.patchall, aliases_by_type,
-                            dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate, attachment_fields)
+            workbook_reader(workbook, booktype, "ExperimentMic_Path", args.update, connection, args.patchall,
+                            aliases_by_type, dict_loadxl, dict_replicates, dict_exp_sets, args.novalidate,
+                            attachment_fields)
         elif n.lower().startswith('user_workflow'):
             if args.update:
-                user_workflow_reader(workbook, n, connection)
+                user_workflow_reader(workbook, booktype, n, connection)
             else:
                 print('user workflow sheets will only be processed with the --update argument')
         else:

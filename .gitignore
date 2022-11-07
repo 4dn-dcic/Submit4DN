@@ -23,6 +23,7 @@ Custom_scripts/
 Data_Files/MicroscopyCalibration/Files/
 .pytest_cache/
 .python-version
+wranglertools/.config/gspread/authorized_user.json
 
 # PyCharm metadata
 .idea/

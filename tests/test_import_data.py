@@ -1,21 +1,28 @@
-import wranglertools.import_data as imp
-import pytest
 import pathlib as pp
+from plistlib import InvalidFileException
+from wranglertools.constants import CONFDIR, DEFAULT_KEYPAIR_FILE
+import pytest
+import inspect
+import wranglertools.import_data as imp
+from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook, MockedGauth
 # test data is in conftest.py
 
 
-# @pytest.mark.file_operation
-@pytest.mark.ftp
-def test_attachment_from_ftp():
-    attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
-    assert attach
-
-
-@pytest.mark.ftp
-def test_attachment_ftp_to_nowhere():
-    with pytest.raises(Exception) as e:
-        imp.attachment("ftp://on/a/road/to/nowhere/blah.txt")
-    assert "urlopen error" in str(e.value)
+def test_imp_get_args_required_default():
+    defaults = {
+        'type': ['all'],
+        'key': 'default',
+        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE,
+        'debug': False,
+        'update': False,
+        'patchall': False,
+        'remote': False,
+        'novalidate': False,
+    }
+    args = imp.getArgs(['infile'])
+    for k, v in defaults.items():
+        assert getattr(args, k) == v
+    assert args.infile == 'infile'
 
 
 def convert_to_path_with_tilde(string_path):
@@ -76,7 +83,7 @@ def test_attachment_wrong_path():
 
 @pytest.mark.webtest
 def test_attachment_url():
-    attach = imp.attachment("http://example.com/index.html")
+    attach = imp.attachment("https://example.com/index.html")
     assert attach['download'] == 'index.html'
     assert attach['type'] == 'text/html'
     assert attach['href'].startswith('data:text/html;base64')
@@ -124,13 +131,91 @@ def test_reader_with_sheetname(vendor_raw_xls_fields, workbooks):
 
 @pytest.mark.file_operation
 def test_reader_wrong_sheetname(capsys):
-    msg = "string indices must be integers\nEnzyme\nERROR: Can not find the collection sheet in excel file (openpyxl error)\n"
+    msg = "string indices must be integers\nEnzyme\nERROR: Can not find the collection sheet in excel file" \
+        " (openpyxl error)\n"
     sheet = 'Vendor'
     sheetkey = "{}.xlsx".format(sheet)
     readxls = imp.reader(sheetkey, 'Enzyme')
     assert readxls is None
     out = capsys.readouterr()[0]
     assert out == msg
+
+
+def test_google_authenticate_mock(mocker):
+    mocker.patch('wranglertools.import_data.os.environ.get', return_value=None)
+    mocker.patch('wranglertools.import_data.gspread.oauth', return_value=True)
+    gauth = imp.google_authenticate()
+    assert gauth
+
+
+def test_google_authenticate_exception(mocker, capsys):
+    mocker.patch('wranglertools.import_data.os.environ.get', return_value=None)
+    mocker.patch("wranglertools.import_data.CONFDIR", pp.Path('no/such/directory'))
+    imp.google_authenticate()
+    out = capsys.readouterr()[0]
+    assert out.startswith('GOOGLE AUTH PROBLEM:')
+
+
+@pytest.fixture
+def gs_test_data():
+    return {'row1': ['a', 'b', 'c'], 'row2': ['d', 'e', 'f']}
+
+
+@pytest.fixture
+def mock_gsheet(gs_test_data):
+    msheet = MockedGoogleWorkSheet()
+    msheet.set_data(gs_test_data)
+    return msheet
+
+
+def test_reader_gsheet_no_name(mock_gsheet):
+    test_wkbk = MockedGoogleWorkBook()
+    test_wkbk.add_sheets([mock_gsheet])
+    res = imp.reader(test_wkbk, booktype='gsheet')
+    assert inspect.isgenerator(res)
+
+
+def test_reader_gsheet_w_name(mock_gsheet):
+    sheetname = 'TestSheet2'
+    test_row_data = ['x', 'y']
+    mock_sheet2 = MockedGoogleWorkSheet()
+    mock_sheet2.set_title(sheetname)
+    mock_sheet2.set_data({'row1': test_row_data})
+    test_wkbk = MockedGoogleWorkBook()
+    test_wkbk.add_sheets([mock_gsheet, mock_sheet2])
+    res = imp.reader(test_wkbk, sheetname=sheetname, booktype='gsheet')
+    assert inspect.isgenerator(res)
+    res_data = list(res)
+    assert len(res_data) == 1
+    assert res_data[0] == test_row_data
+
+
+def test_reader_gsheet_bad_name(mock_gsheet, capsys):
+    badname = 'NoSuchName'
+    errmsg = '\nNoSuchName\nERROR: Can not find the collection sheet in excel file (gspread error)\n'
+    test_wkbk = MockedGoogleWorkBook()
+    test_wkbk.add_sheets([mock_gsheet])
+    res = imp.reader(test_wkbk, sheetname=badname, booktype='gsheet')
+    assert res is None
+    out = capsys.readouterr()[0]
+    assert out == errmsg
+
+
+def test_row_generator_gsheet(mock_gsheet, gs_test_data):
+    res = imp.row_generator(mock_gsheet, 'gsheet')
+    # import pdb; pdb.set_trace()
+    assert inspect.isgenerator(res)
+    lres = list(res)
+    assert len(lres) == 2
+    assert lres[0] == gs_test_data['row1']
+
+
+def test_open_gsheets():
+    test_names = ['Sheet1', 'Sheet2']
+    ret_wkbk, ret_names = imp.open_gsheets('gsid1234', MockedGauth())
+    assert type(ret_wkbk) is MockedGoogleWorkBook
+    for rn in ret_names:
+        assert rn in test_names
 
 
 def test_cell_value(workbooks):
@@ -282,7 +367,8 @@ def test_error_report(connection_mock):
                     {"name": "age",
                      "description": "'at' is not of type 'number'", "location": "body"},
                     {"name": "sex",
-                     "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
+                     "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']",
+                     "location": "body"}],
                 "code": 422,
                 "@type": ["ValidationFailure", "Error"],
                 "description": "Failed validation"}
@@ -340,7 +426,47 @@ def test_digest_xlsx(workbooks):
             assert book[sheet].max_column == workbook[sheet].max_column
 
 
-def test_workbooks_reader_no_update_no_patchall_new_doc_with_attachment(capsys, mocker, connection_mock, workbooks):
+def test_digest_xlsx_error_on_xls(capsys):
+    test_filename = 'test.xls'
+    with pytest.raises(SystemExit):
+        with pytest.raises(InvalidFileException):
+            imp.digest_xlsx(test_filename)
+            out = capsys.readouterr()[0]
+            assert 'WARNING - Old xls format not supported' in out
+
+
+def test_digest_xlsx_error_on_badext(capsys):
+    test_filename = 'test.ods'
+    with pytest.raises(SystemExit):
+        with pytest.raises(InvalidFileException):
+            imp.digest_xlsx(test_filename)
+            out = capsys.readouterr()[0]
+            assert "ERROR - " in out
+
+
+def test_get_workbook_excel(mocker):
+    filename = 'test.xlsx'
+    retval = 'digested excel'
+    mocker.patch('wranglertools.import_data.digest_xlsx', return_value=retval)
+    val = imp.get_workbook(filename, 'excel')
+    assert val == retval
+
+
+def test_get_workbook_gsheet(mocker):
+    filename = 'http://docs.google.com/test_sheet'
+    retval = 'digested gsheet'
+    mocker.patch('wranglertools.import_data.open_gsheets', return_value=retval)
+    val = imp.get_workbook(filename, 'gsheet', True)
+    assert val == retval
+
+
+def test_get_workbook_gsheet_fail_w_no_auth():
+    filename = 'http://docs.google.com/test_sheet'
+    with pytest.raises(Exception):
+        imp.get_workbook(filename, 'gsheet')
+
+
+def test_workbooks_reader_no_update_no_patchall_new_doc_with_attachment(mocker, connection_mock, workbooks):
     # test new item submission without patchall update tags and check the return message
     test_insert = 'Document_insert.xlsx'
     dict_load = {}
@@ -352,7 +478,7 @@ def test_workbooks_reader_no_update_no_patchall_new_doc_with_attachment(capsys, 
     mocker.patch('wranglertools.import_data.remove_deleted', return_value={})
     # mocking the test post line
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value={'status': 'success'})
-    imp.workbook_reader(workbooks.get(test_insert), 'Document', False, connection_mock, False,
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'Document', False, connection_mock, False,
                         all_aliases, dict_load, dict_rep, dict_set, True, ['attachment'])
     args = imp.remove_deleted.call_args
     attach = args[0][0]['attachment']
@@ -376,68 +502,12 @@ def test_workbook_reader_no_update_no_patchall_existing_item(capsys, mocker, con
     mocker.patch('wranglertools.import_data.get_existing', return_value=existing_vendor)
     mocker.patch('wranglertools.import_data.ff_utils.patch_metadata',
                  return_value={'status': 'success', '@graph': [{'uuid': 'uid1', '@id': '/vendor/test'}]})
-    imp.workbook_reader(workbooks.get(test_insert), 'Vendor', False, connection_mock, False, {}, dict_load, dict_rep, dict_set, True, [])
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'Vendor', False, connection_mock, False, {}, dict_load,
+                        dict_rep, dict_set, True, [])
     out = capsys.readouterr()
     args = imp.get_existing.call_args
     assert args[0][0] == post_json
     assert out[0] == message
-
-
-def test_workbook_reader_post_ftp_file_upload(capsys, mocker, connection_mock, workbooks):
-    test_insert = 'Ftp_file_test_md5.xlsx'
-    dict_load = {}
-    dict_rep = {}
-    dict_set = {}
-    all_aliases = {}
-    message1 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors\n"
-    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
-    # mock fetching existing info, return None
-    mocker.patch('wranglertools.import_data.get_existing', return_value={})
-    # mock upload file and skip
-    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
-    # mock the ftp copy - this should get it's own tests
-    mocker.patch('wranglertools.import_data.ftp_copy', return_value=(True, {'md5sum': '0f343b0931126a20f133d67c2b018a3b'}, '1KB.zip'))
-    # mock file deletion
-    mocker.patch('wranglertools.import_data.pp.Path.unlink')
-    # mock posting new items
-    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'FileCalibration', True, connection_mock, False,
-                        all_aliases, dict_load, dict_rep, dict_set, True, [])
-    args = imp.ff_utils.post_metadata.call_args
-    out = capsys.readouterr()[0]
-    post_json_arg = args[0][0]
-    assert post_json_arg['md5sum'] == '0f343b0931126a20f133d67c2b018a3b'
-    assert message1 == out
-
-
-def test_workbook_reader_post_ftp_file_upload_no_md5(capsys, mocker, connection_mock, workbooks):
-    """ This appears to actually mainly be testing the ftp_copy function - confirming that
-        the correct error messages are generated when you try to copy an ftp file without
-        including an md5sum in the post and subsequently that the workbook_reader function
-        will still post the metadata without uploading a file
-    """
-    test_insert = 'Ftp_file_test.xlsx'
-    dict_load = {}
-    dict_rep = {}
-    dict_set = {}
-    all_aliases = {}
-    message0 = "WARNING: File not uploaded"
-    message1 = "Please add original md5 values of the files"
-    message2 = "FILECALIBRATION(1)         :  1 posted / 0 not posted       0 patched / 0 not patched, 0 errors"
-    e = {'status': 'success', '@graph': [{'uuid': 'some_uuid', '@id': 'some_uuid'}]}
-    # mock fetching existing info, return None
-    mocker.patch('wranglertools.import_data.get_existing', return_value={})
-    # mock upload file and skip
-    mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
-    # mock posting new items
-    mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'FileCalibration', True, connection_mock, False,
-                        all_aliases, dict_load, dict_rep, dict_set, True, [])
-    out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i.strip()]
-    assert message0 == outlist[0]
-    assert message1 == outlist[1]
-    assert message2 == outlist[2]
 
 
 @pytest.mark.file_operation
@@ -460,11 +530,11 @@ def test_workbook_reader_update_new_file_fastq_post_and_file_upload(capsys, mock
     mocker.patch('wranglertools.import_data.upload_file_item', return_value={})
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'FileFastq', True, connection_mock, False,
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileFastq', True, connection_mock, False,
                         all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    outlist = [i.strip() for i in out.split('\n') if i]
     post_json_arg = args[0][0]
     assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
     assert message0 == outlist[0]
@@ -500,7 +570,7 @@ def test_workbook_reader_patch_file_meta_and_file_upload(capsys, mocker, connect
     mocker.patch('dcicutils.ff_utils.patch_metadata', return_value=e)
     # mock get upload creds
     mocker.patch('wranglertools.import_data.get_upload_creds', return_value="new_creds")
-    imp.workbook_reader(workbooks.get(test_insert), 'FileFastq', False, connection_mock, True,
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileFastq', False, connection_mock, True,
                         all_aliases, dict_load, dict_rep, dict_set, True, [])
     # check for md5sum
     args = imp.ff_utils.patch_metadata.call_args
@@ -512,7 +582,7 @@ def test_workbook_reader_patch_file_meta_and_file_upload(capsys, mocker, connect
     assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
     # check for output message
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    outlist = [i.strip() for i in out.split('\n') if i]  # is not ""]
     assert message0 == outlist[0]
     assert message1 == outlist[1]
 
@@ -533,7 +603,7 @@ def test_workbook_reader_update_new_filefastq_meta_post(capsys, mocker, connecti
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock posting new items
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'FileFastq', True, connection_mock, False,
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'FileFastq', True, connection_mock, False,
                         all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
@@ -557,7 +627,7 @@ def test_workbook_reader_update_new_replicate_set_post(capsys, mocker, connectio
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock upload file and skip
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'ExperimentSetReplicate', True, connection_mock,
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'ExperimentSetReplicate', True, connection_mock,
                         False, all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
@@ -579,7 +649,7 @@ def test_workbook_reader_update_new_experiment_set_post(capsys, mocker, connecti
     mocker.patch('wranglertools.import_data.get_existing', return_value={})
     # mock upload file and skip
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.workbook_reader(workbooks.get(test_insert), 'ExperimentSet', True, connection_mock, False,
+    imp.workbook_reader(workbooks.get(test_insert), 'excel', 'ExperimentSet', True, connection_mock, False,
                         all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
@@ -631,18 +701,17 @@ def test_user_workflow_reader_wfr_post(capsys, mocker, connection_mock, workbook
     # mock formating files
     mocker.patch('wranglertools.import_data.format_file', side_effect=[
         {'bucket_name': 'elasticbeanstalk-fourfront-webdev-files', 'workflow_argument_name': 'chromsize',
-         'object_key': '4DNFI823LSII.chrom.sizes','uuid': '4a6d10ee-2edb-4402-a98f-0edb1d58f5e9'},
+         'object_key': '4DNFI823LSII.chrom.sizes', 'uuid': '4a6d10ee-2edb-4402-a98f-0edb1d58f5e9'},
         {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput', 'workflow_argument_name': 'input_bams',
-         'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam'], 'uuid': [
-             '11c12207-6684-4346-9038-e7819dfde4e5', '4d55623a-1698-44c2-b111-1aa1379edc57'
-        ]},
+         'object_key': ['4DNFIYI7YMVU.bam', '4DNFIPMZQNF5.bam'],
+         'uuid': ['11c12207-6684-4346-9038-e7819dfde4e5', '4d55623a-1698-44c2-b111-1aa1379edc57']},
         {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput', 'workflow_argument_name': 'annotated_bam',
          'object_key': '4DNFIVQPE4WT.bam', 'uuid': 'b0aaf32c-58de-475a-a222-3f16d3cb68f4'},
         {'bucket_name': 'elasticbeanstalk-fourfront-webdev-wfoutput', 'workflow_argument_name': 'filtered_pairs',
          'object_key': '4DNFIGOJW3XZ.pairs.gz', 'uuid': '0292e08e-facf-4a16-a94e-59606f2bfc71'}
     ])
     mocker.patch('dcicutils.ff_utils.post_metadata', return_value=e)
-    imp.user_workflow_reader(workbooks.get(test_insert), sheet_name, connection_mock)
+    imp.user_workflow_reader(workbooks.get(test_insert), 'excel', sheet_name, connection_mock)
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
     print([i for i in args])
@@ -657,10 +726,10 @@ def test_order_sorter(capsys):
     ordered_list = ['User', 'Lab', 'Document', 'IndividualMouse', 'Modification', 'Biosource',
                     'BiosampleCellCulture', 'Biosample', 'ExperimentHiC']
     message0 = "WARNING! Trouble sheet(s) are not loaded"
-    message1 = '''WARNING! Check the sheet names and the reference list "sheet_order"'''
+    message1 = '''WARNING! Check the sheet names and the list in constant "SHEET_ORDER"'''
     assert ordered_list == imp.order_sorter(test_list)
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    outlist = [i.strip() for i in out.split('\n') if i]
     import sys
     if (sys.version_info > (3, 0)):
         assert message0 in outlist[0]
@@ -697,7 +766,7 @@ def test_cabin_cross_check_dryrun(mocker, connection_mock, capsys):
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
-    imp.cabin_cross_check(connection_mock, False, False, './tests/data_files/workbooks/Exp_Set_insert.xlsx', False, None, None)
+    imp.cabin_cross_check(connection_mock, False, False, False, None, None)
     out = capsys.readouterr()[0]
     message = '''
 Running on:       https://data.4dnucleome.org/
@@ -718,7 +787,7 @@ def test_cabin_cross_check_remote_w_single_lab_award(mocker, connection_mock, ca
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
+    imp.cabin_cross_check(connection_mock, False, False, True, None, None)
     out = capsys.readouterr()[0]
     message = '''
 Running on:       https://data.4dnucleome.org/
@@ -741,7 +810,7 @@ def test_cabin_cross_check_not_remote_w_lab_award_options(mocker, connection_moc
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
     connection_mock.labs = ['test_lab', 'other_lab']
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', False,
+    imp.cabin_cross_check(connection_mock, False, False, False,
                           '795847de-20b6-4f8c-ba8d-185215469cbf', 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
     out = capsys.readouterr()[0]
     print(out)
@@ -765,7 +834,7 @@ def test_cabin_cross_check_remote_w_lab_award_options(mocker, connection_mock, c
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
     connection_mock.labs = ['test_lab', 'other_lab']
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', True,
+    imp.cabin_cross_check(connection_mock, False, False, True,
                           '795847de-20b6-4f8c-ba8d-185215469cbf', 'c55dd1f0-433b-4714-bfce-8b3ae09f071c')
     out = capsys.readouterr()[0]
     print(out)
@@ -791,7 +860,7 @@ def test_cabin_cross_check_remote_w_ok_award_and_no_lab_options(
     ])
     connection_mock.lab = '/labs/bing-ren-lab/'
     connection_mock.labs = ['/labs/bing-ren-lab/']
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, '/awards/1U54DK107977-01/')
+    imp.cabin_cross_check(connection_mock, False, False, True, None, '/awards/1U54DK107977-01/')
     out = capsys.readouterr()[0]
     print(out)
     message = '''
@@ -814,7 +883,7 @@ def test_cabin_cross_check_remote_w_multilabs_no_options(mocker, connection_mock
     connection_mock.labs = ['/labs/bing-ren-lab/', '/labs/test-lab/']
     connection_mock.award = None
     connection_mock.set_award = lambda x, y: None
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, None, None)
+    imp.cabin_cross_check(connection_mock, False, False, True, None, None)
     out = capsys.readouterr()[0]
     print(out)
     message = '''
@@ -841,7 +910,7 @@ def test_cabin_cross_check_remote_w_labopt_and_lab_has_single_award(mocker, conn
         {'awards': '/awards/test_award/'}, {'@id': '/awards/test_award/'}
     ])
     connection_mock.labs = ['test_lab', 'other_lab']
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '/labs/test_lab/', None)
+    imp.cabin_cross_check(connection_mock, False, False, True, '/labs/test_lab/', None)
     out = capsys.readouterr()[0]
     print(out)
     message = '''
@@ -862,7 +931,7 @@ def test_cabin_cross_check_remote_w_unknown_lab_and_award(mocker, connection_moc
     mocker.patch('wranglertools.import_data.pp.Path.is_file', return_value=True)
     mocker.patch('wranglertools.import_data._verify_and_return_item', side_effect=[None, None])
     connection_mock.labs = ['test_lab', 'other_lab']
-    imp.cabin_cross_check(connection_mock, False, False, 'blah', True, 'unknown_lab', 'unknown_award')
+    imp.cabin_cross_check(connection_mock, False, False, True, 'unknown_lab', 'unknown_award')
     out = capsys.readouterr()[0]
     message = '''
 Running on:       https://data.4dnucleome.org/
@@ -889,14 +958,14 @@ def test_cabin_cross_check_remote_w_award_not_for_lab_options(mocker, connection
     ])
     with pytest.raises(SystemExit):
         connection_mock.labs = ['test_lab', '/labs/bing-ren-lab']
-        imp.cabin_cross_check(connection_mock, False, False, 'blah', True, '/labs/bing-ren-lab/', '/awards/non-ren-lab-award/')
+        imp.cabin_cross_check(connection_mock, False, False, True, '/labs/bing-ren-lab/', '/awards/non-ren-lab-award/')
 
 
 def test_get_all_aliases(workbooks):
     wbname = "Exp_Set_insert.xlsx"
     sheet = ["ExperimentSet"]
     my_aliases = {'sample_expset': 'ExperimentSet'}
-    all_aliases = imp.get_all_aliases(workbooks.get(wbname), sheet)
+    all_aliases = imp.get_all_aliases(workbooks.get(wbname), sheet, 'excel')
     assert my_aliases == all_aliases
 
 
@@ -988,8 +1057,8 @@ def test_validate_multiple_items_in_alias_dict_incorrect_type(alias_dict, connec
     msg = imp.validate_item(items, 'Biosample', alias_dict, connection_mock)
     lns = msg.split('\n')
     assert len(lns) == 2
-    for l in lns:
-        assert l.startswith("ERROR")
+    for ln in lns:
+        assert ln.startswith("ERROR")
 
 
 def test_validate_item_not_in_alias_dict_alias_indb(mocker, connection_mock):

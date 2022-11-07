@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
+from logging.config import DEFAULT_LOGGING_CONFIG_PORT
 import pathlib as pp
 import argparse
 from dcicutils import ff_utils
 import attr
 import openpyxl
+import os
 import sys
 import json
+
+from wranglertools.constants import (
+    HOME, CONFDIR, CONFDIR_ENVVAR, DEFAULT_KEYPAIR_FILE, SHEET_ORDER
+)
 
 
 EPILOG = '''
     To create an excel workbook file with sheets to be filled use the examples below and modify to your needs.
-    It will accept the following optional parameters.
-        --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
-        --key            the name of the key identifier for the access key and secret in your keys file (default=default)
-        --type           use for each sheet that you want to add to the excel workbook
-        --nodesc         do not add the descriptions in the second line (by default they are added)
-        --noenums        do not add the list of options for a field if they are specified (by default they are added)
-        --comments       adds any (usually internal) comments together with enums (by default False)
-        --outfile        change the default file name "fields.xlsx" to a specified one
-        --debug          to add more debugging output
-        --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
-
 
     This program graphs uploadable fields (i.e. not calculated properties)
     for a type with optionally included description and enum values.
@@ -54,15 +49,14 @@ def _remove_all_from_types(args):
 
 
 def create_common_arg_parser():
-    home = pp.Path.home()
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--key',
                         default='default',
                         help="The keypair identifier from the keyfile.  \
                         Default is --key=default")
     parser.add_argument('--keyfile',
-                        default=home / 'keypairs.json',
-                        help=f"The keypair file.  Default is --keyfile={home / 'keypairs.json'}")
+                        default=CONFDIR / 'keypairs.json',
+                        help=f"The keypair file.  Default is --keyfile={CONFDIR / DEFAULT_KEYPAIR_FILE}")
     parser.add_argument('--debug',
                         default=False,
                         action='store_true',
@@ -76,7 +70,7 @@ def create_common_arg_parser():
     return parser
 
 
-def getArgs():  # pragma: no cover
+def getArgs(args):  # pragma: no cover
     parser = argparse.ArgumentParser(
         parents=[create_common_arg_parser()],
         description=__doc__, epilog=EPILOG,
@@ -101,31 +95,76 @@ def getArgs():  # pragma: no cover
                         default=False,
                         action='store_true',
                         help="Will set an admin user to non-admin for generating sheets")
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     _remove_all_from_types(args)
     return args
 
 
 class FDN_Key:
     def __init__(self, keyfile, keyname):
+        ''' If key info is not provided as a dictionary then
+            We want to try to get the key info in the following order
+            1) if a keyfile param is provided (not the default value) 
+                then look there for the keys first
+                - using keyname if provided or 
+                - look for a "default" entry if not
+            2) check to see if the CONFDIR_ENVVAR env variable is set and in this
+                case we expect to find a file named keypairs.json with keys
+                to use there where we will look for key named keyname or "default"
+            3) finally look for keypairs.json in the .submit4dn directory and in home
+                directory
+        '''        
         self.error = False
-        # is the keyfile a dictionary
-        if isinstance(keyfile, dict):
-            keys = keyfile
-        # is the keyfile a file (the expected case)
-        elif pp.Path(str(keyfile)).is_file():
-            keys_f = open(keyfile, 'r')
-            keys_json_string = keys_f.read()
-            keys_f.close()
-            keys = json.loads(keys_json_string)
-        # if both fail, the file does not exist
-        else:
-            print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
-            self.error = True
+        keys = None
+        default_location = CONFDIR.joinpath(DEFAULT_KEYPAIR_FILE)
+        if not keyfile:  # this should not happen as defaults are supplied in gfi or imp but just in case
+            msg = "keyfile parameter missing"
+            self.set_error(msg)
             return
-        self.con_key = keys[keyname]
+        elif isinstance(keyfile, dict):  # is the keyfile a dictionary
+            keys = keyfile
+        elif pp.Path(str(keyfile)) != default_location:
+            fpath = pp.Path(str(keyfile))
+            if not fpath.is_file():
+                msg = f"\nThe keyfile {keyfile} does not exist\ncheck the --keyfile path or add {DEFAULT_KEYPAIR_FILE} to {CONFDIR}\n"
+                self.set_error(msg)
+                return
+        else:  # default keyfile arg has been passed 
+            envdir = os.environ.get(CONFDIR_ENVVAR)
+            if envdir:  # loc of keypairs.json specified in env var
+                fpath = pp.Path(envdir).joinpath(DEFAULT_KEYPAIR_FILE) 
+                if not fpath.is_file():
+                    msg = f"\n{envdir} directory set as an env variable does not contain {DEFAULT_KEYPAIR_FILE}\n"
+                    self.set_error(msg)
+                    return
+            else:
+                # see if file found in default location
+                fpath = pp.Path(keyfile)
+                if not fpath.is_file():
+                    # maybe it's stored in the old default home dir
+                    fpath = HOME.joinpath(DEFAULT_KEYPAIR_FILE)
+                    if not fpath.is_file():
+                        msg = f"\nThe keyfile does not exist! Add {DEFAULT_KEYPAIR_FILE} to {CONFDIR} or use the --keyfile option\n"
+                        self.set_error(msg)
+                        return
+
+        if not keys and fpath:
+            with open(fpath, 'r') as keys_f:
+                keys_json_string = keys_f.read()
+            keys = json.loads(keys_json_string)
+        
+        try:
+            self.con_key = keys[keyname]
+        except KeyError:
+            msg = f"ERROR: No key with name '{keyname}' found - check your keypairs file"
+            self.set_error(msg)
+            return
         if not self.con_key['server'].endswith("/"):
             self.con_key['server'] += "/"
+
+    def set_error(self, msg):
+        print(msg)
+        self.error = True
 
 
 class FDN_Connection(object):
@@ -144,7 +183,7 @@ class FDN_Connection(object):
             self.email = me_page['email']
             self.check = True
             self.admin = True if 'admin' in me_page.get('groups', []) else False
-        except:
+        except Exception:
             print('Can not establish connection, please check your keys')
             me_page = {}
         if not me_page:
@@ -231,34 +270,9 @@ class FieldInfo(object):
     enum = attr.ib(default=u'')
 
 
-# additional fields for experiment sheets to capture experiment_set related information
-exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
-                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
-                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
-                    ]
-
-
-sheet_order = [
-    "User", "Award", "Lab", "Document", "Protocol", "ExperimentType",
-    "Publication", "Organism", "Vendor", "IndividualChicken", "IndividualFly",
-    "IndividualHuman", "IndividualMouse", "IndividualPrimate",
-    "IndividualZebrafish", "FileFormat", "Enzyme", "GenomicRegion", "Gene",
-    "BioFeature", "Construct", "TreatmentRnai", "TreatmentAgent",
-    "Antibody", "Modification", "Image", "Biosource", "BiosampleCellCulture",
-    "Biosample", "FileFastq", "FileProcessed", "FileReference",
-    "FileCalibration", "FileSet", "FileSetCalibration", "MicroscopeSettingD1",
-    "MicroscopeSettingD2", "MicroscopeSettingA1", "MicroscopeSettingA2",
-    "FileMicroscopy", "FileSetMicroscopeQc", "ImagingPath", "ExperimentMic",
-    "ExperimentMic_Path", "ExperimentHiC", "ExperimentCaptureC",
-    "ExperimentRepliseq", "ExperimentAtacseq", "ExperimentChiapet",
-    "ExperimentDamid", "ExperimentSeq", "ExperimentTsaseq", "ExperimentSet",
-    "ExperimentSetReplicate", "WorkflowRunSbg", "WorkflowRunAwsem",
-    "OntologyTerm"
-]
-
-file_types = [i for i in sheet_order if i.startswith('File') and not i.startswith('FileSet')]
-file_types.remove('FileFormat')
-exp_types = [i for i in sheet_order if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
+# file_types = [i for i in SHEET_ORDER if i.startswith('File') and not (i.startswith('FileSet') or i == 'FileFormat')]
+# file_types.remove('FileFormat')
+# exp_types = [i for i in SHEET_ORDER if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
 
 
 def get_field_type(field):
@@ -283,7 +297,7 @@ def is_subobject(field):
         return True
     try:
         return field['items']['type'] == 'object'
-    except:
+    except Exception:
         return False
 
 
@@ -351,21 +365,31 @@ def build_field_list(properties, required_fields=None, no_description=False,
 
 
 class FDN_Schema(object):
+    file_types = [i for i in SHEET_ORDER if i.startswith('File') and not (i.startswith('FileSet') or i == 'FileFormat')]
+    exp_types = [i for i in SHEET_ORDER if i.startswith('Experiment') and 'Type' not in i and 'Set' not in i]
+
     def __init__(self, connection, schema_name):
         uri = '/profiles/' + schema_name + '.json'
         response = ff_utils.get_metadata(uri, key=connection.key, add_on="frame=object")
         self.required = None
         if 'required' in response:
             self.required = response['required']
-        if schema_name in file_types and response['properties'].get('file_format'):
+        if schema_name in FDN_Schema.file_types and response['properties'].get('file_format'):
             q = '/search/?type=FileFormat&field=file_format&valid_item_types={}'.format(schema_name)
             formats = [i['file_format'] for i in ff_utils.search_metadata(q, key=connection.key)]
             response['properties']['file_format']['enum'] = formats
-        elif schema_name in exp_types and response['properties'].get('experiment_type'):
+        elif schema_name in FDN_Schema.exp_types and response['properties'].get('experiment_type'):
             q = '/search/?type=ExperimentType&field=title&valid_item_types={}'.format(schema_name)
             exptypes = [i['title'] for i in ff_utils.search_metadata(q, key=connection.key)]
             response['properties']['experiment_type']['enum'] = exptypes
         self.properties = response['properties']
+
+
+# additional fields for experiment sheets to capture experiment_set related information
+exp_set_addition = [FieldInfo('*replicate_set', 'Item:ExperimentSetReplicate', 3, 'Grouping for replicate experiments'),
+                    FieldInfo('*bio_rep_no', 'integer', 4, 'Biological replicate number'),
+                    FieldInfo('*tec_rep_no', 'integer', 5, 'Technical replicate number'),
+                    ]
 
 
 def get_uploadable_fields(connection, types, no_description=False,
@@ -400,7 +424,7 @@ def create_excel(all_fields, filename):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # removes the by default created empty sheet named Sheet
     # order sheets
-    sheet_list = [(sheet, all_fields[sheet]) for sheet in sheet_order if sheet in all_fields.keys()]
+    sheet_list = [(sheet, all_fields[sheet]) for sheet in SHEET_ORDER if sheet in all_fields.keys()]
     for obj_name, fields in sheet_list:
         ws = wb.create_sheet(title=obj_name)
         ws.cell(row=1, column=1, value="#Field Name:")
@@ -431,7 +455,7 @@ def get_sheet_names(types_list):
     lowercase_types = [item.lower().replace('-', '').replace('_', '') for item in types_list if
                        item != 'ExperimentMic_Path']
     if lowercase_types == ['all']:
-        sheets = [sheet for sheet in sheet_order if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
+        sheets = [sheet for sheet in SHEET_ORDER if sheet not in ['ExperimentMic_Path', 'OntologyTerm']]
     else:
         presets = {
             'hic': ["image", "filefastq", "experimenthic"],
@@ -457,7 +481,7 @@ def get_sheet_names(types_list):
                     'protocol', 'publication', 'biosource', 'biosample',
                     'biosamplecellculture', 'image', 'experimentsetreplicate'
                 ]
-        sheets = [sheet for sheet in sheet_order if sheet.lower() in lowercase_types]
+        sheets = [sheet for sheet in SHEET_ORDER if sheet.lower() in lowercase_types]
         for name in types_list:
             modified_name = name.lower().replace('-', '').replace('_', '')
             if modified_name in lowercase_types and modified_name not in [sheetname.lower() for sheetname in sheets]:
@@ -466,7 +490,7 @@ def get_sheet_names(types_list):
 
 
 def main():  # pragma: no cover
-    args = getArgs()
+    args = getArgs(sys.argv[1:])  # the sys.argv bit is for testing purposes
     key = FDN_Key(args.keyfile, args.key)
     if key.error:
         sys.exit(1)
