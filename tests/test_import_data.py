@@ -5,8 +5,6 @@ import pytest
 import inspect
 import wranglertools.import_data as imp
 from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook, MockedGauth
-from gspread.exceptions import GSpreadException
-
 # test data is in conftest.py
 
 

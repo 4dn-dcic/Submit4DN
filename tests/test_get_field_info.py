@@ -12,7 +12,7 @@ def test_gfi_get_args_required_default():
     defaults = {
         'type': ['all'],
         'key': 'default',
-        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE, 
+        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE,
         'debug': False,
         'nodesc': False,
         'comments': False,
@@ -52,9 +52,11 @@ def test_key_as_dict():
 def keydirname():
     return './tests/data_files/'
 
+
 @pytest.fixture
 def keydir(keydirname):
     return Path(keydirname)
+
 
 @pytest.fixture
 def keyfilename():
@@ -74,6 +76,7 @@ def missing_dirname():
 @pytest.fixture
 def missing_dir(missing_dirname):
     return Path(missing_dirname)
+
 
 @pytest.mark.file_operation
 def test_key_file(keypath):
@@ -106,7 +109,6 @@ def test_key_from_env_set_wrong(mocker, capsys):
     default_keypath = CONFDIR / DEFAULT_KEYPAIR_FILE
     baddir = 'some/other/name/'
     mocker.patch('wranglertools.get_field_info.os.environ.get', return_value=baddir)
-    # import pdb; pdb.set_trace()
     key = gfi.FDN_Key(default_keypath, 'default')
     out = capsys.readouterr()[0]
     assert key.error
@@ -173,6 +175,7 @@ def test_key_error_bad_keyname(capsys):
     out = capsys.readouterr()[0]
     assert key.error
     assert out == "ERROR: No key with name 'nosuchkey' found - check your keypairs file\n"
+
 
 def bad_connection_will_exit():
     with pytest.raises(SystemExit) as excinfo:
