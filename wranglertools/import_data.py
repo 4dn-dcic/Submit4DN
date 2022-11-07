@@ -138,8 +138,8 @@ def google_authenticate():
             authorized_user_filename=creddir.joinpath(AUTH_TOKEN_FNAME),
             scopes=SCOPES
         )
-    except GSpreadException as gse:
-        raise f"GOOGLE AUTH PROBLEM: {gse}"
+    except (GSpreadException, FileNotFoundError) as gse:
+        print(f"GOOGLE AUTH PROBLEM: {gse}")
     return gsauth
 
 
@@ -1093,7 +1093,7 @@ def workbook_reader(workbook, booktype, sheet, update, connection, patchall, ali
 
     if sheet == "FileFastq" and not novalidate:
         # check for consistent file pairing of fastqs in the sheet
-        pair_errs = check_file_pairing(reader(workbook, sheetname=sheet))
+        pair_errs = check_file_pairing(reader(workbook, sheetname=sheet, booktype=booktype))
         for f, err in sorted(pair_errs.items()):
             for e in err:
                 print('WARNING: ', f, '\t', e)

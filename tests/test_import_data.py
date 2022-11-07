@@ -5,6 +5,7 @@ import pytest
 import inspect
 import wranglertools.import_data as imp
 from tests.conftest import MockedGoogleWorkSheet, MockedGoogleWorkBook, MockedGauth
+from gspread.exceptions import GSpreadException
 
 # test data is in conftest.py
 
@@ -13,7 +14,7 @@ def test_imp_get_args_required_default():
     defaults = {
         'type': ['all'],
         'key': 'default',
-        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE, 
+        'keyfile': CONFDIR / DEFAULT_KEYPAIR_FILE,
         'debug': False,
         'update': False,
         'patchall': False,
@@ -24,7 +25,6 @@ def test_imp_get_args_required_default():
     for k, v in defaults.items():
         assert getattr(args, k) == v
     assert args.infile == 'infile'
-
 
 
 def convert_to_path_with_tilde(string_path):
@@ -141,6 +141,21 @@ def test_reader_wrong_sheetname(capsys):
     assert readxls is None
     out = capsys.readouterr()[0]
     assert out == msg
+
+
+def test_google_authenticate_mock(mocker):
+    mocker.patch('wranglertools.import_data.os.environ.get', return_value=None)
+    mocker.patch('wranglertools.import_data.gspread.oauth', return_value=True)
+    gauth = imp.google_authenticate()
+    assert gauth
+
+
+def test_google_authenticate_exception(mocker, capsys):
+    mocker.patch('wranglertools.import_data.os.environ.get', return_value=None)
+    mocker.patch("wranglertools.import_data.CONFDIR", pp.Path('no/such/directory'))
+    imp.google_authenticate()
+    out = capsys.readouterr()[0]
+    assert out.startswith('GOOGLE AUTH PROBLEM:')
 
 
 @pytest.fixture
