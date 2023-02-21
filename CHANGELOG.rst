@@ -6,6 +6,11 @@ Submit4DN
 Change Log
 ----------
 
+3.2.0
+=====
+
+* dependencies update - update lock file to resolve dependabot alerts 
+
 3.1.2
 =====
 
