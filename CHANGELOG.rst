@@ -6,6 +6,11 @@ Submit4DN
 Change Log
 ----------
 
+3.1.2
+=====
+
+* update to ubuntu version 20.04 in github workflows
+
 3.1.1
 =====
 
