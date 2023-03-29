@@ -350,7 +350,7 @@ def get_sub_field(field_name):
     """Construct embeded field names."""
     try:
         return field_name.split(".")[1].rstrip('-0123456789')
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         return ''
 
 
@@ -373,7 +373,7 @@ def get_sub_field_number(field_name):
     field = field_name.split(":")[0]
     try:
         return int(field.split("-")[1])
-    except:
+    except Exception:
         return 0
 
 
@@ -418,7 +418,7 @@ def parse_exception(e):
         resp_dict = ast.literal_eval(resp_text)
         return resp_dict
     # if not re-raise
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         raise e
 
 
@@ -802,13 +802,13 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
         try:
             report.append("{sheet:<30}{eid}: {des}"
                           .format(des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
-        except:
+        except Exception:
             return error_dic
     # if there is a conflict
     elif error_dic.get('title') == "Conflict":
         try:
             report.extend(conflict_error_report(error_dic, sheet, connection))
-        except:
+        except Exception:
             return error_dic
     # if nothing works, give the full error, we should add that case to our reporting
     else:
@@ -840,7 +840,7 @@ def conflict_error_report(error_dic, sheet, connection):
                 existing_item = ff_utils.search_metadata(search, key=connection.key)
                 at_id = existing_item.get('@id')
                 add_text = "please use " + at_id
-            except:
+            except Exception:
                 # if there is a conflicting item, but it is not viewable by the user,
                 # we should release the item to the project/public
                 add_text = "please contact DCIC"
@@ -848,7 +848,7 @@ def conflict_error_report(error_dic, sheet, connection):
                             .format(er=error_field, des=error_value, sheet="ERROR " + sheet.lower(), at=add_text))
         all_conflicts.append(conflict_rep)
         return all_conflicts
-    except:
+    except Exception:
         return
 
 
@@ -860,7 +860,7 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
         file_to_upload, post_json, filename_to_post = ftp_copy(filename_to_post, post_json)
     # add the md5
     if file_to_upload and not post_json.get('md5sum'):
-        print("calculating md5 sum for file %s " % (filename_to_post))
+        print(f"calculating md5 sum for file {filename_to_post} ")
         post_json['md5sum'] = md5(filename_to_post)
     try:
         if verb == 'PATCH':
@@ -888,7 +888,7 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             try:
                 file_format = ff_utils.get_metadata(fformat, key=connection.key)
                 ff_uuid = file_format.get('uuid')
-            except:
+            except Exception:
                 raise "Can't find file_format item for %s" % fformat
             for ecred in extcreds:
                 if ff_uuid == ecred.get('file_format'):
@@ -922,7 +922,7 @@ def ftp_copy(filename_to_post, post_json):
             with open(new_file, 'wb') as f:
                 shutil.copyfileobj(r, f)
         return True, post_json, new_file
-    except:
+    except Exception:
         # if download did not work, delete the filename from the post json
         print("WARNING: Download failed")
         post_json.pop('filename')
@@ -1087,7 +1087,7 @@ def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_ty
     on the options passed in.
     """
     # determine right from the top if dry run
-    dryrun = not(update or patchall)
+    dryrun = not (update or patchall)
     all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -1420,7 +1420,7 @@ def user_workflow_reader(workbook, sheet, connection):
 
 
 def get_upload_creds(file_id, connection):  # pragma: no cover
-    url = "%s/upload/" % (file_id)
+    url = f"{file_id}/upload/"
     req = ff_utils.post_metadata({}, url, key=connection.key)
     return req['@graph'][0]['upload_credentials']
 
@@ -1451,7 +1451,7 @@ def upload_file(creds, path):  # pragma: no cover
             'AWS_SECURITY_TOKEN': creds['SessionToken'],
         })
     except Exception as e:
-        raise("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
+        raise Exception(f"Didn't get back s3 access keys from file/upload endpoint.  Error was {e}")
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
@@ -1490,8 +1490,9 @@ def order_sorter(list_of_names):
     # expected list if multiple; ['user_workflow_1', 'user_workflow_2']
     user_workflows = sorted([sh for sh in list_of_names if sh.startswith('user_workflow')])
     ret_list.extend(user_workflows)
-    if list(set(list_of_names)-set(ret_list)) != []:
-        missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
+    missing = set(list_of_names) - set(ret_list)
+    if missing:
+        missing_items = ", ".join(missing)
         print("WARNING!", missing_items, "sheet(s) are not loaded")
         print("WARNING! Check the sheet names and the reference list \"sheet_order\"")
     return ret_list
@@ -1596,10 +1597,7 @@ def cabin_cross_check(connection, patchall, update, infile, remote, lab=None, aw
         print("##############   DRY-RUN MODE   ################\n")
     else:
         if not remote:
-            try:
-                response = raw_input("Do you want to continue with these credentials? (Y/N): ") or "N"
-            except NameError:
-                response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
+            response = input("Do you want to continue with these credentials? (Y/N): ") or "N"
             if response.lower() not in ["y", "yes"]:
                 sys.exit(1)
 
@@ -1636,7 +1634,7 @@ def get_all_aliases(workbook, sheets):
         keys = next(rows)  # grab the first row of headers
         try:
             alias_col = keys.index("aliases")
-        except:
+        except Exception:
             continue
         for row in rows:
             my_aliases = []
