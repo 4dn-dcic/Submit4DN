@@ -16,7 +16,7 @@ python = ">=3.7.0,<3.10"
 python-magic = ">=0.4.12,<1"
 attrs = "^22.2"
 openpyxl = "^3.1.2"
-dcicutils = "^6.10.1"
+dcicutils = "^6.0"
 # awscli is not directly imported but is required for aws cp operation
 awscli = "^1.27"
 
