@@ -12,15 +12,15 @@ import json
 EPILOG = '''
     To create an excel workbook file with sheets to be filled use the examples below and modify to your needs.
     It will accept the following optional parameters.
-        --keyfile        the path to the file where you have stored your access key info (default ~/keypairs.json)
-        --key            the name of the key identifier for the access key and secret in your keys file (default=default)
-        --type           use for each sheet that you want to add to the excel workbook
-        --nodesc         do not add the descriptions in the second line (by default they are added)
-        --noenums        do not add the list of options for a field if they are specified (by default they are added)
-        --comments       adds any (usually internal) comments together with enums (by default False)
-        --outfile        change the default file name "fields.xlsx" to a specified one
-        --debug          to add more debugging output
-        --noadmin        if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
+        --keyfile      the path to the file where you have stored your access key info (default ~/keypairs.json)
+        --key          the name of the key identifier for the access key and secret in your keys file (default=default)
+        --type         use for each sheet that you want to add to the excel workbook
+        --nodesc       do not add the descriptions in the second line (by default they are added)
+        --noenums      do not add the list of options for a field if they are specified (by default they are added)
+        --comments     adds any (usually internal) comments together with enums (by default False)
+        --outfile      change the default file name "fields.xlsx" to a specified one
+        --debug        to add more debugging output
+        --noadmin      if you have admin access to 4DN this option lets you generate the sheet as a non-admin user
 
 
     This program graphs uploadable fields (i.e. not calculated properties)
@@ -44,9 +44,9 @@ EPILOG = '''
 
 
 def _remove_all_from_types(args):
-    ''' helper method to remove the default 'all' argument that is automatically
+    """ helper method to remove the default 'all' argument that is automatically
         add by having a default with the append action for types option
-    '''
+    """
     if len(args.type) > 1:
         types = args.type
         types.remove('all')
@@ -144,7 +144,7 @@ class FDN_Connection(object):
             self.email = me_page['email']
             self.check = True
             self.admin = True if 'admin' in me_page.get('groups', []) else False
-        except:
+        except Exception:
             print('Can not establish connection, please check your keys')
             me_page = {}
         if not me_page:
@@ -162,11 +162,11 @@ class FDN_Connection(object):
             self.award = None
 
     def set_award(self, lab, dontPrompt=False):
-        '''Sets the award for the connection for use in import_data
+        """Sets the award for the connection for use in import_data
            if dontPrompt is False will ask the User to choose if there
            are more than one award for the connection.lab otherwise
            the first award for the lab will be used
-        '''
+        """
         self.award = None
         if lab is not None:
             labjson = ff_utils.get_metadata(lab, key=self.key)
@@ -195,10 +195,10 @@ class FDN_Connection(object):
         return
 
     def prompt_for_lab_award(self, lab=None, award=None):
-        '''Check to see if user submits_for multiple labs or the lab
+        """Check to see if user submits_for multiple labs or the lab
             has multiple awards and if so prompts for the one to set
             for the connection
-        '''
+        """
         if lab:
             if not award:
                 self.set_award(self.lab)
@@ -283,7 +283,7 @@ def is_subobject(field):
         return True
     try:
         return field['items']['type'] == 'object'
-    except:
+    except Exception:
         return False
 
 
@@ -303,7 +303,7 @@ def build_field_list(properties, required_fields=None, no_description=False,
             continue
         if 'submit4dn' in props.get('exclude_from', []):
             continue
-        if ('import_items' in props.get('permission', []) and not admin):
+        if 'import_items' in props.get('permission', []) and not admin:
             continue
         if is_subobject(props) and name != 'attachment':
             if get_field_type(props).startswith('array'):
@@ -391,12 +391,12 @@ def get_uploadable_fields(connection, types, no_description=False,
 
 
 def create_excel(all_fields, filename):
-    '''
+    """
     all_fields being a dictionary of sheet/Item names -> list of FieldInfo(objects)
     create one sheet per dictionary item, that inserts 4 commented header rows for each column
     that corresponds to one of the FieldInfo objects in the list
     header rows are for fieldname, fieldtype, description and comments/enums
-    '''
+    """
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # removes the by default created empty sheet named Sheet
     # order sheets

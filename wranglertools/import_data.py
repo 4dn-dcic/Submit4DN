@@ -1087,7 +1087,7 @@ def workbook_reader(workbook, sheet, update, connection, patchall, aliases_by_ty
     on the options passed in.
     """
     # determine right from the top if dry run
-    dryrun = not(update or patchall)
+    dryrun = not (update or patchall)
     all_aliases = [k for k in aliases_by_type]
     # dict for acumulating cycle patch data
     patch_loadxl = []
@@ -1420,7 +1420,7 @@ def user_workflow_reader(workbook, sheet, connection):
 
 
 def get_upload_creds(file_id, connection):  # pragma: no cover
-    url = "%s/upload/" % (file_id)
+    url = f"{file_id}/upload/"
     req = ff_utils.post_metadata({}, url, key=connection.key)
     return req['@graph'][0]['upload_credentials']
 
@@ -1451,7 +1451,7 @@ def upload_file(creds, path):  # pragma: no cover
             'AWS_SECURITY_TOKEN': creds['SessionToken'],
         })
     except Exception as e:
-        raise("Didn't get back s3 access keys from file/upload endpoint.  Error was %s" % str(e))
+        raise Exception(f"Didn't get back s3 access keys from file/upload endpoint.  Error was {e}")
     # ~10s/GB from Stanford - AWS Oregon
     # ~12-15s/GB from AWS Ireland - AWS Oregon
     print("Uploading file.")
@@ -1490,8 +1490,9 @@ def order_sorter(list_of_names):
     # expected list if multiple; ['user_workflow_1', 'user_workflow_2']
     user_workflows = sorted([sh for sh in list_of_names if sh.startswith('user_workflow')])
     ret_list.extend(user_workflows)
-    if list(set(list_of_names)-set(ret_list)) != []:
-        missing_items = ", ".join(list(set(list_of_names)-set(ret_list)))
+    missing = set(list_of_names) - set(ret_list)
+    if missing:
+        missing_items = ", ".join(missing)
         print("WARNING!", missing_items, "sheet(s) are not loaded")
         print("WARNING! Check the sheet names and the reference list \"sheet_order\"")
     return ret_list

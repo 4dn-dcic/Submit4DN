@@ -1,0 +1,39 @@
+#!/bin/bash
+
+dirty=`git describe --all --dirty | rev | cut -d '-' -f 1 | rev`
+if [ "$dirty" = "dirty" ]; then
+    echo "This branch is dirty. That would create an ambiguity in what to tag."
+    exit 1
+fi
+
+if [ ! -e "pyproject.toml" ]; then
+    echo "There is no pyproject.toml"
+    exit 1
+fi
+
+version=`grep '^version = ' pyproject.toml | sed -E "s/^version = ['\"]([^'\"]+)['\"].*/\1/g"`
+
+if [ -z "${version}" ]; then
+    echo "pyproject.toml has no 'version = \"...\"' line."
+    exit 1
+fi
+    
+new_tag=v${version}
+
+git tag ${new_tag}
+
+if [ $? -ne 0 ]; then
+    echo "Adding tag ${new_tag} failed."
+    exit 1
+else
+    echo "Added tag ${new_tag}."
+fi
+
+git push origin ${new_tag}
+
+if [ $? -ne 0 ]; then
+    echo "Pushing tag ${new_tag} failed."
+    exit 1
+else
+    echo "Pushed tag ${new_tag}."
+fi

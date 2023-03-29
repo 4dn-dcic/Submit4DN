@@ -21,6 +21,7 @@ dcicutils = "^6.10.1"
 awscli = "^1.27"
 
 [tool.poetry.dev-dependencies]
+flake8 = ">=3.9.2"
 pytest = ">=7.2.2"
 pytest-cov = ">=4.0.0"
 pytest-mock = ">=3.10.0"
