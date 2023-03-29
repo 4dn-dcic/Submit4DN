@@ -26,3 +26,6 @@ Data_Files/MicroscopyCalibration/Files/
 
 # PyCharm metadata
 .idea/
+
+# Environments
+*env/
