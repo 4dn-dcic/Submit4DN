@@ -14,7 +14,7 @@ build:  # builds
 	poetry install
 
 test:
-	pytest -vv
+	pytest -vv -m 'not ftp'
 
 update:  # updates dependencies
 	poetry update
