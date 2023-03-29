@@ -13,17 +13,17 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.7.0,<3.10"
-python-magic = ">=0.4.12"
-attrs = ">=21.4"
-openpyxl = "^3.0.9"
-dcicutils = ">=4.0"
+python-magic = ">=0.4.12,<1"
+attrs = "^22.2"
+openpyxl = "^3.1.2"
+dcicutils = "^6.10.1"
 # awscli is not directly imported but is required for aws cp operation
-awscli = "^1.22.88"
+awscli = "^1.27"
 
 [tool.poetry.dev-dependencies]
-pytest = "3.0.1"
-pytest-cov = "2.3.1"
-pytest-mock = ">=1.11.2, <=2.0.0"
+pytest = ">=7.2.2"
+pytest-cov = ">=4.0.0"
+pytest-mock = ">=3.10.0"
 
 [tool.poetry.scripts]
 import_data = "wranglertools.import_data:main"

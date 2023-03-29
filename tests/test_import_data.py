@@ -1,3 +1,4 @@
+from dcicutils.misc_utils import get_error_message
 import wranglertools.import_data as imp
 import pytest
 import pathlib as pp
@@ -7,7 +8,13 @@ import pathlib as pp
 # @pytest.mark.file_operation
 @pytest.mark.ftp
 def test_attachment_from_ftp():
-    attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
+    try:
+        attach = imp.attachment("ftp://speedtest.tele2.net/1KB.zip")
+    except Exception as e:
+        msg = get_error_message(e)
+        if 'timeout' in msg.lower():
+            pytest.xfail(f"Integration test failure. {msg}")
+        raise
     assert attach
 
 
