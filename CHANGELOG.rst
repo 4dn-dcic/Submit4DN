@@ -6,6 +6,38 @@ Submit4DN
 Change Log
 ----------
 
+3.3.0
+=====
+
+Added/modified config files:
+
+* ``.flake8``
+
+  * declare expected line length, etc.
+
+* ``pytest.ini``
+
+  * Declare mark keywords (``pytest.mark.xxx``)
+
+* ``Makefile``
+
+  * Add targets ``clear-poetry-cache``, ``lint``, ``tag-and-push``
+  * Make test target exclude ``pytest.mark.ftp``
+  * Load (pinned) ``poetry 1.3.2``
+
+* ``pyproject.toml``
+
+  * update library versions, including ``poetry_core``.
+
+* ``scripts/tag-and-push``
+
+  * supports make target ``tag-and-push``
+
+* ``tests/`` and ``wranglertools/``
+
+  * misc PEP8
+
+
 3.2.0
 =====
 
