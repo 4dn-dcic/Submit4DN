@@ -787,12 +787,17 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                               .format(des=error_description, sheet="ERROR " + sheet.lower()))
             else:
                 # field errors
-                if error_description[-9:] == 'not found':
+                not_found = None
+                utrl_txt = 'Unable to resolve link:'
+                if utrl_txt in error_description:
+                    alias_bit = error_description.replace(utrl_txt, '')
+                    not_found = alias_bit.strip()
+                elif error_description[-9:] == 'not found':
                     # if error is about object connections, check all aliases
                     # ignore ones about existing aliases
                     not_found = error_description[1:-11]
-                    if not_found in all_aliases:
-                        continue
+                if not_found and not_found in all_aliases:
+                    continue
                 error_field = err['name']
                 report.append("{sheet:<30}Field '{er}': {des}"
                               .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
