@@ -779,23 +779,29 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                     'title': 'Unprocessable Entity', 'description': 'Failed validation'}
     report = []
     if all(item in error_dic.items() for item in error_header.items()):
-        for err in error_dic['errors']:
-            error_description = err['description']
-            # if no field specified in the error, schema wide error
-            if not err['name']:
+        # deal with Validation errors
+        for err in error_dic.get('errors'):
+            error_description = err.get('description')
+            # this may no longer ever happen?
+            if 'name' not in err or not err.get('name'):
                 report.append("{sheet:<30}{des}"
                               .format(des=error_description, sheet="ERROR " + sheet.lower()))
             else:
-                # field errors
-                not_found = None
+                # deal with errors about linked objects not in db - checking for those with
+                # aliases present in the workbook that should be ignored
                 utrl_txt = 'Unable to resolve link:'
-                if utrl_txt in error_description:
+                nf_txt = 'not found'
+                not_found = None
+                alias_bit = None
+                if error_id:
+                    alias_bit = error_id
+                elif utrl_txt in error_description:
                     alias_bit = error_description.replace(utrl_txt, '')
+                elif error_description.endswith(nf_txt):
+                    alias_bit = error_description.replace(nf_txt, '').replace("'", '')
+                if alias_bit:
                     not_found = alias_bit.strip()
-                elif error_description[-9:] == 'not found':
-                    # if error is about object connections, check all aliases
-                    # ignore ones about existing aliases
-                    not_found = error_description[1:-11]
+                # ignore ones about existing aliases
                 if not_found and not_found in all_aliases:
                     continue
                 error_field = err['name']

@@ -280,21 +280,32 @@ def test_combine_set_expsets_with_existing():
 
 
 def test_error_report(connection_mock):
-    # There are 3 errors, 2 of them are legit, one needs to be checked afains the all aliases list, and excluded
-    err_dict = {"title": "Unprocessable Entity",
-                "status": "error",
-                "errors": [
-                    {"name": "protocol_documents",
-                     "description": "'dcic:insituhicagar' not found", "location": "body"},
-                    {"name": "age",
-                     "description": "'at' is not of type 'number'", "location": "body"},
-                    {"name": "sex",
-                     "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}],
-                "code": 422,
-                "@type": ["ValidationFailure", "Error"],
-                "description": "Failed validation"}
-    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar'], connection_mock)
+    # There are x errors, x of them are legit,  need to be checked against the all aliases list, and excluded
+    err_dict = {
+                    "title": "Unprocessable Entity",
+                    "status": "error",
+                    "errors": [
+                        {"name": "Schema: ", "location": "body",
+                         "description": "Unable to resolve link: siyuan-wang-lab:region_1MB_TAD_1"},
+                        {"name": "Schema: ", "location": "body",
+                         "description": "Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2"},
+                        {"location": "body", "name": "Schema: genome_location.1",
+                         "description": "'siyuan-wang-lab:region_5MB_TAD_2' not found"},
+                        {"name": "protocol_documents",
+                         "description": "'dcic:insituhicagar' not found", "location": "body"},
+                        {"name": "age",
+                         "description": "'at' is not of type 'number'", "location": "body"},
+                        {"name": "sex",
+                         "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}
+                    ],
+                    "code": 422,
+                    "@type": ["ValidationFailure", "Error"],
+                    "description": "Failed validation"
+                }
+    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar', 'siyuan-wang-lab:region_1MB_TAD_1'], connection_mock)
     message = '''
+ERROR vendor                  Field 'Schema: ': Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2
+ERROR vendor                  Field 'Schema: genome_location.1': 'siyuan-wang-lab:region_5MB_TAD_2' not found
 ERROR vendor                  Field 'age': 'at' is not of type 'number'
 ERROR vendor                  Field 'sex': 'green' is not one of ['male', 'female', 'unknown', 'mixed']
 '''
