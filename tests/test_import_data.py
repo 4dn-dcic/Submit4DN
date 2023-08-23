@@ -285,6 +285,8 @@ def test_error_report(connection_mock):
                     "title": "Unprocessable Entity",
                     "status": "error",
                     "errors": [
+                        {"location": "body",
+                         "description": "Test for error with no name"},
                         {"name": "Schema: ", "location": "body",
                          "description": "Unable to resolve link: siyuan-wang-lab:region_1MB_TAD_1"},
                         {"name": "Schema: ", "location": "body",
@@ -304,6 +306,7 @@ def test_error_report(connection_mock):
                 }
     rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar', 'siyuan-wang-lab:region_1MB_TAD_1'], connection_mock)
     message = '''
+ERROR vendor                  Test for error with no name
 ERROR vendor                  Field 'Schema: ': Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2
 ERROR vendor                  Field 'Schema: genome_location.1': 'siyuan-wang-lab:region_5MB_TAD_2' not found
 ERROR vendor                  Field 'age': 'at' is not of type 'number'
