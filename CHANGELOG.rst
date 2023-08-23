@@ -6,6 +6,17 @@ Submit4DN
 Change Log
 ----------
 
+3.4.0
+=====
+
+`PR 161: update error report <https://github.com/4dn-dcic/Submit4DN/pull/169>`_
+
+* Updated 'error_report' function to handle additional output on validation exceptions due to fourfront schema version update
+* added some additional test cases for this
+* increased allowed line lenght in .flake8
+* updated lock file with updated version of dcicutils
+
+
 3.3.0
 =====
 
