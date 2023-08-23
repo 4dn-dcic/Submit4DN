@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Submit4DN"
-version = "3.3.0"
+version = "3.4.0"
 description = "Utility package for submitting data to the 4DN Data Portal"
 authors = ["4DN-DCIC Team <support@4dnucleome.org>"]
 license = "MIT"
@@ -16,7 +16,7 @@ python = ">=3.7.0,<3.10"
 python-magic = ">=0.4.12,<1"
 attrs = "^22.2"
 openpyxl = "^3.1.2"
-dcicutils = "^6.0"
+dcicutils = "^7.9.0"
 # awscli is not directly imported but is required for aws cp operation
 awscli = "^1.27"
 
