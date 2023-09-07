@@ -894,7 +894,9 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
         if ftp_download:
             pp.Path(filename_to_post).unlink()
     if extrafiles:
-        extcreds = e['@graph'][0].get('extra_files_creds')
+        extcreds = e['@graph'][0].get('extra_file_creds')
+        if not extcreds:
+            extcreds = get_upload_creds(e['@graph'][0]['accession'], connection, extfilecreds=True)
         for fformat, filepath in extrafiles.items():
             try:
                 file_format = ff_utils.get_metadata(fformat, key=connection.key)
@@ -909,8 +911,8 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
 
 
 def patch_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, existing_data):
-    return update_item('PATCH', file_to_upload, post_json, filename_to_post,
-                       extrafiles, connection, existing_data.get('uuid'))
+    return update_item('PATCH', file_to_upload, post_json, filename_to_post, extrafiles,
+                       connection, existing_data.get('uuid'))
 
 
 def post_item(file_to_upload, post_json, filename_to_post, extrafiles, connection, sheet):
@@ -1430,10 +1432,15 @@ def user_workflow_reader(workbook, sheet, connection):
                   error=error, patch="-", not_patched="-"))
 
 
-def get_upload_creds(file_id, connection):  # pragma: no cover
+def get_upload_creds(file_id, connection, extfilecreds=False):  # pragma: no cover
+    creds2return = 'upload_credentials'
     url = f"{file_id}/upload/"
-    req = ff_utils.post_metadata({}, url, key=connection.key)
-    return req['@graph'][0]['upload_credentials']
+    if extfilecreds:
+        creds2return = 'extra_files_creds'
+        req = ff_utils.authorized_request(f"{connection.key.get('server')}/{url}", auth=ff_utils.get_authentication_with_server(connection.key)).json()
+    else:
+        req = ff_utils.post_metadata({}, f"{file_id}{stem}", key=connection.key)
+    return req['@graph'][0][creds2return]
 
 
 def upload_file_item(metadata_post_response, path):
