@@ -1571,7 +1571,10 @@ def pf_w_extfiles_resp():
 
 def test_update_item_extrafiles(mocker, connection_mock, pf_w_extfiles_resp):
     extrafiles = {'pairs_px2': '/test/file/test_pairs.gz.px2', 'pairsam_px2': '/test/file/testfile.pairs.sam.gz'}
+    upld_creds = [{'file_format': 'pairs_px2', 'upload_credentials': 'px2creds'},
+                  {'file_format': 'pairsam_px2', 'upload_credentials': 'px2creds'}]
     mocker.patch('wranglertools.import_data.ff_utils.post_metadata', return_value=pf_w_extfiles_resp)
+    mocker.patch('wranglertools.import_data.get_upload_creds', return_value=upld_creds)
     mocker.patch('wranglertools.import_data.upload_extra_file', side_effect=[None, None])
     mocker.patch('wranglertools.import_data.ff_utils.get_metadata', side_effect=[
         {'uuid': 'd13d06cf-218e-4f61-aaf0-91f226348b2c'}, {'uuid': 'd13d06cf-218e-6f61-aaf0-91f226248b2c'}
