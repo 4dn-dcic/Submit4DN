@@ -896,6 +896,7 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_file_creds')
         if not extcreds:
+            time.sleep(5)
             extcreds = get_upload_creds(e['@graph'][0]['accession'], connection, extfilecreds=True)
         for fformat, filepath in extrafiles.items():
             try:
