@@ -6,6 +6,13 @@ Submit4DN
 Change Log
 ----------
 
+3.4.1
+=====
+
+`PR 170: fix bug in extra file upld <https://github.com/4dn-dcic/Submit4DN/pull/170>`_
+
+* Update to allow extra_files to be uploaded even if the regular file was already uploaded (which was previously stymied by permission denied for POST to get extracreds)
+
 3.4.0
 =====
 
