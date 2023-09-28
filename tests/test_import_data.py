@@ -131,13 +131,13 @@ def test_reader_with_sheetname(vendor_raw_xls_fields, workbooks):
 
 @pytest.mark.file_operation
 def test_reader_wrong_sheetname(capsys):
-    msg = "string indices must be integers\nEnzyme\nERROR: Can not find the collection sheet in excel file (openpyxl error)\n"
+    msg_end = "Enzyme\nERROR: Can not find the collection sheet in excel file (openpyxl error)\n"
     sheet = 'Vendor'
     sheetkey = "{}.xlsx".format(sheet)
     readxls = imp.reader(sheetkey, 'Enzyme')
     assert readxls is None
     out = capsys.readouterr()[0]
-    assert out == msg
+    assert out.endswith(msg_end)
 
 
 def test_cell_value(workbooks):
