@@ -1440,7 +1440,7 @@ def get_upload_creds(file_id, connection, extfilecreds=False):  # pragma: no cov
         creds2return = 'extra_files_creds'
         req = ff_utils.authorized_request(f"{connection.key.get('server')}/{url}", auth=ff_utils.get_authentication_with_server(connection.key)).json()
     else:
-        req = ff_utils.post_metadata({}, f"{file_id}{stem}", key=connection.key)
+        req = ff_utils.post_metadata({}, url, key=connection.key)
     return req['@graph'][0][creds2return]
 
 
