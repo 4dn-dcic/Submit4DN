@@ -6,6 +6,14 @@ Submit4DN
 Change Log
 ----------
 
+3.4.2
+=====
+
+`PR 172: fix bug in get_upload_credentials <https://github.com/4dn-dcic/Submit4DN/pull/172>`_
+
+* Bug fix that was introduced in the previous bug fix for extra_file upload creds that affected regular file upload
+
+
 3.4.1
 =====
 
