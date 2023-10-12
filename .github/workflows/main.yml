@@ -18,27 +18,28 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python_version: [3.7, 3.8, 3.9]
+        python_version: ['3.8', '3.9', '3.10', '3.11']
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python_version }}
 
       - name: Install Deps
         run: |
-          pip install poetry coveralls codacy-coverage
+          make build
+          pip install coveralls codacy-coverage
 
       - name: QA
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          poetry install
+          make configure
           poetry run coverage run --source=wranglertools -m pytest -vv tests -m 'not ftp'
           poetry run coveralls --service=github
