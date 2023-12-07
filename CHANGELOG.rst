@@ -6,6 +6,16 @@ Submit4DN
 Change Log
 ----------
 
+4.0.1
+=====
+
+* remove stray pdb that got left in and hung file upload
+
+4.0.0
+=====
+
+* update to use python versions 3.8 - 3.11
+
 3.4.2
 =====
 
