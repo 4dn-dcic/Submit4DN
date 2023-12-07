@@ -6,6 +6,20 @@ Submit4DN
 Change Log
 ----------
 
+4.0.1
+=====
+
+`PR 174: remove pdb <https://github.com/4dn-dcic/Submit4DN/pull/174>`_
+
+* remove stray pdb that got left in and hung file upload
+
+4.0.0
+=====
+
+`PR 173: update python versions <https://github.com/4dn-dcic/Submit4DN/pull/173>`_
+
+* update to use python versions 3.8 - 3.11
+
 3.4.2
 =====
 
