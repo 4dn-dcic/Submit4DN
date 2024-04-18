@@ -793,7 +793,6 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                 nf_txt = 'not found'
                 not_found = None
                 alias_bit = None
-                #import pdb; pdb.set_trace()
                 if utrl_txt in error_description:
                     alias_bit = error_description.replace(utrl_txt, '')
                 elif error_description.endswith(nf_txt):
