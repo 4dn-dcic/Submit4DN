@@ -280,14 +280,15 @@ def test_combine_set_expsets_with_existing():
 
 
 def test_error_report(connection_mock):
-    # There are x errors, x of them are legit,  need to be checked against the all aliases list, and excluded
+    # There are 6 errors in the err_dict, 5 of them are legit, 1 is checked against the all aliases list, and excluded
     err_dict = {
                     "title": "Unprocessable Entity",
                     "status": "error",
                     "errors": [
                         {"location": "body",
                          "description": "Test for error with no name"},
-                        {"name": "Schema: ", "location": "body",
+                        {# This one should be excluded from report as this alias is in the sheet alias list
+                         "name": "Schema: ", "location": "body",
                          "description": "Unable to resolve link: siyuan-wang-lab:region_1MB_TAD_1"},
                         {"name": "Schema: ", "location": "body",
                          "description": "Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2"},
@@ -307,12 +308,50 @@ def test_error_report(connection_mock):
     rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar', 'siyuan-wang-lab:region_1MB_TAD_1'], connection_mock)
     message = '''
 ERROR vendor                  Test for error with no name
-ERROR vendor                  Field 'Schema: ': Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2
-ERROR vendor                  Field 'Schema: genome_location.1': 'siyuan-wang-lab:region_5MB_TAD_2' not found
-ERROR vendor                  Field 'age': 'at' is not of type 'number'
-ERROR vendor                  Field 'sex': 'green' is not one of ['male', 'female', 'unknown', 'mixed']
+ERROR vendor                   Field 'Schema: ': Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2
+ERROR vendor                   Field 'Schema: genome_location.1': 'siyuan-wang-lab:region_5MB_TAD_2' not found
+ERROR vendor                   Field 'age': 'at' is not of type 'number'
+ERROR vendor                   Field 'sex': 'green' is not one of ['male', 'female', 'unknown', 'mixed']
 '''
     assert rep.strip() == message.strip()
+
+
+def test_error_with_alias_param_report(connection_mock):
+    # There are 6 errors in the err_dict, 5 of them are legit, 1 is checked against the all aliases list, and excluded
+    err_dict = {
+                    "title": "Unprocessable Entity",
+                    "status": "error",
+                    "errors": [
+                        {"location": "body",
+                         "description": "Test for error with no name"},
+                        {# This one should be excluded from report as this alias is in the sheet alias list
+                         "name": "Schema: ", "location": "body",
+                         "description": "Unable to resolve link: siyuan-wang-lab:region_1MB_TAD_1"},
+                        {"name": "Schema: ", "location": "body",
+                         "description": "Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2"},
+                        {"location": "body", "name": "Schema: genome_location.1",
+                         "description": "'siyuan-wang-lab:region_5MB_TAD_2' not found"},
+                        {"name": "protocol_documents",
+                         "description": "'dcic:insituhicagar' not found", "location": "body"},
+                        {"name": "age",
+                         "description": "'at' is not of type 'number'", "location": "body"},
+                        {"name": "sex",
+                         "description": "'green' is not one of ['male', 'female', 'unknown', 'mixed']", "location": "body"}
+                    ],
+                    "code": 422,
+                    "@type": ["ValidationFailure", "Error"],
+                    "description": "Failed validation"
+                }
+    rep = imp.error_report(err_dict, "Vendor", ['dcic:insituhicagar', 'siyuan-wang-lab:region_1MB_TAD_1'], connection_mock, error_id='dcic:insituhicagar')
+    message = '''
+ERROR vendor                  Test for error with no name
+ERROR vendor                  dcic:insituhicagar Field 'Schema: ': Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2
+ERROR vendor                  dcic:insituhicagar Field 'Schema: genome_location.1': 'siyuan-wang-lab:region_5MB_TAD_2' not found
+ERROR vendor                  dcic:insituhicagar Field 'age': 'at' is not of type 'number'
+ERROR vendor                  dcic:insituhicagar Field 'sex': 'green' is not one of ['male', 'female', 'unknown', 'mixed']
+'''
+    assert rep.strip() == message.strip()
+
 
 
 def test_error_conflict_report(connection_mock):
@@ -485,7 +524,7 @@ def test_workbook_reader_update_new_file_fastq_post_and_file_upload(capsys, mock
                         all_aliases, dict_load, dict_rep, dict_set, True, [])
     args = imp.ff_utils.post_metadata.call_args
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    outlist = [i.strip() for i in out.split('\n') if i != ""]
     post_json_arg = args[0][0]
     assert post_json_arg['md5sum'] == '8f8cc612e5b2d25c52b1d29017e38f2b'
     assert message0 == outlist[0]
@@ -533,7 +572,7 @@ def test_workbook_reader_patch_file_meta_and_file_upload(capsys, mocker, connect
     assert updated_post['@graph'][0]['upload_credentials'] == 'new_creds'
     # check for output message
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    outlist = [i.strip() for i in out.split('\n') if i != ""]
     assert message0 == outlist[0]
     assert message1 == outlist[1]
 
@@ -681,7 +720,7 @@ def test_order_sorter(capsys):
     message1 = '''WARNING! Check the sheet names and the reference list "sheet_order"'''
     assert ordered_list == imp.order_sorter(test_list)
     out = capsys.readouterr()[0]
-    outlist = [i.strip() for i in out.split('\n') if i is not ""]
+    outlist = [i.strip() for i in out.split('\n') if i != ""]
     import sys
     if (sys.version_info > (3, 0)):
         assert message0 in outlist[0]

@@ -793,9 +793,8 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                 nf_txt = 'not found'
                 not_found = None
                 alias_bit = None
-                if error_id:
-                    alias_bit = error_id
-                elif utrl_txt in error_description:
+                #import pdb; pdb.set_trace()
+                if utrl_txt in error_description:
                     alias_bit = error_description.replace(utrl_txt, '')
                 elif error_description.endswith(nf_txt):
                     alias_bit = error_description.replace(nf_txt, '').replace("'", '')
@@ -805,8 +804,8 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                 if not_found and not_found in all_aliases:
                     continue
                 error_field = err['name']
-                report.append("{sheet:<30}Field '{er}': {des}"
-                              .format(er=error_field, des=error_description, sheet="ERROR " + sheet.lower()))
+                report.append("{sheet:<30}{eid} Field '{er}': {des}"
+                              .format(er=error_field, des=error_description, eid=error_id, sheet="ERROR " + sheet.lower()))
     # if there is a an access forbidden error
     elif error_dic.get('title') == 'Forbidden':
         error_description = error_dic['description']
