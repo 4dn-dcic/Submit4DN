@@ -6,6 +6,14 @@ Submit4DN
 Change Log
 ----------
 
+4.0.2
+=====
+
+`PR 175: error reporting bug fix <https://github.com/4dn-dcic/Submit4DN/pull/175>`_
+
+* bug fix of bug that did not properly report validation errors
+* added a test for case where an alias is passed to error_report function
+
 4.0.1
 =====
 
