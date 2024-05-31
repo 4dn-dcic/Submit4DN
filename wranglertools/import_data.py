@@ -798,6 +798,7 @@ def error_report(error_dic, sheet, all_aliases, connection, error_id=''):
                 elif error_description.endswith(nf_txt):
                     alias_bit = error_description.replace(nf_txt, '').replace("'", '')
                 if alias_bit:
+                    alias_bit = alias_bit.split('/')[-1]
                     not_found = alias_bit.strip()
                 # ignore ones about existing aliases
                 if not_found and not_found in all_aliases:
