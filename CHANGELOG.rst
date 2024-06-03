@@ -6,6 +6,14 @@ Submit4DN
 Change Log
 ----------
 
+4.0.3
+=====
+
+`PR 176: bug fix on error reporting <https://github.com/4dn-dcic/Submit4DN/pull/176>`_
+
+* fix of bug introduced by the previous error reporting fix
+* test to cover that case
+
 4.0.2
 =====
 

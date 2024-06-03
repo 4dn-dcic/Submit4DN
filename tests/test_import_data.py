@@ -280,16 +280,21 @@ def test_combine_set_expsets_with_existing():
 
 
 def test_error_report(connection_mock):
-    # There are 6 errors in the err_dict, 5 of them are legit, 1 is checked against the all aliases list, and excluded
+    # There are 7 errors in the err_dict, 5 of them are legit, 2 are checked against the all aliases list, and excluded
     err_dict = {
                     "title": "Unprocessable Entity",
                     "status": "error",
                     "errors": [
                         {"location": "body",
                          "description": "Test for error with no name"},
-                        {# This one should be excluded from report as this alias is in the sheet alias list
+                        {
+                         # This one should be excluded from report as this alias is in the sheet alias list
                          "name": "Schema: ", "location": "body",
                          "description": "Unable to resolve link: siyuan-wang-lab:region_1MB_TAD_1"},
+                        {
+                         # This also excluded - error format different (includes type name)
+                         "name": "Schema: ", "location": "body",
+                         "description": "Unable to resolve link: /GenomicRegion/siyuan-wang-lab:region_1MB_TAD_1"},
                         {"name": "Schema: ", "location": "body",
                          "description": "Unable to resolve link: siyuan-wang-lab:region_5MB_TAD_2"},
                         {"location": "body", "name": "Schema: genome_location.1",
