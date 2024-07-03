@@ -6,6 +6,12 @@ Submit4DN
 Change Log
 ----------
 
+4.0.4
+=====
+
+* Support for Python 3.12.
+
+
 4.0.3
 =====
 
