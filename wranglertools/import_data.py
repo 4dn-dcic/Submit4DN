@@ -894,19 +894,34 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             pp.Path(filename_to_post).unlink()
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_file_creds')
-        if not extcreds:
+        if extcreds:
+            print("existing ext creds")
+            import pdb; pdb.set_trace()
+            if (
+                datetime.datetime.strptime(extcreds.get('upload_credentials').get('Expiration'), "%Y-%m-%d %H:%M:%S%z")
+                .replace(tzinfo=None) < datetime.datetime.now()
+            ):
+                print("expired")
+                import pdb; pdb.set_trace()
+        else:
             time.sleep(5)
             extcreds = get_upload_creds(e['@graph'][0]['accession'], connection, extfilecreds=True)
-        for fformat, filepath in extrafiles.items():
-            try:
-                file_format = ff_utils.get_metadata(fformat, key=connection.key)
-                ff_uuid = file_format.get('uuid')
-            except Exception:
-                raise "Can't find file_format item for %s" % fformat
-            for ecred in extcreds:
-                if ff_uuid == ecred.get('file_format'):
-                    upload_creds = ecred.get('upload_credentials')
-                    upload_extra_file(upload_creds, filepath)
+            for fformat, filepath in extrafiles.items():
+                try:
+                    file_format = ff_utils.get_metadata(fformat, key=connection.key)
+                    ff_uuid = file_format.get('uuid')
+                except Exception:
+                    raise "Can't find file_format item for %s" % fformat
+                for ecred in extcreds:
+                    if ff_uuid == ecred.get('file_format'):
+                        upload_creds = ecred.get('upload_credentials')
+                        if (
+                            datetime.datetime.strptime(upload_creds.get('Expiration'), "%Y-%m-%d %H:%M:%S%z")
+                            .replace(tzinfo=None) < datetime.datetime.now()
+                        ):
+                            print("expired")
+                            import pdb; pdb.set_trace()
+                        upload_extra_file(upload_creds, filepath)
     return e
 
 
@@ -1486,6 +1501,7 @@ def upload_file(creds, path):  # pragma: no cover
             options = {"shell": True}
         subprocess.check_call(command, env=env, **options)
     except subprocess.CalledProcessError as e:
+        import pdb; pdb.set_trace()
         raise RuntimeError("Upload failed with exit code %d" % e.returncode)
     else:
         end = time.time()
