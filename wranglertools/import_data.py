@@ -894,8 +894,10 @@ def update_item(verb, file_to_upload, post_json, filename_to_post, extrafiles, c
             pp.Path(filename_to_post).unlink()
     if extrafiles:
         extcreds = e['@graph'][0].get('extra_file_creds')
-        if not extcreds:
-            time.sleep(5)
+        if not extcreds or (
+            datetime.datetime.strptime(extcreds.get('upload_credentials').get('Expiration'), "%Y-%m-%d %H:%M:%S%z")
+            .replace(tzinfo=None) < datetime.datetime.now()
+        ):
             extcreds = get_upload_creds(e['@graph'][0]['accession'], connection, extfilecreds=True)
         for fformat, filepath in extrafiles.items():
             try:
@@ -1434,10 +1436,12 @@ def user_workflow_reader(workbook, sheet, connection):
 
 def get_upload_creds(file_id, connection, extfilecreds=False):  # pragma: no cover
     creds2return = 'upload_credentials'
-    url = f"{file_id}/upload/"
+    url = f"{file_id}/upload/?datastore=database"
     if extfilecreds:
         creds2return = 'extra_files_creds'
-        req = ff_utils.authorized_request(f"{connection.key.get('server')}/{url}", auth=ff_utils.get_authentication_with_server(connection.key)).json()
+        req = ff_utils.authorized_request(
+            f"{connection.key.get('server')}/{url}", auth=ff_utils.get_authentication_with_server(connection.key)
+        ).json()
     else:
         req = ff_utils.post_metadata({}, url, key=connection.key)
     return req['@graph'][0][creds2return]

@@ -6,6 +6,13 @@ Submit4DN
 Change Log
 ----------
 
+
+4.1.1
+=====
+
+* Bug fix for uploading extra_files via spreadsheet
+
+
 4.1.0
 =====
 
