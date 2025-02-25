@@ -22,7 +22,7 @@ pip install submit4dn --upgrade
 
 ### Troubleshooting
 
-This package is not supported on older Python versions and is supported and tested for versions 3.8 - 3.11.  It may work with other python versions but your mileage may vary.
+This package is not supported on older Python versions and is supported and tested for versions 3.9 - 3.12.  It may work with other python versions but your mileage may vary.
 
 It is recommended to install this package in a virtual environment to avoid dependency clashes.
 
