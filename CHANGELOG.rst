@@ -6,6 +6,11 @@ Submit4DN
 Change Log
 ----------
 
+5.0.1
+=====
+
+* update to readme for supported python versions
+* update to version of dcicutils used in ga publish
 
 5.0.0
 =====
