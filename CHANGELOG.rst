@@ -7,6 +7,12 @@ Change Log
 ----------
 
 
+5.0.0
+=====
+
+
+* drop support for python 3.8 and update lock file 
+
 4.1.1
 =====
 
